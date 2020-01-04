@@ -1,0 +1,199 @@
+
+body,p, div, a, ul, li, input, label
+{
+	margin: 0;
+	padding: 0;
+	border: 1px solid blue;
+}
+
+body
+{
+	font-size: 1.5em;
+}
+
+#header
+{
+	width: 100%;
+	height: 100px;
+	background-color: black;
+}
+
+#menu
+{
+	width: 200px;
+	height: 700px;
+	background-color: white;
+	float: left;
+	font-style: normal;
+	color: black;
+}
+
+#add-note-button, #add-folder-button, #add-attribute-button
+{
+	width: 100px;
+	height: 30px;
+}
+
+a
+{
+	color: black;
+}
+
+a:link
+{
+	color: black;
+}
+
+a:visited
+{
+	color: black;
+}
+
+a:hover
+{
+	color: green;
+}
+
+a:hover
+{
+	color: green;
+}
+
+#menu ul li
+{
+	list-style: none;
+}
+
+#menu ul li a
+{
+	text-decoration: none;
+}
+
+#content
+{
+	background-color: white;	
+}
+
+#add-form input[type=text]
+{
+	display: block;
+	width: 1000px;
+	font-size: 1em;
+	font-style: normal;
+}
+
+#add-form input[type=button]
+{
+	width: 100px;
+	height: 30px;
+}
+
+#form-container, #data-container, #data-menu
+{
+	display: none;
+}
+
+/*
+table, th, td
+{
+	border: 1px solid black;
+}
+*/
+
+td
+{
+	min-width: 1.5em;
+} 
+
+.folder
+{
+	background-color: plum;
+}
+
+.note
+{
+	background-color: palegreen
+}
+
+.collapseIcon
+{
+	background-image: url("img/collapseIcon.svg");
+	max-width: 100%;
+	max-height: 100%;
+	width: 30px;
+	height: 30px;
+	background-size: 30px 100%;
+	background-position: right center;
+	background-repeat: no-repeat;
+}
+
+.expandIcon
+{
+	background-image: url("img/expandIcon.svg");
+	max-width: 100%;
+	max-height: 100%;
+	width: 30px;
+	height: 30px;
+	background-size: 30px 100%;
+	background-position: right center;
+	background-repeat: no-repeat;
+}
+
+.emptyIcon
+{
+	max-width: 100%;
+	max-height: 100%;
+	width: 30px;
+	height: 30px;
+}
+
+.folderIcon
+{
+	background-image: url("img/folderIcon.svg");
+	max-width: 100%;
+	max-height: 100%;
+	width: 30px;
+	height: 30px;
+	background-size: 30px 100%;
+	background-position: right center;
+	background-repeat: no-repeat;
+}
+
+.noteIcon
+{
+	background-image: url("img/noteIcon.svg");
+	max-width: 100%;
+	max-height: 100%;
+	width: 30px;
+	height: 30px;
+	align: right;
+	background-size: 30px 100%;
+	background-position: right center;
+	background-repeat: no-repeat;
+}
+
+.editButton
+{
+	background-image: url("img/editIcon.svg");
+	max-width: 100%;
+	max-height: 100%;
+	width: 30px;
+	height: 30px;
+	align: left;
+	background-size: 30px 100%;
+	background-position: left center;
+	background-repeat: no-repeat;
+}
+
+.deleteButton
+{
+	background-image: url("img/deleteIcon.svg");
+	max-width: 100%;
+	max-height: 100%;
+	width: 30px;
+	height: 30px;
+	align: left;
+	background-size: 30px 100%;
+	background-position: left center;
+	background-repeat: no-repeat;	
+}
