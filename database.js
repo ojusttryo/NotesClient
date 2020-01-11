@@ -6,9 +6,9 @@ class Database
 
     }
 
-    saveObject(note, id, itemType)
+    saveObject(collection, object, id)
     {
-        return true;
+        return id ? id : 999;   // RETURN NEW ID
     }
 
     saveFolder(folder, id)
@@ -16,7 +16,7 @@ class Database
         return true;
     }
 
-    deleteNote(id)
+    deleteObject(collection, id)
     {
         return true;
     }

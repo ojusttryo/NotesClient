@@ -59,6 +59,11 @@ a:hover
 	color: green;
 }
 
+#data-element label
+{
+	display: block;
+}
+
 #menu ul li
 {
 	list-style: none;

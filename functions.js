@@ -64,7 +64,8 @@ function getContentType()
 function getEmptyElement(id)
 {
 	var element = document.getElementById(id);
-	element.innerHTML = "";
+	while (element.lastChild)
+		element.removeChild(element.lastChild);
 	return element;
 }
 
@@ -77,11 +78,17 @@ function getObjectFromForm(form)
 {
 	var result = new Object();
 
-	for (var i = 0; i < form.childNodes.length; i++)
+	var allNodes = form.getElementsByTagName('*');
+	for (var i = 0; i < allNodes.length; i++)
 	{
-		var attributeName = form.childNodes[i].getAttribute(ATTRIBUTE_NAME);
+		var attributeName = allNodes[i].getAttribute(ATTRIBUTE_NAME);
 		if (attributeName != null)
-			result[attributeName] = form.childNodes[i].value;
+		{
+			if (allNodes[i].type && allNodes[i].type === 'checkbox')
+				result[attributeName] = allNodes[i].checked;
+			else if (allNodes[i].value.length > 0)
+				result[attributeName] = allNodes[i].value;
+		}
 	}
 
 	return result;

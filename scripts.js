@@ -44,203 +44,30 @@ function showContent(name)
 // 	}
 // }
 
-function showAttributesMenu()
+async function makeHttpRequest(url, init, handler, responseType)
 {
-	var dataMenu = getEmptyElement(DATA_MENU);
+	let response;
+	let json;
 
-	var addAttributeButton = document.createElement("input");
-	addAttributeButton.type = "button";
-	addAttributeButton.id = "add-attribute-button";
-	addAttributeButton.value = "New attribute";
-	addAttributeButton.onclick = function() { addAttributeInfo(); };
-
-	dataMenu.appendChild(addAttributeButton);
-}
-
-
-
-function showAttributes()
-{
-	showAttributesMenu();
-
-	var attributesUrl = SERVER_ADDRESS + '/rest/attributes';
-	const init = { method: 'GET' };
-
-	makeHttpRequest(attributesUrl, init, showAttributesHandler);
-}
-
-
-function showAttributesHandler(attributes)
-{
-	if (!attributes)
-		return;
-
-	//var attributes = jsonString;
-	//var attributes = JSON.parse(jsonString);
-
-	var attrMap = [];
-	for (var i = 0; i < attributes.length; i++)
+	try
 	{
-		var id = attributes[i].id;
-		attrMap[id] = attributes[i];
+		response = await fetch(url, init);
+		if (init.method == "GET")
+			json = await response.json();
+		else
+			json = await response.text();
 	}
-	CACHE[ATTRIBUTES] = attrMap;
-
-	var table = getEmptyElement(DATA_TABLE);
-	table.appendChild(createAttributesTableHead(attributes));
-	table.appendChild(createAttributesTableBody(attributes));
-}
-
-
-function createAttributesTableHead()
-{
-	var thead = document.createElement("thead");
-	var tr = document.createElement("tr");
-
-	appendNewTh(tr, "№");
-	appendNewTh(tr, "Name");
-	appendNewTh(tr, "");		// Edit
-	appendNewTh(tr, "");		// Remove
-
-	thead.appendChild(tr);
-
-	return thead;
-}
-
-function createAttributesTableBody(attributes)
-{
-	var tbody = document.createElement("tbody");
-
-	for (var i = 0; i < attributes.length; i++)
+	catch(e)
 	{
-		var tr = document.createElement("tr");
-		tr.className = ATTRIBUTE;
-		tr.setAttribute(CONTENT_ID, attributes[i].id);
-
-		var number = document.createElement("td");
-		number.innerText = i + 1;
-		number.onclick = function() { showAttributeInfo(attributes[i].id); };
-		tr.appendChild(number);
-
-		var name = document.createElement("td");
-		name.innerText = attributes[i].name;
-		name.onclick = function() { showAttributeInfo(attributes[i].id); };
-		tr.appendChild(name);
-
-		var editButton = document.createElement("td");
-		editButton.className = EDIT_BUTTON;
-		editButton.onclick = function() { editAttributeInfo(attributes[i].id); };
-		tr.appendChild(editButton);		
-
-		var deleteButton = document.createElement("td");
-		deleteButton.className = DELETE_BUTTON;
-		deleteButton.onclick = function() 
-		{
-			removeAttribute(this.parentNode.getAttribute(CONTENT_ID));
-			this.parentNode.style.display = "none";
-		};
-		tr.appendChild(deleteButton);
-
-		tbody.appendChild(tr);
+		alert(e);
 	}
 
-	return tbody;
+	if (response.ok && handler)
+		handler(init.method == "GET" ? json : null);
+
+	return;
 }
 
-
-function createAttributesForm(id)
-{
-	var attribute = CACHE[ATTRIBUTES][id];
-	var dataElement = getEmptyElement(DATA_ELEMENT);
-
-
-}
-
-
-async function makeHttpRequest(url, init, handler)
-{
-
-	//const userAction = async () => {
-		
-		//const response = 
-		//const myJson = await response.json(); //extract JSON from the http response
-		
-		//var textItem = document.createElement("div");
-		//textItem.innerHTML = "NO TEXT " + myJson + " NO TEXT";
-		//dataMenu.appendChild(textItem);
-	//}
-
-	// const init = {
-	// 	method: 'GET'
-	// }
-
-	let response = await fetch(url, init);
-	let json = await response.json();
-	
-	//var data = JSON.stringify(json);
-	if (handler)
-		handler(json);
-
-	var content = document.getElementById(CONTENT);
-	var x = JSON.stringify(json);
-	var y = document.createElement("div");
-	y.innerText = x;
-	content.appendChild(y);
-
-	// await fetch(url, init)
-	// 	.then(function(response)
-	// 	{
-	// 		if (response.ok) 
-	// 		{
-	// 			var json = response.json();
-	// 			var data = JSON.stringify(json);
-	// 			//handler(data);
-	// 			//alert(response.json().toString());
-	// 			// var textItem = document.createElement("div");
-	// 			// textItem.innerHTML = "TEXT " + response.json().toString() + " TEXT";
-	// 			// dataMenu.appendChild(textItem);
-	// 		}
-	// 		else 
-	// 		{
-	// 			// var textItem = document.createElement("div");
-	// 			// textItem.innerHTML = "NO TEXT";
-	// 			// dataMenu.appendChild(textItem);
-	// 		}
-	// 	});
-		// .then(function(data) 
-		// {
-		// 	alert(data);
-		// 	handler(data);
-
-		// 	// var textItemX = document.createElement("div");
-		// 	// textItemX.innerHTML = data + "HERE";
-		// 	// dataMenu.appendChild(textItemX);
-		// }
-		// );
-
-	// var asynchronous = true;
-	// const Http = new XMLHttpRequest();
-	// Http.open(method, url, asynchronous);
-	// Http.send();
-	
-	// Http.onreadystatechange = (e) => { handler(Http.responseText); }
-
-	// return Http.responseText;
-/*
-	var textItem2 = document.createElement("div");
-	textItem2.innerHTML = "SOME HTML";
-	dataMenu.appendChild(textItem2);*/
-	
-}
-
-function removeAttribute(id)
-{
-	var attributesUrl = SERVER_ADDRESS + '/rest/attributes/' + id;
-	const init = { method: 'DELETE' };
-
-	makeHttpRequest(attributesUrl, init, null);
-	CACHE[ATTRIBUTES][id] = null;
-}
 
 function showMenu()
 {
@@ -612,7 +439,7 @@ function deleteFolder(id)
 function deleteNote(id)
 {
 	var db = new Database();
-	if (db.deleteNote(id))
+	if (db.deleteObject(id))	// TODO ADD FIRST PARAM - COLLECTIOn
 	{
 		var dataTable = document.getElementById(DATA_TABLE);
 		var tbody = dataTable.childNodes[1];
@@ -668,7 +495,7 @@ function showAddEditForm(tr, id, itemType)
 	{
 		var db = new Database();
 		var note = getObjectFromForm(this.parentNode);
-		if (db.saveObject(note, id, itemType))
+		if (db.saveObject(itemType, note, id))
 		{
 			if (hidden.value != null)
 			{

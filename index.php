@@ -9,6 +9,7 @@
 		<script type="text/javascript" src="constants.js"></script>
 		<script type="text/javascript" src="functions.js"></script>
 		<script type="text/javascript" src="database.js"></script>
+		<script type="text/javascript" src="metainfo.js"></script>
 	</head>
 	<body onload="showContent('Movies')">
 
@@ -18,8 +19,8 @@
 
 		<div id="menu">
 			<ul>
-			    <li onclick="showAttributes()">Attributes</a><li>
-				<li><a href="">Entities</a></li>
+			    <li onclick="showAttributes()">Attributes<li>
+				<li onclick="showEntities()">Entities</li>
 				<li onclick="showContent(this.innerText)" content-type="films" id="Movies-button">Movies</li>
 				
 			</ul>
