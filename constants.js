@@ -45,6 +45,7 @@ const EMPTY_ICON = "emptyIcon";
 const FOLDER = "folder";
 const NOTE = "note";
 const ATTRIBUTE = "attribute";
+const ENTITY = "entity";
 const EDIT_BUTTON = "editButton";
 const DELETE_BUTTON = "deleteButton";
 

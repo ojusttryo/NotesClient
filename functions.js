@@ -81,13 +81,30 @@ function getObjectFromForm(form)
 	var allNodes = form.getElementsByTagName('*');
 	for (var i = 0; i < allNodes.length; i++)
 	{
-		var attributeName = allNodes[i].getAttribute(ATTRIBUTE_NAME);
+		var currentNode = allNodes[i];
+		var attributeName = currentNode.getAttribute(ATTRIBUTE_NAME);
 		if (attributeName != null)
 		{
-			if (allNodes[i].type && allNodes[i].type === 'checkbox')
-				result[attributeName] = allNodes[i].checked;
-			else if (allNodes[i].value.length > 0)
-				result[attributeName] = allNodes[i].value;
+			if (currentNode.type && currentNode.type === 'checkbox')
+			{
+				result[attributeName] = currentNode.checked;
+			}
+			else if (currentNode.type && (currentNode.type === 'select' || currentNode.type === 'select-multiple'))
+			{
+				var array = [];
+				var length = currentNode.options.length;
+				for (var j = 0; j < length; j++)
+				{
+					var option = currentNode.options[j];
+					if (currentNode.options[j].selected === true)
+						array.push(option.id);
+				}
+				result[attributeName] = array;
+			}
+			else if (currentNode.value.length > 0)
+			{
+				result[attributeName] = currentNode.value;
+			}
 		}
 	}
 

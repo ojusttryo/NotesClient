@@ -44,7 +44,7 @@ function showContent(name)
 // 	}
 // }
 
-async function makeHttpRequest(url, init, handler, responseType)
+async function makeHttpRequest(url, init, handler)
 {
 	let response;
 	let json;

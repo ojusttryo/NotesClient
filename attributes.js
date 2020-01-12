@@ -4,12 +4,7 @@
 function showAttributes()
 {
 	showAttributesMenu();
-
-	var attributesUrl = SERVER_ADDRESS + '/rest/attributes';
-	const init = { method: 'GET' };
-
-    makeHttpRequest(attributesUrl, init, showAttributesHandler);
-    
+	readAttributes(showAttributesHandler);    
     switchToContent();
 }
 
@@ -23,11 +18,19 @@ function showAttributesMenu()
 	addAttributeButton.value = "New attribute";
     addAttributeButton.onclick = function() 
     { 
-        createAttributeForm(true, null);
+        createAttributeForm(null);
         switchToAddEditForm();
     };
 
 	dataMenu.appendChild(addAttributeButton);
+}
+
+function readAttributes(afterReadHandler)
+{
+    var url = SERVER_ADDRESS + '/rest/attributes';
+	const init = { method: 'GET' };
+
+    makeHttpRequest(url, init, afterReadHandler);
 }
 
 function showAttributesHandler(attributes)
@@ -35,16 +38,8 @@ function showAttributesHandler(attributes)
 	if (!attributes)
 		return;
 
-	var attrMap = [];
-	for (var i = 0; i < attributes.length; i++)
-	{
-		var id = attributes[i].id;
-		attrMap[id] = attributes[i];
-	}
-	CACHE[ATTRIBUTES] = attrMap;
-
 	var table = getEmptyElement(DATA_TABLE);
-	table.appendChild(createAttributesTableHead(attributes));
+	table.appendChild(createAttributesTableHead());
 	table.appendChild(createAttributesTableBody(attributes));
 }
 
@@ -87,7 +82,7 @@ function createAttributesTableBody(attributes)
 		editButton.className = EDIT_BUTTON;
         editButton.onclick = function() 
         {
-            createEditAttributesForm(this.parentNode.getAttribute(CONTENT_ID));
+            createEditAttributeForm(this.parentNode.getAttribute(CONTENT_ID));
             switchToAddEditForm();
         };
 		tr.appendChild(editButton);		
@@ -112,15 +107,53 @@ function deleteAttribute(id, deleteHandler)
 	const init = { method: 'DELETE' };
 
 	makeHttpRequest(attributesUrl, init, deleteHandler);
-	CACHE[ATTRIBUTES][id] = null;
 }
 
-function createEditAttributesForm(id)
+function createEditAttributeForm(id)
 {
-    var attribute = CACHE[ATTRIBUTES][id];
-    
-    createAttributeForm(false, id);
+    createAttributeForm(id);
+    readAttribute(id, fillAttributeValuesOnForm);
+}
 
+function readAttribute(id, afterReadHandler)
+{
+    var url = SERVER_ADDRESS + '/rest/attributes/' + id;
+	const init = { method: 'GET' };
+
+    makeHttpRequest(url, init, afterReadHandler);
+}
+
+function createAttributeForm(attributeId)
+{
+    var dataElement = getEmptyElement(DATA_ELEMENT);
+    var form = document.createElement("form");
+    form.id = "attribute-form";
+    if (attributeId)
+        form.setAttribute(CONTENT_ID, attributeId);
+    else if (form.hasAttribute(CONTENT_ID))
+        form.removeAttribute(CONTENT_ID);
+
+    addTextInputWithlabel(form, "name", "Name", "attribute-name");
+    addSelectWithLabel(form, "alignment", "Alignment", "attribute-alignment", [ "left", "right", "center" ]);
+    addSelectWithLabel(form, "type", "Type", "attribute-type", [ "text", "textarea", "year", "int", "float", "select", "multiselect", "checkbox", "inc", "url"]);
+    addBooleanInputWithLabel(form, "visible", "Visible in table", "attribute-visible", "visible");
+    addBooleanInputWithLabel(form, "required", "Required", "attribute-required", "required");
+    addNumberInputWithLabel(form, "linesCount", "Lines count", "attribute-lines-count", 1, 5);
+    addSelectWithLabel(form, "method", "Method", "attribute-method", [ "none", "folder name", "avg", "count" ]);
+    addTextInputWithlabel(form, "maxWidth", "Max width in table", "attribute-max-width");
+    addTextInputWithlabel(form, "minWidth", "Min width in table", "attribute-min-width");
+    addTextInputWithlabel(form, "max", "Max value/length", "attribute-max");
+    addTextInputWithlabel(form, "min", "Min value/length", "attribute-min");
+    addTextInputWithlabel(form, "defaultValue", "Default value", "attribute-default");
+    addTextInputWithlabel(form, "regex", "Regular expression to check", "attribute-regex");
+
+    addButton(form, attributeId ? "edit-attribute" : "save-attribute", attributeId ? "Edit attribute" : "Save attribute", function() { saveAttributeInfo(showAttributes) });
+
+    dataElement.appendChild(form);
+}
+
+function fillAttributeValuesOnForm(attribute)
+{
     document.getElementById("attribute-name").value = attribute["name"];
     document.getElementById("attribute-type").value = attribute["type"];
     document.getElementById("attribute-visible").checked = attribute["visible"];
@@ -159,38 +192,6 @@ function createEditAttributesForm(id)
         case "url":
             break;
     }
-}
-
-function createAttributeForm(add, attributeId)
-{
-    var dataElement = getEmptyElement(DATA_ELEMENT);
-    var form = document.createElement("form");
-    form.id = "attribute-form";
-    if (attributeId)
-        form.setAttribute(CONTENT_ID, attributeId);
-    else if (form.hasAttribute(CONTENT_ID))
-        form.removeAttribute(CONTENT_ID);
-
-    addTextInputWithlabel(form, "name", "Name", "attribute-name");
-    addSelectWithLabel(form, "alignment", "Alignment", "attribute-alignment", [ "left", "right", "center" ]);
-    addSelectWithLabel(form, "type", "Type", "attribute-type", [ "text", "textarea", "year", "int", "float", "select", "multiselect", "checkbox", "inc", "url"]);
-    addBooleanInputWithLabel(form, "visible", "Visible in table", "attribute-visible", "visible");
-    addBooleanInputWithLabel(form, "required", "Required", "attribute-required", "required");
-    addNumberInputWithLabel(form, "linesCount", "Lines count", "attribute-lines-count", 1, 5);
-    addSelectWithLabel(form, "method", "Method", "attribute-method", [ "none", "folder name", "avg", "count" ]);
-    addTextInputWithlabel(form, "maxWidth", "Max width in table", "attribute-max-width");
-    addTextInputWithlabel(form, "minWidth", "Min width in table", "attribute-min-width");
-    addTextInputWithlabel(form, "max", "Max value/length", "attribute-max");
-    addTextInputWithlabel(form, "min", "Min value/length", "attribute-min");
-    addTextInputWithlabel(form, "defaultValue", "Default value", "attribute-default");
-    addTextInputWithlabel(form, "regex", "Regular expression to check", "attribute-regex");
-
-    addButton(form, add ? "save-attribute" : "edit-attribute", add ? "Save attribute" : "Edit attribute", function() { saveAttributeInfo(showAttributes) });
-
-    dataElement.appendChild(form);
-    
-
-    //dataElement.insertAdjacentHTML('afterbegin', getAttributeForm(true));
 }
 
 function addTextInputWithlabel(parent, attrName, labelText, inputId)

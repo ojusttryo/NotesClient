@@ -9,7 +9,8 @@
 		<script type="text/javascript" src="constants.js"></script>
 		<script type="text/javascript" src="functions.js"></script>
 		<script type="text/javascript" src="database.js"></script>
-		<script type="text/javascript" src="metainfo.js"></script>
+		<script type="text/javascript" src="attributes.js"></script>
+		<script type="text/javascript" src="entities.js"></script>
 	</head>
 	<body onload="showContent('Movies')">
 
