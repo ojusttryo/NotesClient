@@ -12,17 +12,18 @@
 		<script type="text/javascript" src="attributes.js"></script>
 		<script type="text/javascript" src="entities.js"></script>
 	</head>
-	<body onload="showContent('Movies')">
+	<body onload="loadMenu()">
 
 		<div id="header">
 			
 		</div>
 
 		<div id="menu">
-			<ul>
+			<ul id="menu-list">
+			<!--
 			    <li onclick="showAttributes()">Attributes<li>
 				<li onclick="showEntities()">Entities</li>
-				<li onclick="showContent(this.innerText)" content-type="films" id="Movies-button">Movies</li>
+				 <li onclick="showContent(this.innerText)" content-type="films" id="Movies-button">Movies</li> -->
 				
 			</ul>
 		</div>

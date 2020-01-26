@@ -49,7 +49,8 @@ function createAttributesTableHead()
 	var tr = document.createElement("tr");
 
 	appendNewTh(tr, "№");
-	appendNewTh(tr, "Name");
+    appendNewTh(tr, "Name");
+    appendNewTh(tr, "Title");
 	appendNewTh(tr, "");		// Edit
 	appendNewTh(tr, "");		// Remove
 
@@ -76,7 +77,12 @@ function createAttributesTableBody(attributes)
 		var name = document.createElement("td");
 		name.innerText = attributes[i].name;
 		name.onclick = function() { showAttributeInfo(attributes[i].id); };
-		tr.appendChild(name);
+        tr.appendChild(name);
+        
+        var title = document.createElement("td");
+        title.innerText = attributes[i].title;
+        title.onclick = function() { showAttributeInfo(attributes[i].id); };
+        tr.appendChild(title);
 
 		var editButton = document.createElement("td");
 		editButton.className = EDIT_BUTTON;
@@ -134,6 +140,7 @@ function createAttributeForm(attributeId)
         form.removeAttribute(CONTENT_ID);
 
     addTextInputWithlabel(form, "name", "Name", "attribute-name");
+    addTextInputWithlabel(form, "title", "Title", "attribute-title");
     addSelectWithLabel(form, "alignment", "Alignment", "attribute-alignment", [ "left", "right", "center" ]);
     addSelectWithLabel(form, "type", "Type", "attribute-type", [ "text", "textarea", "year", "int", "float", "select", "multiselect", "checkbox", "inc", "url"]);
     addBooleanInputWithLabel(form, "visible", "Visible in table", "attribute-visible", "visible");
@@ -155,6 +162,7 @@ function createAttributeForm(attributeId)
 function fillAttributeValuesOnForm(attribute)
 {
     document.getElementById("attribute-name").value = attribute["name"];
+    document.getElementById("attribute-title").value = attribute["title"];
     document.getElementById("attribute-type").value = attribute["type"];
     document.getElementById("attribute-visible").checked = attribute["visible"];
     document.getElementById("attribute-required").checked = attribute["required"];

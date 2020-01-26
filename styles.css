@@ -28,6 +28,11 @@ body
 	color: black;
 }
 
+#menu-list li
+{
+	height: 1.3em;
+}
+
 #add-note-button, #add-folder-button, #add-attribute-button
 {
 	width: 100px;

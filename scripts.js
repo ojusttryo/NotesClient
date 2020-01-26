@@ -4,6 +4,46 @@
 CACHE = {};
 SERVER_ADDRESS = "http://localhost:8765";
 
+function loadMenu()
+{
+	var url = SERVER_ADDRESS + '/rest/entities';
+	const init = { method: 'GET' };
+
+    makeHttpRequest(url, init, fillMenu);
+}
+
+function fillMenu(entities)
+{
+	var menuList = getEmptyElement("menu-list");
+
+	for (var i = 0; i < entities.length; i++)
+	{
+		var title = entities[i].title;
+		var collection = entities[i].collection;
+		var li = document.createElement("li");
+		li.onclick = function() { showContent(this); };
+		li.id = collection + "-button";
+		li.innerText = title;
+		li.setAttribute(CONTENT, collection);
+		menuList.appendChild(li);
+	}
+
+	if (entities.length > 0)
+	{
+		var emptyLi = document.createElement("li");
+		menuList.appendChild(emptyLi);
+	}
+
+	var attributesLi = document.createElement("li");
+	attributesLi.innerText = "Attributes";
+	attributesLi.onclick = function() { showAttributes(); };
+	menuList.appendChild(attributesLi);
+
+	var entitiesLi = document.createElement("li");
+	entitiesLi.innerText = "Entities";
+	entitiesLi.onclick = function() { showEntities(); };
+	menuList.appendChild(entitiesLi);
+}
 
 function showContent(name)
 {

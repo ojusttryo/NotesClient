@@ -37,7 +37,9 @@ function showEntitiesHandler(entities)
 
 	var table = getEmptyElement(DATA_TABLE);
 	table.appendChild(createEntitiesTableHead(entities));
-	table.appendChild(createEntitiesTableBody(entities));
+    table.appendChild(createEntitiesTableBody(entities));
+    
+    loadMenu();
 }
 
 // This method is the same as in attributes.js, but will differ in future.
@@ -47,9 +49,10 @@ function createEntitiesTableHead()
 	var tr = document.createElement("tr");
 
 	appendNewTh(tr, "№");
-	appendNewTh(tr, "Name");
-	appendNewTh(tr, "");		// Edit
-	appendNewTh(tr, "");		// Remove
+    appendNewTh(tr, "Title");
+    appendNewTh(tr, "Collection");
+	appendNewTh(tr, "");		    // Edit
+	appendNewTh(tr, "");		    // Remove
 
 	thead.appendChild(tr);
 
@@ -72,10 +75,15 @@ function createEntitiesTableBody(entities)
 		number.onclick = function() { showEntityInfo(entities[i].id); };
 		tr.appendChild(number);
 
-		var name = document.createElement("td");
-		name.innerText = entities[i].name;
-		name.onclick = function() { showEntitiesInfo(entities[i].id); };
-		tr.appendChild(name);
+		var title = document.createElement("td");
+		title.innerText = entities[i].title;
+		title.onclick = function() { showEntitiesInfo(entities[i].id); };
+        tr.appendChild(title);
+        
+        var collection = document.createElement("td");
+		collection.innerText = entities[i].collection;
+		collection.onclick = function() { showEntitiesInfo(entities[i].id); };
+		tr.appendChild(collection);
 
 		var editButton = document.createElement("td");
 		editButton.className = EDIT_BUTTON;
@@ -108,7 +116,32 @@ function deleteEntity(id, deleteHandler)
 	makeHttpRequest(attributesUrl, init, deleteHandler);
 }
 
-function fillEntitiyForm(attributes)
+function createEntityForm(entityId)
+{
+    var dataElement = getEmptyElement(DATA_ELEMENT);
+    var form = document.createElement("form");
+    form.id = "entity-form";
+    if (entityId)
+        form.setAttribute(CONTENT_ID, entityId);
+    else if (form.hasAttribute(CONTENT_ID))
+        form.removeAttribute(CONTENT_ID);
+
+    addTextInputWithlabel(form, "title", "Title", "entity-title");
+    addTextInputWithlabel(form, "collection", "Collection", "entity-collection");
+    addMultiSelectWithLabel(form, "attributes", "Attributes", "entity-attributes", []);
+
+    var entityFormButtonHandler = function() 
+    {
+        saveEntityInfo(showEntities);
+    }
+    addButton(form, entityId ? "edit-entity" : "save-entity", entityId ? "Edit entity" : "Save entity", entityFormButtonHandler);
+
+    dataElement.appendChild(form);
+
+    readAttributes(createOptionsWithExistentAttributes);
+}
+
+function createOptionsWithExistentAttributes(attributes)
 {
     var form = document.getElementById("entity-form");
     var id = form.getAttribute(CONTENT_ID);
@@ -123,7 +156,8 @@ function fillEntitiyForm(attributes)
         select.appendChild(option);
     }
 
-    readEntity(id, fillEntityValuesOnForm);
+    if (id)
+        readEntity(id, fillEntityValuesOnForm);
 }
 
 function readEntity(id, afterReadHandler)
@@ -134,29 +168,10 @@ function readEntity(id, afterReadHandler)
     makeHttpRequest(url, init, afterReadHandler);
 }
 
-function createEntityForm(entityId)
-{
-    var dataElement = getEmptyElement(DATA_ELEMENT);
-    var form = document.createElement("form");
-    form.id = "entity-form";
-    if (entityId)
-        form.setAttribute(CONTENT_ID, entityId);
-    else if (form.hasAttribute(CONTENT_ID))
-        form.removeAttribute(CONTENT_ID);
-
-    addTextInputWithlabel(form, "name", "Name", "entity-name");
-    addMultiSelectWithLabel(form, "attributes", "Attributes", "entity-attributes", []);
-
-    addButton(form, entityId ? "edit-entity" : "save-entity", entityId ? "Edit entity" : "Save entity", function() { saveEntityInfo(showEntities) });
-
-    dataElement.appendChild(form);
-
-    readAttributes(fillEntitiyForm);
-}
-
 function fillEntityValuesOnForm(entity)
 {
-    document.getElementById("entity-name").value = entity["name"];
+    document.getElementById("entity-title").value = entity["title"];
+    document.getElementById("entity-collection").value = entity["collection"];
     for (var i = 0; i < entity.attributes.length; i++)
     {
         var attribute = entity.attributes[i];
