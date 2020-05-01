@@ -1,115 +1,108 @@
 
-// Object to store my cache.
-// Fucking javascript...
-CACHE = {};
-SERVER_ADDRESS = "http://localhost:8765";
 
+/**
+ * Load the left side menu of entities on onload event action.
+ */
 function loadMenu()
 {
-	var url = SERVER_ADDRESS + '/rest/entities';
-	const init = { method: 'GET' };
+	fetch(SERVER_ADDRESS + '/rest/entities')
+	.then(response => response.json())
+	.then(entities => {
 
-    makeHttpRequest(url, init, fillMenu);
+		var menuList = getEmptyElement(MENU_LIST);
+
+		for (var i = 0; i < entities.length; i++)
+		{
+			var title = entities[i].title;
+			var collection = entities[i].collection;
+			var li = document.createElement("li");
+			li.onclick = function() { showContent(this.getAttribute(CONTENT), this.getAttribute(CONTENT_ID)); };
+			li.id = collection + "-button";
+			li.innerText = title;
+			li.setAttribute(CONTENT, collection);
+			li.setAttribute(CONTENT_ID, entities[i].id);
+			menuList.appendChild(li);
+		}
+	
+		if (entities.length > 0)
+		{
+			var emptyLi = document.createElement("li");
+			menuList.appendChild(emptyLi);
+		}
+	
+		var attributesLi = document.createElement("li");
+		attributesLi.innerText = "Attributes";
+		attributesLi.onclick = function() { showAttributes(); };
+		menuList.appendChild(attributesLi);
+	
+		var entitiesLi = document.createElement("li");
+		entitiesLi.innerText = "Entities";
+		entitiesLi.onclick = function() { showEntities(); };
+		menuList.appendChild(entitiesLi);
+	});
 }
 
-function fillMenu(entities)
+
+function loadLogs()
 {
-	var menuList = getEmptyElement("menu-list");
-
-	for (var i = 0; i < entities.length; i++)
-	{
-		var title = entities[i].title;
-		var collection = entities[i].collection;
-		var li = document.createElement("li");
-		li.onclick = function() { showContent(this); };
-		li.id = collection + "-button";
-		li.innerText = title;
-		li.setAttribute(CONTENT, collection);
-		menuList.appendChild(li);
-	}
-
-	if (entities.length > 0)
-	{
-		var emptyLi = document.createElement("li");
-		menuList.appendChild(emptyLi);
-	}
-
-	var attributesLi = document.createElement("li");
-	attributesLi.innerText = "Attributes";
-	attributesLi.onclick = function() { showAttributes(); };
-	menuList.appendChild(attributesLi);
-
-	var entitiesLi = document.createElement("li");
-	entitiesLi.innerText = "Entities";
-	entitiesLi.onclick = function() { showEntities(); };
-	menuList.appendChild(entitiesLi);
+	fetch(SERVER_ADDRESS + "/rest/log/50")
+	.then(response => response.json())
+	.then(logs => {
+		var history = getEmptyElement("history");
+		for (var i = 0; i < logs.length; i++)
+		{
+			var date = new Date(logs[i].time);
+			var day = addLeadingZeroIfLessThan10(date.getDay());
+			var month = addLeadingZeroIfLessThan10(date.getMonth() + 1);
+			var year = date.getFullYear();
+			var hours = addLeadingZeroIfLessThan10(date.getHours());
+			var minutes = addLeadingZeroIfLessThan10(date.getMinutes());
+			var seconds = addLeadingZeroIfLessThan10(date.getSeconds());
+			var operation = logs[i].operation;
+			var collection = logs[i].collection;
+			var id = logs[i].id;
+			var before = logs[i].before;
+			var after = logs[i].after;
+			var message = `[${day}.${month}.${year} ${hours}:${minutes}:${seconds}] ${collection} ${operation}: `;
+			switch (logs[i].operation)
+			{
+				case "CREATE": message += `${id} ${logs[i].after}`; break;
+				case "UPDATE": message += `${id} before=${before}; after=${after}`; break;
+				case "DELETE": message += (id != null) ? `${id} ${before}` : `count = ${before}`; break;
+				default: message += "Unknown operation"; break;
+			}
+			var p = document.createElement("p");
+			p.innerText = message;
+			history.appendChild(p);
+		}
+	});	
 }
 
-function showContent(name)
-{
-	var attributes = getAttributes(name);
-	var data = getData(name);
-	CACHE[DATA] = data;
 
-	setContentType(name);
-	drawHeader(name);	
+async function showContent(name, contentId)
+{
+	document.getElementById(CONTENT).setAttribute(CONTENT_TYPE, name);
+	document.getElementById(CONTENT).setAttribute(CONTENT_ID, contentId);
+	//drawHeader(name);
 	switchToContent();
-	showData(data, attributes);
-	showMenu();
-	updateContentTableVisibility();
+	createActionsMenu();
 
-	//readNotes();
+	fetch(SERVER_ADDRESS + '/rest/attributes/search?entityId=' + contentId)
+	.then(response => response.json())
+	.then(attributes => {
+		fetch(SERVER_ADDRESS + '/rest/notes/' + name)
+		.then(response => response.json())
+		.then(notes => {
+			showNotes(notes, attributes);
+		});
+	});
 }
 
 
-// function readNotes()
-// {
-// 	var notesUrl = 'http://192.168.0.101:8765/rest/notes/films';
-// 	var attributesUrl = 'http://192.168.0.101:8765/rest/attributes';
-// 	const init = { method: 'GET' };
-
-// 	var attributes = makeHttpRequest(attributesUrl, init, 'GET');
-// 	var notes = makeHttpRequest(notesUrl, init, 'GET');
-
-// 	var attrObjects = JSON.parse(attributes);
-// 	var attrMap = [];
-// 	for (var i = 0; i < attrObjects.length; i++)
-// 	{
-// 		var attr = attrObjects[i];
-// 		attrMap[attr.id] = attr;
-
-// 		var textItem = document.createElement("div");
-// 		textItem.innerHTML = JSON.stringify(attrMap[attr.id]);
-// 		document.getElementById(DATA_MENU).appendChild(textItem);
-// 	}
-// }
-
-async function makeHttpRequest(url, init, handler)
-{
-	let response;
-	let json;
-
-	try
-	{
-		response = await fetch(url, init);
-		if (init.method == "GET")
-			json = await response.json();
-		else
-			json = await response.text();
-	}
-	catch(e)
-	{
-		alert(e);
-	}
-
-	if (response.ok && handler)
-		handler(init.method == "GET" ? json : null);
-
-	return;
-}
-
-
-function showMenu()
+/**
+ * Create buttons to create new note, etc.
+ */
+function createActionsMenu()
 {
 	var dataMenu = getEmptyElement(DATA_MENU);
 
@@ -117,61 +110,31 @@ function showMenu()
 	addNoteButton.type = "button";
 	addNoteButton.id = "add-note-button";
 	addNoteButton.value = "New note";
-	addNoteButton.onclick = function() { showAddEditForm(null, null, NOTE) };
+	addNoteButton.onclick = function() { showNoteForm(null, null, NOTE) };
 
 	var addFolderButton = document.createElement("input");
 	addFolderButton.type = "button";
 	addFolderButton.id = "add-folder-button";
 	addFolderButton.value = "New folder";
-	addFolderButton.onclick = function() { showAddEditForm(null, null, FOLDER) };
+	addFolderButton.onclick = function() { showNoteForm(null, null, FOLDER) };
 
 	dataMenu.appendChild(addNoteButton);
 	dataMenu.appendChild(addFolderButton);
 }
 
 
-/** Switch view to content (menu buttons and data table), hiding the add/edit form */
-function switchToContent()
-{
-	hideHtmlElementById(DATA_ELEMENT);
-	showHtmlElementById(DATA_TABLE);
-	showHtmlElementById(DATA_MENU);	
-}
-
-/** Switch view to add/edit form, hiding menu buttons and data table */
-function switchToAddEditForm()
-{
-	hideHtmlElementById(DATA_TABLE);
-	hideHtmlElementById(DATA_MENU);	
-	showHtmlElementById(DATA_ELEMENT);
-}
-
-/** Update visibility of content elements (buttons and data table) depending on rows count */
-function updateContentTableVisibility()
-{
-	if (document.getElementById(DATA_TABLE).childNodes[1].childNodes.length > 0)
-		showHtmlElementById(DATA_TABLE);
-	else
-		hideHtmlElementById(DATA_TABLE);
-}
-
-
-function showData(data, attributes)
+function showNotes(notes, attributes)
 {
 	var table = getEmptyElement(DATA_TABLE);
 	table.appendChild(createTableHead(attributes));
-	table.appendChild(createTableBody(attributes, data));
+	table.appendChild(createTableBody(attributes, notes));
 
-	setNotesCount(data[NOTES_COUNT]);
+	setNotesCount(notes.length);
 }
 
 
 function createTableHead(attributes)
 {
-	// Table head should look like this
-	// |       Name      | Edit | Delete |    --- Names
-	// |  |  |  |  |  |  |      |        |    --- Columns (i.e. combining 6 columns for name)
-
 	var thead = document.createElement("thead");
 	var tr = document.createElement("tr");
 
@@ -179,12 +142,7 @@ function createTableHead(attributes)
 	for (var i = 0; i < attributes.length; i++)
 	{
 		var th = document.createElement("th");
-		th.innerText = attributes[i][NAME];
-		if (i === 0)
-		{
-			th.colSpan = 6;
-			th.setAttribute("align", "center");
-		}
+		th.innerText = attributes[i]["title"];
 		tr.appendChild(th);
 	}
 
@@ -198,206 +156,124 @@ function createTableHead(attributes)
 }
 
 
-function createTableBody(attributes, data)
+function createTableBody(attributes, notes)
 {
-	// Table body should look like this
-	// | - | F | Folder level 1 name                 | Attribute 1 | Attribute 2 | ...    --- Top level folder
-	// |   | - |  F  | Folder level 2 name           | Attribute 1 | Attribute 2 | ...    --- First level nesting folder
-	// |   |   |  -  |  F  | Folder level 3 name     | Attribute 1 | Attribute 2 | ...    --- Second level nesting folder (maximum)
-	// |   |   |     |     |  N  | Note level 4 name | Attribute 1 | Attribute 2 | ...    --- Third level nestring note (maximum)
-	// |   |   |     |  N  | Note level 3 name       | Attribute 1 | Attribute 2 | ...    --- Second level nesting note
-	// |   |   |  N  | Note level 2 name             | Attribute 1 | Attribute 2 | ...    --- First level nesting note
-	// |   | N | Note level 1 name                   | Attribute 1 | Attribute 2 | ...    --- Top level note
-	// |   |   |     |     |     |                   | Attribute 1 | Attribute 2 | ...
-	// So there are 6 columns for name and sings/icons.
-	// To the left of the sings and icons there are empty td elements without colSpan.
-	// To the right of the name there could be empty space. Name column combine it using colSpan.
-
 	var tbody = document.createElement("tbody");
 
-	if (data.Folders != null)
+	if (notes == null)
+		return tbody;
+
+	for (var i = 0; i < notes.length; i++)
 	{
-		for (var i = 0; i < data.Folders.length; i++)
-			printFolder(tbody, attributes, data.Folders[i]);
+		var note = notes[i];
+		var noteAttributes = convertArrayToObject(note.attributes);
+
+		var tr = document.createElement("tr");
+		tr.className = NOTE;
+		tr.setAttribute(CONTENT_ID, note[ID]);
+
+		//tr.appendChild(createTdWithIcon(NOTE_ICON));
+
+		for (var j = 0; j < attributes.length; j++)
+		{
+			var attr = attributes[j];
+			var td = document.createElement("td");
+			var attributeName = attr[NAME];
+			var attributeId = attr[ID];
+			td.setAttribute(ATTRIBUTE_NAME, attributeName);
+			td.innerHTML = noteAttributes[attributeName] != null ? noteAttributes[attributeName] : "";
+			tr.appendChild(td);
+		}
+
+		tr.appendChild(createEditButton(NOTE, note[ID]));
+		tr.appendChild(createDeleteButton(NOTE, note[ID]));
+
+		tbody.appendChild(tr);
 	}
-	printNotes(tbody, attributes, data);
 
 	return tbody;
 }
 
+
+function convertArrayToObject(attributes)
+{
+	var object = {};
+	for (var i = 0; i < attributes.length; i++)
+	{
+		var keys = Object.keys(attributes[i]);
+		for (var j = 0; j < keys.length; j++)
+		{
+			var key = keys[j];
+			object[key] = attributes[i][key];
+		}
+	}
+	return object;
+}
+
+
+function showContentWithAttributes(attributes)
+{
+	document.getElementById(DATA_TABLE).appendChild(createTableHead(attributes));
+
+	var url = SERVER_ADDRESS + '/rest/' + getContentType() + '/';
+	const init = { method: 'GET' };
+
+	var fillNotes = function(notes, attrs) { fillNotesTable(notes, attributes = attrs); };
+
+    makeHttpRequestSync(url, init, fillNotesTable());
+}
+
+
+function fillNotesTable(notes, attributes)
+{
+	for (var i = 0; i < folder.Notes.length; i++)
+	{
+		var tr = document.createElement("tr");
+		tr.className = NOTE;
+		tr.setAttribute(CONTENT_ID, folder.Notes[i][ID]);
+		tr.setAttribute(CONTENT_LEVEL, folder[LEVEL] + 1);
+
+		for (var k = 0; k < folder[LEVEL] + 1; k++)
+		{
+			var td = document.createElement("td");
+			tr.appendChild(td);
+		}
+
+		tr.appendChild(createTdWithIcon(NOTE_ICON));
+
+		for (var j = 0; j < attributes.length; j++)
+		{
+			var attr = attributes[j];
+			var td = document.createElement("td");
+			var attributeName = attr[NAME];
+			td.setAttribute(ATTRIBUTE_NAME, attributeName);
+			if (j == 0)
+			{
+				td.setAttribute("colSpan", 4 - folder[LEVEL]);
+			}
+			td.innerHTML = folder.Notes[i][attributeName];
+			tr.appendChild(td);
+		}
+
+		tr.appendChild(createEditButton(NOTE, folder.Notes[i][ID]));
+		tr.appendChild(createDeleteButton(NOTE, folder.Notes[i][ID]));
+
+		tbody.appendChild(tr);
+	}
+}
+
+
 function setNotesCount(count)
 {
+	if (count == null || count == undefined)
+		return;
+	
 	var contentType = getContentType();
 	var li = document.getElementById(contentType + "-button");
 	li.innerHTML = contentType + " (" + count + ")";
 	li.setAttribute(COUNT, count);
 }
 
-function printFolder(tbody, attributes, folder)
-{
-	var tr = document.createElement("tr");
-	tr.className = FOLDER;
-	tr.setAttribute(CONTENT_ID, folder[ID]);
-	tr.setAttribute(CONTENT_LEVEL, folder[LEVEL]);
-
-	for (var i = 0; i < folder[LEVEL] - 1; i++)
-		tr.appendChild(document.createElement("td"));
-	
-	var dashButton = (folder.Notes.length > 0 || folder.Folders.length > 0) ? createTdWithIcon(COLLAPSE_ICON) : createTdWithIcon(EMPTY_ICON);
-	dashButton.onclick = function() 
-	{
-		switch (dashButton.className)
-		{			
-			case COLLAPSE_ICON: collapseFolder(this.parentNode); break;
-			case EXPAND_ICON: expandFolder(this.parentNode); break;
-			default: break;
-		}
-	}
-
-	tr.appendChild(dashButton);
-	tr.appendChild(createTdWithIcon(FOLDER_ICON));
-
-	var folderName = document.createElement("td");
-	folderName.innerHTML = folder[NAME];
-	folderName.colSpan = 4 - folder[LEVEL] + 1;
-	folderName.setAttribute("align", "left");
-	folderName.setAttribute(ATTRIBUTE_NAME, NAME);
-	tr.appendChild(folderName);
-
-	for (var i = 1; i < attributes.length; i++)
-	{
-		var attributeName = attributes[i][NAME];
-		var td = document.createElement("td");
-		td.setAttribute(ATTRIBUTE_NAME, attributeName);
-		td.innerHTML = folder[attributeName] == null ? "" : folder[attributeName];
-		tr.appendChild(td);
-	}
-
-	tr.appendChild(createEditButton(FOLDER, folder[ID]));
-	tr.appendChild(createDeleteButton(FOLDER, folder[ID]));
-
-	tbody.appendChild(tr);
-	
-	if (folder.Folders != null)
-	{
-		for (var i = 0; i < folder.Folders.length; i++)
-			printFolder(tbody, attributes, folder.Folders[i]);
-	}
-
-	printNotes(tbody, attributes, folder);
-}
-
-
-function collapseFolder(folderRow)
-{
-	folderRow.setAttribute(DASHED, "true");					
-	for (var i = 0; i < folderRow.childNodes.length; i++)
-	{
-		var td = folderRow.childNodes[i];
-		if (td.className == COLLAPSE_ICON)
-		{
-			td.className = EXPAND_ICON;
-			break;
-		}
-	}
-
-	var tbody = folderRow.parentNode;
-	var level = folderRow.getAttribute(CONTENT_LEVEL);
-	for (var i = folderRow.rowIndex; i < tbody.childNodes.length; i++)
-	{
-		var innerItem = tbody.childNodes[i];
-		if (innerItem.getAttribute(CONTENT_LEVEL) <= level)
-			break;
-
-		innerItem.style.display = "none";
-
-		if (innerItem.getAttribute(DASHED) == "true")
-		{
-			var innerLevel = innerItem.getAttribute(CONTENT_LEVEL);
-			i++;
-			while (i < tbody.childNodes.length && tbody.childNodes[i].getAttribute(CONTENT_LEVEL) > innerLevel)
-				i++;
-			i--;
-		}
-	}
-}
-
-
-function expandFolder(foldeRow)
-{
-	foldeRow.setAttribute(DASHED, "false");						
-	for (var i = 0; i < foldeRow.childNodes.length; i++)
-	{
-		var td = foldeRow.childNodes[i];
-		if (td.className == EXPAND_ICON)
-		{
-			td.className = COLLAPSE_ICON;
-			break;
-		}
-	}
-
-	var tbody = foldeRow.parentNode;
-	var level = foldeRow.getAttribute(CONTENT_LEVEL);
-	for (var i = foldeRow.rowIndex; i < tbody.childNodes.length; i++)
-	{
-		var innerItem = tbody.childNodes[i];
-		if (innerItem.getAttribute(CONTENT_LEVEL) <= level)
-			break;
-
-		innerItem.style.display = "table-row";
-
-		if (innerItem.getAttribute(DASHED) == "true")
-		{
-			var innerLevel = innerItem.getAttribute(CONTENT_LEVEL);
-			i++;
-			while (i < tbody.childNodes.length && tbody.childNodes[i].getAttribute(CONTENT_LEVEL) > innerLevel)
-				i++;
-			i--;
-		}
-	}
-}
-
-
-function printNotes(tbody, attributes, folder)
-{
-	if (folder.Notes != null)
-	{
-		for (var i = 0; i < folder.Notes.length; i++)
-		{
-			var tr = document.createElement("tr");
-			tr.className = NOTE;
-			tr.setAttribute(CONTENT_ID, folder.Notes[i][ID]);
-			tr.setAttribute(CONTENT_LEVEL, folder[LEVEL] + 1);
-
-			for (var k = 0; k < folder[LEVEL] + 1; k++)
-			{
-				var td = document.createElement("td");
-				tr.appendChild(td);
-			}
-
-			tr.appendChild(createTdWithIcon(NOTE_ICON));
-
-			for (var j = 0; j < attributes.length; j++)
-			{
-				var attr = attributes[j];
-				var td = document.createElement("td");
-				var attributeName = attr[NAME];
-				td.setAttribute(ATTRIBUTE_NAME, attributeName);
-				if (j == 0)
-				{
-					td.setAttribute("colSpan", 4 - folder[LEVEL]);
-				}
-				td.innerHTML = folder.Notes[i][attributeName];
-				tr.appendChild(td);
-			}
-
-			tr.appendChild(createEditButton(NOTE, folder.Notes[i][ID]));
-			tr.appendChild(createDeleteButton(NOTE, folder.Notes[i][ID]));
-
-			tbody.appendChild(tr);
-		}
-	}
-}
 
 function createTdWithIcon(iconClassName)
 {
@@ -415,7 +291,7 @@ function createEditButton(itemType, id)
 	editButton.setAttribute(CONTENT_ID, id);
 	editButton.onclick = function() 
 	{		
-		showAddEditForm(this.parentNode, id, itemType); 
+		showNoteForm(this.parentNode, id, itemType); 
 	};
 
 	return editButton;
@@ -441,135 +317,121 @@ function createDeleteButton(itemType, id)
 }
 
 
-function deleteFolder(id)
-{
-	var db = new Database();
-	if (db.deleteFolder(id))
-	{
-		var dataTable = document.getElementById(DATA_TABLE);
-		var tbody = dataTable.childNodes[1];
-		var toRemove = new Array();
-		for (var i = 0; i < tbody.childNodes.length; i++)
-		{
-			var tr = tbody.childNodes[i];
-			if (tr.className == FOLDER && tr.getAttribute(CONTENT_ID) == id)
-			{
-				toRemove.push(tr);
-				i++;
-				var level = tr.getAttribute(CONTENT_LEVEL);
-
-				while (i < tbody.childNodes.length && tbody.childNodes[i].getAttribute(CONTENT_LEVEL) > level)
-				{
-					toRemove.push(tbody.childNodes[i]);
-					i++;
-				}
-
-				break;
-			}
-		}
-
-		for (var i = 0; i < toRemove.length; i++)
-		{
-			tbody.removeChild(toRemove[i]);
-		}
-	}
-}
-
-
 function deleteNote(id)
 {
-	var db = new Database();
-	if (db.deleteObject(id))	// TODO ADD FIRST PARAM - COLLECTIOn
-	{
-		var dataTable = document.getElementById(DATA_TABLE);
-		var tbody = dataTable.childNodes[1];
-		for (var i = 0; i < tbody.childNodes.length; i++)
+	var contentType = document.getElementById(CONTENT).getAttribute(CONTENT_TYPE);
+	fetch(SERVER_ADDRESS + '/rest/notes/' + contentType + '/' + id, {
+		method: "DELETE"
+	})
+	.then(response => {
+		if (response.status === 200)
 		{
-			var tr = tbody.childNodes[i];
-			if (tr.className == NOTE && tr.getAttribute(CONTENT_ID) == id)
-			{
-				tbody.removeChild(tr);
-				return;
-			}
+			showCurrentContent();
+			//var dataTable = document.getElementById(DATA_TABLE);
+			//var tbody = dataTable.childNodes[1];
+			//for (var i = 0; i < tbody.childNodes.length; i++)
+			//{
+			//	var tr = tbody.childNodes[i];
+			//	if (tr.className == NOTE && tr.getAttribute(CONTENT_ID) == id)
+			//	{
+			//		tbody.removeChild(tr);
+			//		return;
+			//	}
+			//}
 		}
-	}
+	})
 }
 
 
-function showAddEditForm(tr, id, itemType)
+function showNoteForm(tr, id, itemType)
 {
 	switchToAddEditForm();
 
-	var attributes = getAttributes(getContentType());
-	var formContainer = getEmptyElement(DATA_ELEMENT);
-	var form = document.createElement("form");
-	form.id = ADD_FORM;
-	form.setAttribute(CONTENT_ID, id);
-
-	for (var i = 0; i < attributes.length; i++)
-	{
-		var attribute = attributes[i];
-		var label = document.createElement("label");
-		label.innerText = attribute[NAME];
-		var input = document.createElement("input");
-		input.type = attribute[TYPE];
-		input.setAttribute(ATTRIBUTE_NAME, attribute[NAME]);
-		if (tr != null)
-			input.value = getAttributeValueFromRow(tr, attribute[NAME]);
-		if (itemType == FOLDER && attribute[NAME] != NAME)
-			input.readOnly = true;
-		
-		form.appendChild(label);
-		form.appendChild(input);
-	}
-
-	var hidden = document.createElement("input");
-	hidden.type = "hidden";
-	hidden.id = CONTENT_ID;
-	hidden.value = id;
+	fetch(SERVER_ADDRESS + '/rest/attributes/search?entityId=' + document.getElementById(CONTENT).getAttribute(CONTENT_ID))
+	.then(response => response.json())
+	.then(attributes => {
+		var formContainer = getEmptyElement(DATA_ELEMENT);
+		var form = document.createElement("form");
+		form.id = ADD_FORM;
+		if (id)
+			form.setAttribute(CONTENT_ID, id);
 	
-	var saveButton = document.createElement("input");
-	saveButton.type = "button";
-	saveButton.value = "Save";
-	saveButton.onclick = function() 
-	{
-		var db = new Database();
-		var note = getObjectFromForm(this.parentNode);
-		if (db.saveObject(itemType, note, id))
+		for (var i = 0; i < attributes.length; i++)
 		{
-			if (hidden.value != null)
-			{
-				editDataInTable(this.parentNode, itemType);
-				switchToContent();
-			}
-			else
-			{
-				// TODO pass folder (tr or id) to addDataToTable
-				addDataToTable(this.parentNode, itemType);
-				switchToContent();
-			}
+			var attribute = attributes[i];
+			var label = document.createElement("label");
+			label.innerText = attribute[TITLE];
+			var input = document.createElement("input");
+			input.type = attribute[TYPE];
+			input.setAttribute(ATTRIBUTE_NAME, attribute[NAME]);
+			input.setAttribute(ATTRIBUTE_ID, attribute[ID]);
+			
+			if (tr != null)
+				input.value = getAttributeValueFromRow(tr, attribute[NAME]);
+			if (itemType == FOLDER && attribute[NAME] != NAME)
+				input.readOnly = true;
 
-			// TODO sort notes in folder
+				
+			
+			form.appendChild(label);
+			form.appendChild(input);
 		}
-		else
+	
+		var hidden = document.createElement("input");
+		hidden.type = "hidden";
+		hidden.id = CONTENT_ID;
+		hidden.value = id;
+		
+		var saveButton = document.createElement("input");
+		saveButton.type = "button";
+		saveButton.value = "Save";
+		saveButton.onclick = function() 
 		{
-			// TODO: show error
-		}
-	};
+			var addForm = document.getElementById("add-form");
+			var objectToSave = new Object();
+			objectToSave.attributes = getNoteAttributesFromForm(addForm);
+			objectToSave.id = form.getAttribute(CONTENT_ID);
+			//var id = form.getAttribute(CONTENT_ID);
+			//if (id)
+			//	objectToSave.id = id;
 
-	var cancelButton = document.createElement("input");
-	cancelButton.type = "button";
-	cancelButton.value = "Cancel";
-	cancelButton.onclick = function() 
-	{ 
-		switchToContent();
-	};
+			//var json = JSON.stringify(objectToSave);
 
-	form.appendChild(hidden);
-	form.appendChild(saveButton);
-	form.appendChild(cancelButton);
+			fetch(saveNoteUrl = SERVER_ADDRESS + '/rest/notes/' + document.getElementById(CONTENT).getAttribute(CONTENT_TYPE), {
+				method: objectToSave.id == null ? "POST" : "PUT",       // If there is id for attribute, it's already exist. So just PUT (update),
+				body: JSON.stringify(objectToSave),
+				headers:
+				{
+					"Accept": "text/plain;charset=UTF-8",               // Expect an id of the attribute
+					"Content-Type": "application/json;charset=UTF-8"
+				}
+			})
+			.then(response => {
+				if (hidden.value != null)
+				{
+					
+				}
+				else
+				{
+					// TODO pass folder (tr or id) to addDataToTable
+					//addDataToTable(this.parentNode, itemType);
+				}
 
-	formContainer.appendChild(form);
+				showCurrentContent();
+			});
+		};
+	
+		var cancelButton = document.createElement("input");
+		cancelButton.type = "button";
+		cancelButton.value = "Cancel";
+		cancelButton.onclick = function() { showCurrentContent(); };
+	
+		form.appendChild(hidden);
+		form.appendChild(saveButton);
+		form.appendChild(cancelButton);
+	
+		formContainer.appendChild(form);
+	});
 }
 
 
@@ -584,7 +446,7 @@ function editDataInTable(form, type)
 		var idEqual = tr.getAttribute(CONTENT_ID) == form.getAttribute(CONTENT_ID);
 		if (isNote && idEqual)
 		{
-			var note = getObjectFromForm(form);
+			var note = getMetaObjectFromForm(form);
 			for (var j = 0; j < tr.childNodes.length; j++)
 			{
 				var td = tr.childNodes[j];
@@ -639,6 +501,12 @@ function getAttributeValueFromRow(tr, attributeForSearch)
 
 
 
+
+
+
+
+
+
 function drawHeader(name)
 {
 	var header = document.getElementById("header");
@@ -659,5 +527,3 @@ function drawHeader(name)
 	svg.appendChild(text);	
 	header.appendChild(svg);
 }
-
-

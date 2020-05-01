@@ -138,10 +138,10 @@ function createEntityForm(entityId)
 
     dataElement.appendChild(form);
 
-    readAttributes(createOptionsWithExistentAttributes);
+    readAttributes( [ createOptionsWithExistentAttributes, fillEntityValuesOnForm] );
 }
 
-function createOptionsWithExistentAttributes(attributes)
+function createOptionsWithExistentAttributes(attributes, handlers)
 {
     var form = document.getElementById("entity-form");
     var id = form.getAttribute(CONTENT_ID);
@@ -157,12 +157,12 @@ function createOptionsWithExistentAttributes(attributes)
     }
 
     if (id)
-        readEntity(id, fillEntityValuesOnForm);
+        readEntity(id, handlers);
 }
 
 function readEntity(id, afterReadHandler)
 {
-    var url = SERVER_ADDRESS + '/rest/entities/' + id;
+    var url = SERVER_ADDRESS + '/rest/entities/search?id=' + id;
 	const init = { method: 'GET' };
 
     makeHttpRequest(url, init, afterReadHandler);
@@ -238,7 +238,7 @@ function saveEntityInfo(handler)
     var url = SERVER_ADDRESS + '/rest/entities';
     var form = document.getElementById("entity-form");
     var id = form.getAttribute(CONTENT_ID);
-    var objectToSave = getObjectFromForm(form);
+    var objectToSave = getMetaObjectFromForm(form);
     if (id)
         objectToSave.id = id;
     

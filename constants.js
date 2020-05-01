@@ -1,5 +1,7 @@
 
 
+const SERVER_ADDRESS = "http://localhost:8765";
+
 
 // Data types
 const MOVIES = "Movies";
@@ -10,9 +12,11 @@ const FORM_CONTAINER = "form-container";
 const DATA_MENU = "data-menu";
 const DATA_TABLE = "data-table";
 const DATA_ELEMENT = "data-element";
+const HISTORY = "history";
 const CONTENT_ID = "content-id";
 const CONTENT_LEVEL = "content-level";
 const ATTRIBUTE_NAME = "attribute-name";
+const ATTRIBUTE_ID = "attribute-id";
 const CONTENT_TYPE = "content-type";
 const ITEM_TYPE = "item-type";
 const ADD_FORM = "add-form";
@@ -23,12 +27,14 @@ const DASHED = "dashed";
 const ATTRIBUTES_MENU = "attributes-menu";
 const NOTES_MENU = "notes-menu";
 const FOLDERS_MENU = "folders-menu";
+const MENU_LIST = "menu-list";
 
-const NAME = "Name";
+const NAME = "name";
+const TITLE = "title";
 const FOLDER_ID = "FolderId";
 const LEVEL = "Level";
-const ID = "Id";
-const TYPE = "Type";
+const ID = "id";
+const TYPE = "type";
 const METHOD = "Method";
 const NOTES_COUNT = "NotesCount";
 

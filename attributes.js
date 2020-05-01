@@ -123,7 +123,7 @@ function createEditAttributeForm(id)
 
 function readAttribute(id, afterReadHandler)
 {
-    var url = SERVER_ADDRESS + '/rest/attributes/' + id;
+    var url = SERVER_ADDRESS + '/rest/attributes/search?id=' + id;
 	const init = { method: 'GET' };
 
     makeHttpRequest(url, init, afterReadHandler);
@@ -290,7 +290,7 @@ function saveAttributeInfo(handler)
     var attributesUrl = SERVER_ADDRESS + '/rest/attributes';
     var form = document.getElementById("attribute-form");
     var id = form.getAttribute(CONTENT_ID);
-    var objectToSave = getObjectFromForm(form);
+    var objectToSave = getMetaObjectFromForm(form);
     if (id)
         objectToSave.id = id;
     

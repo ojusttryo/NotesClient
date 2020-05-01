@@ -1,5 +1,86 @@
 
 
+async function makeHttpRequest(url, init, handlers)
+{
+	let response;
+	let json;
+
+	try
+	{
+		response = await fetch(url, init);
+		if (init.method == "GET")
+			json = await response.json();
+		else
+			json = await response.text();
+	}
+	catch(e)
+	{
+		alert(e);
+	}
+
+	// Processing chain of handlers
+	if (response.ok && handlers)
+	{
+		if (typeof handlers === 'function')
+		{
+			handlers(init.method == "GET" ? json : null);
+		}
+		else
+		{
+			var handler = handlers.shift();
+			handler(init.method == "GET" ? json : null, handlers);
+		}
+	}
+
+	return (response.ok) ? json : null;
+}
+
+
+function showCurrentContent()
+{
+	var content = document.getElementById(CONTENT);
+	showContent(content.getAttribute(CONTENT_TYPE), content.getAttribute(CONTENT_ID));
+	switchToContent();
+}
+
+
+/** Switch view to content (menu buttons and data table), hiding the add/edit form */
+function switchToContent()
+{
+	hideHtmlElementById(DATA_ELEMENT);
+	hideHtmlElementById(HISTORY);
+	showHtmlElementById(DATA_TABLE);
+	showHtmlElementById(DATA_MENU);
+}
+
+
+/** Switch view to add/edit form, hiding menu buttons and data table */
+function switchToAddEditForm()
+{
+	hideHtmlElementById(DATA_TABLE);
+	hideHtmlElementById(DATA_MENU);
+	hideHtmlElementById(HISTORY);
+	showHtmlElementById(DATA_ELEMENT);
+}
+
+
+function switchToMainPage()
+{
+	hideHtmlElementById(DATA_ELEMENT);
+	showHtmlElementById(HISTORY);
+	hideHtmlElementById(DATA_TABLE);
+	hideHtmlElementById(DATA_MENU);
+}
+
+
+/** Update visibility of content elements (buttons and data table) depending on rows count */
+function updateContentTableVisibility()
+{
+	if (document.getElementById(DATA_TABLE).childNodes[1].childNodes.length > 0)
+		showHtmlElementById(DATA_TABLE);
+	else
+		hideHtmlElementById(DATA_TABLE);
+}
 
 
 /**
@@ -42,10 +123,15 @@ function appendNewTd(tr, innerText)
  * Set the attribute content-type to the content div.
  * @param {String} name - name of the content 
  */
-function setContentType(name)
-{
-	document.getElementById(CONTENT).setAttribute(CONTENT_TYPE, name);
-}
+//function setContentType(name)
+//{
+//	document.getElementById(CONTENT).setAttribute(CONTENT_TYPE, name);
+//}
+
+//function setContentId(contentId)
+//{
+//	document.getElementById(CONTENT).setAttribute(CONTENT_ID, contentId);
+//}
 
 
 /**
@@ -71,10 +157,10 @@ function getEmptyElement(id)
 
 
 /**
- * Get note or folder from the add/edit form
- * @param {Object} form - <form>, that contains inputs with note/folder attributes
+ * Get meta object from the add/edit form
+ * @param {Object} form - <form>, that contains requested data
  */
-function getObjectFromForm(form)
+function getMetaObjectFromForm(form)
 {
 	var result = new Object();
 
@@ -105,6 +191,52 @@ function getObjectFromForm(form)
 			{
 				result[attributeName] = currentNode.value;
 			}
+		}
+	}
+
+	return result;
+}
+
+
+/**
+ * Get note from the add/edit form
+ * @param {Object} form - <form>, that contains requested data
+ */
+function getNoteAttributesFromForm(form)
+{
+	var result = [];
+
+	var allNodes = form.getElementsByTagName('*');
+	for (var i = 0; i < allNodes.length; i++)
+	{
+		var currentNode = allNodes[i];
+		var attributeName = currentNode.getAttribute(ATTRIBUTE_NAME);
+		if (attributeName != null)
+		{
+			var attribute = new Object();
+
+			if (currentNode.type && currentNode.type === 'checkbox')
+			{
+				attribute[attributeName] = currentNode.checked;
+			}
+			else if (currentNode.type && (currentNode.type === 'select' || currentNode.type === 'select-multiple'))
+			{
+				var array = [];
+				var length = currentNode.options.length;
+				for (var j = 0; j < length; j++)
+				{
+					var option = currentNode.options[j];
+					if (currentNode.options[j].selected === true)
+						array.push(option.id);
+				}
+				attribute[attributeName] = array;
+			}
+			else if (currentNode.value.length > 0)
+			{
+				attribute[attributeName] = currentNode.value;
+			}
+
+			result.push(attribute);
 		}
 	}
 
@@ -149,4 +281,10 @@ function getSvgWithText(innerText, height, width)
 	svg.appendChild(text);
 
 	return svg;
+}
+
+
+function addLeadingZeroIfLessThan10(number)
+{
+	return (number < 10) ? "0" + number.toString() : number.toString();
 }

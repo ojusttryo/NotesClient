@@ -12,23 +12,13 @@
 		<script type="text/javascript" src="attributes.js"></script>
 		<script type="text/javascript" src="entities.js"></script>
 	</head>
-	<body onload="loadMenu()">
-
-		<div id="header">
-			
-		</div>
-
+	<body onload="loadMenu(); loadLogs();">		
+		<div id="header" onclick="loadLogs(); switchToMainPage();"></div>
 		<div id="menu">
-			<ul id="menu-list">
-			<!--
-			    <li onclick="showAttributes()">Attributes<li>
-				<li onclick="showEntities()">Entities</li>
-				 <li onclick="showContent(this.innerText)" content-type="films" id="Movies-button">Movies</li> -->
-				
-			</ul>
+			<ul id="menu-list"></ul>
 		</div>
-
-		<div id="content" >
+		<div id="content">
+			<div id="history"></div>
 			<div id="data-menu"></div>
 			<table id="data-table"></table>
 			<div id="data-element"></div>
