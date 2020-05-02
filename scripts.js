@@ -361,8 +361,27 @@ function showNoteForm(tr, id, itemType)
 			var attribute = attributes[i];
 			var label = document.createElement("label");
 			label.innerText = attribute[TITLE];
-			var input = document.createElement("input");
-			input.type = attribute[TYPE];
+
+			var input;
+			if (attribute.type == "select" || attribute.type == "multiselect")
+			{
+				input = document.createElement("select");
+				if (attribute.selectOptions != null)
+				{
+					for (value of attribute.selectOptions)
+					{
+						var option = document.createElement("option");
+						option.innerText = value;
+						option.value = value;
+						input.appendChild(option);
+					}
+				}
+			}
+			else
+			{
+				input = document.createElement("input");
+				input.type = attribute[TYPE];
+			}
 			input.setAttribute(ATTRIBUTE_NAME, attribute[NAME]);
 			input.setAttribute(ATTRIBUTE_ID, attribute[ID]);
 			
@@ -370,8 +389,6 @@ function showNoteForm(tr, id, itemType)
 				input.value = getAttributeValueFromRow(tr, attribute[NAME]);
 			if (itemType == FOLDER && attribute[NAME] != NAME)
 				input.readOnly = true;
-
-				
 			
 			form.appendChild(label);
 			form.appendChild(input);

@@ -107,27 +107,24 @@ function createAttributesTableBody(attributes)
 	return tbody;
 }
 
+
 function deleteAttribute(id, deleteHandler)
 {
-	var attributesUrl = SERVER_ADDRESS + '/rest/attributes/' + id;
-	const init = { method: 'DELETE' };
-
-	makeHttpRequest(attributesUrl, init, deleteHandler);
+    fetch(SERVER_ADDRESS + '/rest/attributes/' + id, { method: "DELETE" })
+    .then(showAttributes());
 }
+
 
 function createEditAttributeForm(id)
 {
-    createAttributeForm(id);
-    readAttribute(id, fillAttributeValuesOnForm);
+    fetch(SERVER_ADDRESS + '/rest/attributes/search?id=' + id)
+    .then(response => response.json())
+    .then(attribute => {
+        createAttributeForm(id, attribute);
+        fillAttributeValuesOnForm(attribute);
+    });
 }
 
-function readAttribute(id, afterReadHandler)
-{
-    var url = SERVER_ADDRESS + '/rest/attributes/search?id=' + id;
-	const init = { method: 'GET' };
-
-    makeHttpRequest(url, init, afterReadHandler);
-}
 
 function createAttributeForm(attributeId)
 {
@@ -143,6 +140,7 @@ function createAttributeForm(attributeId)
     addTextInputWithlabel(form, "title", "Title", "attribute-title");
     addSelectWithLabel(form, "alignment", "Alignment", "attribute-alignment", [ "left", "right", "center" ]);
     addSelectWithLabel(form, "type", "Type", "attribute-type", [ "text", "textarea", "year", "int", "float", "select", "multiselect", "checkbox", "inc", "url"]);
+    addTextInputWithlabel(form, "selectOptions", "Select options", "attribute-select-options");
     addBooleanInputWithLabel(form, "visible", "Visible in table", "attribute-visible", "visible");
     addBooleanInputWithLabel(form, "required", "Required", "attribute-required", "required");
     addNumberInputWithLabel(form, "linesCount", "Lines count", "attribute-lines-count", 1, 5);
@@ -159,11 +157,13 @@ function createAttributeForm(attributeId)
     dataElement.appendChild(form);
 }
 
+
 function fillAttributeValuesOnForm(attribute)
 {
     document.getElementById("attribute-name").value = attribute["name"];
     document.getElementById("attribute-title").value = attribute["title"];
     document.getElementById("attribute-type").value = attribute["type"];
+    document.getElementById("attribute-select-options").value = attribute["selectOptions"] != null ? attribute["selectOptions"].join("; ") : "";
     document.getElementById("attribute-visible").checked = attribute["visible"];
     document.getElementById("attribute-required").checked = attribute["required"];
     document.getElementById("attribute-alignment").value = attribute["alignment"];
@@ -174,7 +174,7 @@ function fillAttributeValuesOnForm(attribute)
     document.getElementById("attribute-min").value = attribute["min"];
     document.getElementById("attribute-default").value = attribute["defaultValue"];
     document.getElementById("attribute-regex").value = attribute["regex"];
-    document.getElementById("attribute-lines-count").value = attribute["linesCount"];
+    document.getElementById("attribute-lines-count").value = attribute["linesCount"];    
     
     switch (attribute["type"])
     {
@@ -215,6 +215,7 @@ function addTextInputWithlabel(parent, attrName, labelText, inputId)
     label.appendChild(input);
     parent.appendChild(label);
 }
+
 
 function addNumberInputWithLabel(parent, attrName, labelText, inputId, min, max)
 {

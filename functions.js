@@ -187,6 +187,10 @@ function getMetaObjectFromForm(form)
 				}
 				result[attributeName] = array;
 			}
+			else if (currentNode.id == "attribute-select-options")
+			{
+				result[attributeName] = currentNode.value.split(";");
+			}
 			else if (currentNode.value.length > 0)
 			{
 				result[attributeName] = currentNode.value;
