@@ -5,12 +5,19 @@ function showEntities()
 {
 	showEntitiesMenu();
 
-	var url = SERVER_ADDRESS + '/rest/entities';
-	const init = { method: 'GET' };
+    fetch(SERVER_ADDRESS + '/rest/entities')
+    .then(response => response.json())
+    .then(entities => {
+        if (!entities)
+		    return;
 
-    makeHttpRequest(url, init, showEntitiesHandler);
-    
-    switchToContent();
+        var table = getEmptyElement(DATA_TABLE);
+        table.appendChild(createEntitiesTableHead(entities));
+        table.appendChild(createEntitiesTableBody(entities));
+        
+        loadMenu();
+        switchToContent();
+    })
 }
 
 function showEntitiesMenu()
@@ -30,17 +37,6 @@ function showEntitiesMenu()
 	dataMenu.appendChild(addEntityButton);
 }
 
-function showEntitiesHandler(entities)
-{
-	if (!entities)
-		return;
-
-	var table = getEmptyElement(DATA_TABLE);
-	table.appendChild(createEntitiesTableHead(entities));
-    table.appendChild(createEntitiesTableBody(entities));
-    
-    loadMenu();
-}
 
 // This method is the same as in attributes.js, but will differ in future.
 function createEntitiesTableHead()
@@ -51,6 +47,7 @@ function createEntitiesTableHead()
 	appendNewTh(tr, "№");
     appendNewTh(tr, "Title");
     appendNewTh(tr, "Collection");
+    appendNewTh(tr, "Visible");
 	appendNewTh(tr, "");		    // Edit
 	appendNewTh(tr, "");		    // Remove
 
@@ -64,6 +61,7 @@ function createEntitiesTableBody(entities)
 {
 	var tbody = document.createElement("tbody");
 
+    // Inside loop elements should be ordered as in createEntitiesTableHead()
 	for (var i = 0; i < entities.length; i++)
 	{
 		var tr = document.createElement("tr");
@@ -83,7 +81,12 @@ function createEntitiesTableBody(entities)
         var collection = document.createElement("td");
 		collection.innerText = entities[i].collection;
 		collection.onclick = function() { showEntitiesInfo(entities[i].id); };
-		tr.appendChild(collection);
+        tr.appendChild(collection);
+        
+        var visible = document.createElement("td");
+        visible.innerText = entities[i].visible;
+        visible.onclick = function() { showEntitiesInfo(entities[i].id); };
+        tr.appendChild(visible);
 
 		var editButton = document.createElement("td");
 		editButton.className = EDIT_BUTTON;
@@ -97,8 +100,12 @@ function createEntitiesTableBody(entities)
 		var deleteButton = document.createElement("td");
 		deleteButton.className = DELETE_BUTTON;
         deleteButton.onclick = function() 
-        { 
-            deleteEntity(this.parentNode.getAttribute(CONTENT_ID), showEntities);
+        {
+            fetch(SERVER_ADDRESS + '/rest/entities/' + this.parentNode.getAttribute(CONTENT_ID), { method: "DELETE" })
+            .then(response => {
+                if (response.status === 200)
+                    showEntities();
+            })
         };
 		tr.appendChild(deleteButton);
 
@@ -108,13 +115,6 @@ function createEntitiesTableBody(entities)
 	return tbody;
 }
 
-function deleteEntity(id, deleteHandler)
-{
-	var attributesUrl = SERVER_ADDRESS + '/rest/entities/' + id;
-	const init = { method: 'DELETE' };
-
-	makeHttpRequest(attributesUrl, init, deleteHandler);
-}
 
 function createEntityForm(entityId)
 {
@@ -126,132 +126,51 @@ function createEntityForm(entityId)
     else if (form.hasAttribute(CONTENT_ID))
         form.removeAttribute(CONTENT_ID);
 
-    addTextInputWithlabel(form, "title", "Title", "entity-title");
-    addTextInputWithlabel(form, "collection", "Collection", "entity-collection");
-    addMultiSelectWithLabel(form, "attributes", "Attributes", "entity-attributes", []);
+    addTextInputWithLabel(form, "title", "Title", "entity-title");
+    addTextInputWithLabel(form, "collection", "Collection", "entity-collection");
+    addBooleanInputWithLabel(form, "visible", "Visible", "entity-visible", "visible");
 
-    var entityFormButtonHandler = function() 
-    {
-        saveEntityInfo(showEntities);
-    }
-    addButton(form, entityId ? "edit-entity" : "save-entity", entityId ? "Edit entity" : "Save entity", entityFormButtonHandler);
+    var addButtonOnClickHandler = function() { saveMetaObjectInfo("entity-form", "/rest/entities", showEntities) };
+    var saveButton = addButton(form, entityId ? "edit-entity" : "save-entity", entityId ? "Edit entity" : "Save entity", addButtonOnClickHandler);
+
+    fetch(SERVER_ADDRESS + "/rest/attributes")
+	.then(response => response.json())
+	.then(attributes => {
+        var label = document.createElement("label");
+        label.innerText = "Attributes";
+        label.id = "attributes-label";
+        form.insertBefore(label, saveButton);
+
+        var multiselect = createMultiselectWithCheckboxes("attributes", attributes);
+        label.appendChild(multiselect);
+
+        if (entityId)
+        {
+            fetch(SERVER_ADDRESS + '/rest/entities/search?id=' + entityId)
+            .then(response => response.json())
+            .then(entity => {
+                document.getElementById("entity-title").value = entity["title"];
+                document.getElementById("entity-collection").value = entity["collection"];
+                document.getElementById("entity-visible").checked = entity["visible"];
+                var checkboxes = multiselect.getElementsByTagName("input");
+                for (var i = 0; i < entity.attributes.length; i++)
+                {
+                    var attribute = entity.attributes[i];
+                    for (var j = 0; j < checkboxes.length; j++)
+                    {
+                        if (checkboxes[j].getAttribute("attribute-id") == attribute)
+                        {
+                            checkboxes[j].checked = true;
+                            break;
+                        }
+                    }
+                }
+            });
+        }
+
+        form.insertBefore(multiselect, saveButton);
+        form.insertBefore(document.createElement("br"), saveButton);
+    });
 
     dataElement.appendChild(form);
-
-    readAttributes( [ createOptionsWithExistentAttributes, fillEntityValuesOnForm] );
-}
-
-function createOptionsWithExistentAttributes(attributes, handlers)
-{
-    var form = document.getElementById("entity-form");
-    var id = form.getAttribute(CONTENT_ID);
-
-    var select = document.getElementById("entity-attributes");
-    for (var i = 0; i < attributes.length; i++)
-    {
-        var option = document.createElement("option");
-        option.innerText = attributes[i].name;
-        option.value = attributes[i].id;
-        option.id = attributes[i].id;
-        select.appendChild(option);
-    }
-
-    if (id)
-        readEntity(id, handlers);
-}
-
-function readEntity(id, afterReadHandler)
-{
-    var url = SERVER_ADDRESS + '/rest/entities/search?id=' + id;
-	const init = { method: 'GET' };
-
-    makeHttpRequest(url, init, afterReadHandler);
-}
-
-function fillEntityValuesOnForm(entity)
-{
-    document.getElementById("entity-title").value = entity["title"];
-    document.getElementById("entity-collection").value = entity["collection"];
-    for (var i = 0; i < entity.attributes.length; i++)
-    {
-        var attribute = entity.attributes[i];
-        var option = document.getElementById(attribute);
-        option.selected = "selected";
-    }
-}
-
-function addMultiSelectWithLabel(parent, attrName, labelText, inputId, options)
-{
-    var label = document.createElement("label");
-    label.innerText = labelText;
-
-    var select = document.createElement("select");
-    select.id = inputId;
-    select.setAttribute("multiple", "multiple");
-    select.setAttribute(ATTRIBUTE_NAME, attrName);
-
-    var values = options.values();
-    for (value of values)
-    {
-        var option = document.createElement("option");
-        option.innerText = value;
-        option.value = value;
-        select.appendChild(option);
-    }
-
-    label.appendChild(select);
-    parent.appendChild(label);
-}
-
-function addBooleanInputWithLabel(parent, attrName, labelText, inputId, value)
-{
-    var label = document.createElement("label");
-    label.innerText = labelText;
-
-    var input = document.createElement("input");
-    input.type = "checkbox";
-    input.id = inputId;
-    input.value = value;
-    input.setAttribute(ATTRIBUTE_NAME, attrName);
-
-    label.appendChild(input);
-    parent.appendChild(label);
-}
-
-function addButton(parent, buttonId, buttonValue, onclick)
-{
-    var input = document.createElement("input");
-    input.type = "button";
-    input.id = buttonId;
-    input.value = buttonValue;
-    input.onclick = onclick;
-
-    parent.appendChild(input);
-}
-
-
-// TODO optimize later to not to reload all entitites. 
-// But maybe it's necessary because there could be some edit request from another page.
-// TODO maybe try to optimize by sending only changed fields.
-function saveEntityInfo(handler)
-{
-    var url = SERVER_ADDRESS + '/rest/entities';
-    var form = document.getElementById("entity-form");
-    var id = form.getAttribute(CONTENT_ID);
-    var objectToSave = getMetaObjectFromForm(form);
-    if (id)
-        objectToSave.id = id;
-    
-    const init = 
-    {
-        method: id ? "PUT" : "POST",                            // If there is id for entity, it's already exist. So just PUT (update)
-        body: JSON.stringify(objectToSave),
-        headers:
-        {
-            "Accept": "text/plain;charset=UTF-8",               // Expect an id of the entity
-            "Content-Type": "application/json;charset=UTF-8"
-        }
-    };
-
-    makeHttpRequest(url, init, handler);
 }

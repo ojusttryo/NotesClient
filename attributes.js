@@ -3,9 +3,19 @@
 
 function showAttributes()
 {
-	showAttributesMenu();
-	readAttributes(showAttributesHandler);    
+    showAttributesMenu();
     switchToContent();
+
+    fetch(SERVER_ADDRESS + '/rest/attributes')
+    .then(response => response.json())
+    .then(attributes => {
+        if (!attributes)
+		    return;
+
+        var table = getEmptyElement(DATA_TABLE);
+        table.appendChild(createAttributesTableHead());
+        table.appendChild(createAttributesTableBody(attributes));
+    })
 }
 
 function showAttributesMenu()
@@ -25,23 +35,6 @@ function showAttributesMenu()
 	dataMenu.appendChild(addAttributeButton);
 }
 
-function readAttributes(afterReadHandler)
-{
-    var url = SERVER_ADDRESS + '/rest/attributes';
-	const init = { method: 'GET' };
-
-    makeHttpRequest(url, init, afterReadHandler);
-}
-
-function showAttributesHandler(attributes)
-{
-	if (!attributes)
-		return;
-
-	var table = getEmptyElement(DATA_TABLE);
-	table.appendChild(createAttributesTableHead());
-	table.appendChild(createAttributesTableBody(attributes));
-}
 
 function createAttributesTableHead()
 {
@@ -111,7 +104,10 @@ function createAttributesTableBody(attributes)
 function deleteAttribute(id, deleteHandler)
 {
     fetch(SERVER_ADDRESS + '/rest/attributes/' + id, { method: "DELETE" })
-    .then(showAttributes());
+    .then(response => {
+        if (response.status === 200)
+            showAttributes();
+    });
 }
 
 
@@ -136,23 +132,25 @@ function createAttributeForm(attributeId)
     else if (form.hasAttribute(CONTENT_ID))
         form.removeAttribute(CONTENT_ID);
 
-    addTextInputWithlabel(form, "name", "Name", "attribute-name");
-    addTextInputWithlabel(form, "title", "Title", "attribute-title");
+    addTextInputWithLabel(form, "name", "Name", "attribute-name");
+    addTextInputWithLabel(form, "title", "Title", "attribute-title");
     addSelectWithLabel(form, "alignment", "Alignment", "attribute-alignment", [ "left", "right", "center" ]);
-    addSelectWithLabel(form, "type", "Type", "attribute-type", [ "text", "textarea", "year", "int", "float", "select", "multiselect", "checkbox", "inc", "url"]);
-    addTextInputWithlabel(form, "selectOptions", "Select options", "attribute-select-options");
+    addSelectWithLabel(form, "type", "Type", "attribute-type", [ "text", "textarea", "number", "select", "multiselect", "checkbox", "inc", "url"]);
+    addTextInputWithLabel(form, "selectOptions", "Select options", "attribute-select-options");
     addBooleanInputWithLabel(form, "visible", "Visible in table", "attribute-visible", "visible");
     addBooleanInputWithLabel(form, "required", "Required", "attribute-required", "required");
     addNumberInputWithLabel(form, "linesCount", "Lines count", "attribute-lines-count", 1, 5);
     addSelectWithLabel(form, "method", "Method", "attribute-method", [ "none", "folder name", "avg", "count" ]);
-    addTextInputWithlabel(form, "maxWidth", "Max width in table", "attribute-max-width");
-    addTextInputWithlabel(form, "minWidth", "Min width in table", "attribute-min-width");
-    addTextInputWithlabel(form, "max", "Max value/length", "attribute-max");
-    addTextInputWithlabel(form, "min", "Min value/length", "attribute-min");
-    addTextInputWithlabel(form, "defaultValue", "Default value", "attribute-default");
-    addTextInputWithlabel(form, "regex", "Regular expression to check", "attribute-regex");
+    addTextInputWithLabel(form, "maxWidth", "Max width in table", "attribute-max-width");
+    addTextInputWithLabel(form, "minWidth", "Min width in table", "attribute-min-width");
+    addTextInputWithLabel(form, "max", "Max value/length", "attribute-max");
+    addTextInputWithLabel(form, "min", "Min value/length", "attribute-min");
+    addTextInputWithLabel(form, "defaultValue", "Default value", "attribute-default");
+    addNumberInputWithLabel(form, "step", "Step", "attribute-step", 0, 1);
+    addTextInputWithLabel(form, "regex", "Regular expression to check", "attribute-regex");
 
-    addButton(form, attributeId ? "edit-attribute" : "save-attribute", attributeId ? "Edit attribute" : "Save attribute", function() { saveAttributeInfo(showAttributes) });
+    var addButtonOnClickHandler = function() { saveMetaObjectInfo("attribute-form", "/rest/attributes", showAttributes) };
+    addButton(form, attributeId ? "edit-attribute" : "save-attribute", attributeId ? "Edit attribute" : "Save attribute", addButtonOnClickHandler);
 
     dataElement.appendChild(form);
 }
@@ -173,6 +171,7 @@ function fillAttributeValuesOnForm(attribute)
     document.getElementById("attribute-max").value = attribute["max"];
     document.getElementById("attribute-min").value = attribute["min"];
     document.getElementById("attribute-default").value = attribute["defaultValue"];
+    document.getElementById("attribute-step").value = attribute["step"];
     document.getElementById("attribute-regex").value = attribute["regex"];
     document.getElementById("attribute-lines-count").value = attribute["linesCount"];    
     
@@ -183,11 +182,7 @@ function fillAttributeValuesOnForm(attribute)
         case "textarea": 
             document.getElementById("attribute-lines-count").visible = (attribute["type"] == "textarea"); 
             break;
-        case "year":
-            break;
-        case "int":
-            break;
-        case "float":
+        case "number":
             break;
         case "select":
             break;
@@ -202,109 +197,3 @@ function fillAttributeValuesOnForm(attribute)
     }
 }
 
-function addTextInputWithlabel(parent, attrName, labelText, inputId)
-{
-    var label = document.createElement("label");
-    label.innerText = labelText;
-
-    var input = document.createElement("input");
-    input.type = "text";
-    input.id = inputId;
-    input.setAttribute(ATTRIBUTE_NAME, attrName);
-
-    label.appendChild(input);
-    parent.appendChild(label);
-}
-
-
-function addNumberInputWithLabel(parent, attrName, labelText, inputId, min, max)
-{
-    var label = document.createElement("label");
-    label.innerText = labelText;
-
-    var input = document.createElement("input");
-    input.type = "number";
-    input.id = inputId;
-    input.min = min;
-    input.max = max;
-    input.defaultValue = min;
-    input.setAttribute(ATTRIBUTE_NAME, attrName);
-
-    label.appendChild(input);
-    parent.appendChild(label);
-}
-
-function addSelectWithLabel(parent, attrName, labelText, inputId, options)
-{
-    var label = document.createElement("label");
-    label.innerText = labelText;
-
-    var select = document.createElement("select");
-    select.id = inputId;
-    select.setAttribute(ATTRIBUTE_NAME, attrName);
-
-    var values = options.values();
-    for (value of values)
-    {
-        var option = document.createElement("option");
-        option.innerText = value;
-        option.value = value;
-        select.appendChild(option);
-    }
-
-    label.appendChild(select);
-    parent.appendChild(label);
-}
-
-function addBooleanInputWithLabel(parent, attrName, labelText, inputId, value)
-{
-    var label = document.createElement("label");
-    label.innerText = labelText;
-
-    var input = document.createElement("input");
-    input.type = "checkbox";
-    input.id = inputId;
-    input.value = value;
-    input.setAttribute(ATTRIBUTE_NAME, attrName);
-
-    label.appendChild(input);
-    parent.appendChild(label);
-}
-
-function addButton(parent, buttonId, buttonValue, onclick)
-{
-    var input = document.createElement("input");
-    input.type = "button";
-    input.id = buttonId;
-    input.value = buttonValue;
-    input.onclick = onclick;
-
-    parent.appendChild(input);
-}
-
-
-// TODO optimize later to not to reload all attributes. 
-// But maybe it's necessary because there could be some edit request from another page.
-// TODO maybe try to optimize by sending only changed fields.
-function saveAttributeInfo(handler)
-{
-    var attributesUrl = SERVER_ADDRESS + '/rest/attributes';
-    var form = document.getElementById("attribute-form");
-    var id = form.getAttribute(CONTENT_ID);
-    var objectToSave = getMetaObjectFromForm(form);
-    if (id)
-        objectToSave.id = id;
-    
-    const init = 
-    {
-        method: id ? "PUT" : "POST",                            // If there is id for attribute, it's already exist. So just PUT (update)
-        body: JSON.stringify(objectToSave),
-        headers:
-        {
-            "Accept": "text/plain;charset=UTF-8",               // Expect an id of the attribute
-            "Content-Type": "application/json;charset=UTF-8"
-        }
-    };
-
-    makeHttpRequest(attributesUrl, init, handler);
-}
