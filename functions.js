@@ -1,5 +1,88 @@
 
 
+/**
+ * Load the left side menu of entities on onload event action.
+ */
+function loadMenu()
+{
+	fetch(SERVER_ADDRESS + '/rest/entities')
+	.then(response => response.json())
+	.then(entities => {
+		var menuList = getEmptyElement(MENU_LIST);
+		entities = entities.filter(entity => entity.visible);
+
+		for (var i = 0; i < entities.length; i++)
+		{
+			var title = entities[i].title;
+			var collection = entities[i].collection;
+			var li = document.createElement("li");
+			li.onclick = function() { showContentTableWithNotes(this.getAttribute(CONTENT), this.getAttribute(CONTENT_ID)); };
+			li.id = collection + "-button";
+			li.innerText = title;
+			li.setAttribute(CONTENT, collection);
+			li.setAttribute(CONTENT_ID, entities[i].id);
+			menuList.appendChild(li);
+		}
+	
+		if (entities.length > 0)
+		{
+			var emptyLi = document.createElement("li");
+			menuList.appendChild(emptyLi);
+		}
+	
+		var attributesLi = document.createElement("li");
+		attributesLi.innerText = "Attributes";
+		attributesLi.onclick = function() { showAttributes(); };
+		menuList.appendChild(attributesLi);
+	
+		var entitiesLi = document.createElement("li");
+		entitiesLi.innerText = "Entities";
+		entitiesLi.onclick = function() { showEntities(); };
+		menuList.appendChild(entitiesLi);
+	});
+}
+
+
+
+/**
+ * Get log from database and put them at the main page
+ */
+function showLog()
+{
+	fetch(SERVER_ADDRESS + "/rest/log/50")
+	.then(response => response.json())
+	.then(logs => {
+		var history = getEmptyElement("history");
+		for (var i = 0; i < logs.length; i++)
+		{
+			var date = new Date(logs[i].time);
+			var day = addLeadingZeroIfLessThan10(date.getDay());
+			var month = addLeadingZeroIfLessThan10(date.getMonth() + 1);
+			var year = date.getFullYear();
+			var hours = addLeadingZeroIfLessThan10(date.getHours());
+			var minutes = addLeadingZeroIfLessThan10(date.getMinutes());
+			var seconds = addLeadingZeroIfLessThan10(date.getSeconds());
+			var operation = logs[i].operation;
+			var collection = logs[i].collection;
+			var id = logs[i].id;
+			var before = logs[i].before;
+			var after = logs[i].after;
+			var message = `[${day}.${month}.${year} ${hours}:${minutes}:${seconds}] ${collection} ${operation}: `;
+			switch (logs[i].operation)
+			{
+				case "CREATE": message += `${id} ${logs[i].after}`; break;
+				case "UPDATE": message += `${id} before=${before}; after=${after}`; break;
+				case "DELETE": message += (id != null) ? `${id} ${before}` : `count = ${before}`; break;
+				default: message += "Unknown operation"; break;
+			}
+			var p = document.createElement("p");
+			p.innerText = message;
+			history.appendChild(p);
+		}
+	});	
+}
+
+
 
 function showCurrentContent()
 {
@@ -337,14 +420,14 @@ function addTextInputWithLabel(parent, attrName, labelText, inputId)
     var input = document.createElement("input");
     input.type = "text";
     input.id = inputId;
-    input.setAttribute(ATTRIBUTE_NAME, attrName);
+	input.setAttribute(ATTRIBUTE_NAME, attrName);
 
     label.appendChild(input);
     parent.appendChild(label);
 }
 
 
-function addNumberInputWithLabel(parent, attrName, labelText, inputId, min, max)
+function addNumberInputWithLabel(parent, attrName, labelText, inputId)
 {
     var label = document.createElement("label");
     label.innerText = labelText;
@@ -366,7 +449,7 @@ function addSelectWithLabel(parent, attrName, labelText, inputId, options)
 
     var select = document.createElement("select");
     select.id = inputId;
-    select.setAttribute(ATTRIBUTE_NAME, attrName);
+	select.setAttribute(ATTRIBUTE_NAME, attrName);
 
     var values = options.values();
     for (value of values)
@@ -401,4 +484,31 @@ function createTdWithIcon(iconClassName)
 	var icon = document.createElement("td");
 	icon.className = iconClassName;
 	return icon;
+}
+
+function drawHeader(name)
+{
+	var header = document.getElementById("header");
+	header.innerHTML = "";
+
+	var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+	svg.setAttribute("width", header.clientWidth);
+	svg.setAttribute("height", header.clientHeight);
+
+	var text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+	text.setAttribute("fill", "red");
+	text.setAttribute("text-anchor", "middle");
+	text.setAttribute("dominant-baseline", "middle");
+	text.textContent = name;
+	text.setAttribute("x", "50%");
+	text.setAttribute("y", "50%");
+
+	svg.appendChild(text);	
+	header.appendChild(svg);
+}
+
+function showInputAndLabelIf(inputId, needToShow)
+{
+	//document.getElementById(inputId).parentNode.style.visibility = needToHide ? 'visible' : 'hidden';
+	document.getElementById(inputId).parentNode.style.display = needToShow ? 'block' : 'none';
 }

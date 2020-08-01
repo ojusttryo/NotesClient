@@ -135,7 +135,7 @@ function createAttributeForm(attributeId)
     addTextInputWithLabel(form, "name", "Name", "attribute-name");
     addTextInputWithLabel(form, "title", "Title", "attribute-title");
     addSelectWithLabel(form, "alignment", "Alignment", "attribute-alignment", [ "left", "right", "center" ]);
-    addSelectWithLabel(form, "type", "Type", "attribute-type", [ "text", "textarea", "number", "select", "multiselect", "checkbox", "inc", "url"]);
+    addSelectWithLabel(form, "type", "Type", "attribute-type", [ "text", "textarea", "number", "select", "multiselect", "checkbox", "inc", "url"]);   
     addTextInputWithLabel(form, "selectOptions", "Select options", "attribute-select-options");
     addBooleanInputWithLabel(form, "visible", "Visible in table", "attribute-visible", "visible");
     addBooleanInputWithLabel(form, "required", "Required", "attribute-required", "required");
@@ -153,6 +153,19 @@ function createAttributeForm(attributeId)
     addButton(form, attributeId ? "edit-attribute" : "save-attribute", attributeId ? "Edit attribute" : "Save attribute", addButtonOnClickHandler);
 
     dataElement.appendChild(form);
+
+    // When changing the type other fields may become excess
+    document.getElementById("attribute-type").onchange = function() 
+    {
+        var type = document.getElementById("attribute-type").value;
+        showInputAndLabelIf("attribute-select-options", (type == "select" || type == "multiselect"));
+        showInputAndLabelIf("attribute-lines-count", (type == "textarea"));
+        showInputAndLabelIf("attribute-max", (type == "text" || type == "textarea" || type == "number" || type == "inc" || type == "url"));
+        showInputAndLabelIf("attribute-min", (type == "text" || type == "textarea" || type == "number" || type == "inc" || type == "url"));
+        showInputAndLabelIf("attribute-step", (type == "number" || type == "inc"));
+        showInputAndLabelIf("attribute-regex", (type == "text" || type == "textarea" || type == "number" || type == "inc" || type == "url"));
+    }
+    document.getElementById("attribute-type").onchange();
 }
 
 
@@ -179,8 +192,7 @@ function fillAttributeValuesOnForm(attribute)
     {
         case "text": 
             break;
-        case "textarea": 
-            document.getElementById("attribute-lines-count").visible = (attribute["type"] == "textarea"); 
+        case "textarea":             
             break;
         case "number":
             break;
