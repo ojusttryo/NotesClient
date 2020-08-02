@@ -99,7 +99,19 @@ function createNotesTableBody(attributes, notes)
 			var attributeName = attr[NAME];
 			var attributeId = attr[ID];
 			td.setAttribute(ATTRIBUTE_NAME, attributeName);
-			td.innerHTML = noteAttributes[attributeName] != null ? noteAttributes[attributeName] : "";
+			switch(attr.type)
+			{
+				case "url":
+					var a = document.createElement("a");
+					a.href = noteAttributes[attributeName] != null ? noteAttributes[attributeName] : "";
+					a.text = noteAttributes[attributeName] != null ? noteAttributes[attributeName] : "";
+					a.target = "_blank";
+					td.appendChild(a);
+					break;
+				default:
+					td.innerHTML = noteAttributes[attributeName] != null ? noteAttributes[attributeName] : "";
+					break;
+			}			
 			tr.appendChild(td);
 		}
 
@@ -284,6 +296,7 @@ function prepareNoteAttributes(form, note, attributes)
 				else if (attribute.defaultValue != null && isBoolean(attribute.defaultValue))
 					input.checked = attribute.defaultValue == "true";
 				break;
+			// text, url, ...
 			default:
 				input = document.createElement("input");
 				input.type = attribute[TYPE];
