@@ -83,7 +83,8 @@ function createNotesTableBody(attributes, notes)
 	for (var i = 0; i < notes.length; i++)
 	{
 		var note = notes[i];
-		var noteAttributes = convertArrayToObject(note.attributes);
+		//var noteAttributes = convertArrayToObject(note.attributes);
+		var noteAttributes = note.attributes;
 
 		var tr = document.createElement("tr");
 		tr.className = NOTE;
@@ -173,7 +174,7 @@ function showNoteForm(id)
 			fetch(SERVER_ADDRESS + "/rest/notes/" + document.getElementById(CONTENT).getAttribute(CONTENT_TYPE) + "/" + id)
 			.then(response => response.json())
 			.then(note => {
-				note.attributes = convertArrayToObject(note.attributes);
+				//note.attributes = convertArrayToObject(note.attributes);
 				prepareNoteAttributes(form, note, attributes);
 				createNoteActionButtons(form, id);
 			})
@@ -217,16 +218,34 @@ function prepareNoteAttributes(form, note, attributes)
 				}
 
 				if (note != null)
-				{
-					input.value = note.attributes[attribute.name];
-				}
+					input.value = valueOrEmptyString(note.attributes[attribute.name]);
 				else if (attribute.defaultValue != null)
 					input.value = attribute.defaultValue;
 
 				break;
 			case "multiselect":
-				input = document.createElement("select");
+				input = createMultiselectWithCheckboxes(attribute.name, attribute.selectOptions);
 
+				if (note == null)
+					break;
+
+				var checkboxes = input.getElementsByTagName("input");
+				var noteOptions = note.attributes[attribute.name];
+				if (noteOptions == null || noteOptions.length == 0)
+					break;
+
+				for (var k = 0; k < noteOptions.length; k++)
+				{
+					var option = noteOptions[k];
+					for (var j = 0; j < checkboxes.length; j++)
+					{
+						if (checkboxes[j].getAttribute("title") == option)
+						{
+							checkboxes[j].checked = true;
+							break;
+						}
+					}
+				}
 				break;
 			case "textarea":
 				input = document.createElement(attribute.type);
@@ -235,14 +254,15 @@ function prepareNoteAttributes(form, note, attributes)
 					input.setAttribute("rows", attribute.linesCount);
 
 				if (note != null)
-					input.value = note.attributes[attribute.name];
+					input.value = valueOrEmptyString(note.attributes[attribute.name]);
 				else if (attribute.defaultValue != null)
 					input.value = attribute.defaultValue;
 
 				break;
 			case "number":
+			case "inc":
 				input = document.createElement("input");
-				input.type = attribute.type;
+				input.type = "number";
 				if (attribute.min != null)
 					input.min = attribute.min;
 				if (attribute.max != null)
@@ -251,16 +271,26 @@ function prepareNoteAttributes(form, note, attributes)
 					input.step = attribute.step;
 
 				if (note != null)
-					input.value = note.attributes[attribute.name];
+					input.value = valueOrEmptyString(note.attributes[attribute.name]);
 				else if (attribute.defaultValue != null)
 					input.value = attribute.defaultValue;
 
+				break;
+			case "checkbox":
+				input = document.createElement("input");
+				input.type = attribute.type;
+				if (note != null && isBoolean(note.attributes[attribute.name]))
+					input.checked = note.attributes[attribute.name] == "true";
+				else if (attribute.defaultValue != null && isBoolean(attribute.defaultValue))
+					input.checked = attribute.defaultValue == "true";
 				break;
 			default:
 				input = document.createElement("input");
 				input.type = attribute[TYPE];
 				if (note != null)
-					input.value = note.attributes[attribute.name];
+					input.value = valueOrEmptyString(note.attributes[attribute.name]);
+				else if (attribute.defaultValue != null)
+					input.value = attribute.defaultValue;
 				break;				
 		}
 
@@ -289,8 +319,16 @@ function createNoteActionButtons(form, id)
 	{
 		var addForm = document.getElementById("add-form");
 		var objectToSave = new Object();
-		objectToSave.attributes = getNoteAttributesFromForm(addForm);
 		objectToSave.id = id;
+		objectToSave.attributes = getMetaObjectFromForm(addForm);
+		//objectToSave.attributes = convertObjectToArray(objectToSave.attributes);
+		/*
+		for (var prop in objectToSave.attributes)
+		{
+			if (objectToSave.attributes[prop] instanceof Object)
+				objectToSave.attributes[prop] = JSON.stringify(objectToSave.attributes[prop]) 
+		}
+		*/
 
 		fetch(saveNoteUrl = SERVER_ADDRESS + '/rest/notes/' + document.getElementById(CONTENT).getAttribute(CONTENT_TYPE), {
 			method: objectToSave.id == null ? "POST" : "PUT",
@@ -345,7 +383,7 @@ function getNoteAttributesFromForm(form)
 			{
 				attribute[attributeName] = currentNode.checked;
 			}
-			else if (currentNode.type && (currentNode.type === 'select' || currentNode.type === 'select-multiple'))
+			else if (currentNode.type && (currentNode.type === 'select'))
 			{
 				var array = [];
 				var length = currentNode.options.length;
@@ -357,7 +395,22 @@ function getNoteAttributesFromForm(form)
 				}
 				attribute[attributeName] = array;
 			}
-			else if (currentNode.value.length > 0)
+
+			else if (currentNode.id != null && currentNode.id.toString().startsWith("checkboxes-"))
+			{
+				var array = [];				
+				var checkboxes = currentNode.getElementsByTagName("input");
+				//result[attributeName] = new Array();
+				for (var j = 0; j < checkboxes.length; j++)
+				{
+					if (checkboxes[j].type == "checkbox" && checkboxes[j].checked == true)
+						result[attributeName].push(checkboxes[j].getAttribute("title"));
+					else if (checkboxes[j].getAttribute("title") != null && checkboxes[j].checked == true)
+						result[attributeName].push(checkboxes[j].getAttribute("title"));
+				}
+			}
+
+			else if (currentNode.type && currentNode.value.length > 0)
 			{
 				attribute[attributeName] = currentNode.value;
 			}

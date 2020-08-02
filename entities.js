@@ -133,6 +133,12 @@ function createEntityForm(entityId)
     var addButtonOnClickHandler = function() { saveMetaObjectInfo("entity-form", "/rest/entities", showEntities) };
     var saveButton = addButton(form, entityId ? "edit-entity" : "save-entity", entityId ? "Edit entity" : "Save entity", addButtonOnClickHandler);
 
+    var cancelButton = document.createElement("input");
+	cancelButton.type = "button";
+	cancelButton.value = "Cancel";
+    cancelButton.onclick = function() { showEntities(); };
+    form.appendChild(cancelButton);
+
     fetch(SERVER_ADDRESS + "/rest/attributes")
 	.then(response => response.json())
 	.then(attributes => {

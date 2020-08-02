@@ -152,6 +152,12 @@ function createAttributeForm(attributeId)
     var addButtonOnClickHandler = function() { saveMetaObjectInfo("attribute-form", "/rest/attributes", showAttributes) };
     addButton(form, attributeId ? "edit-attribute" : "save-attribute", attributeId ? "Edit attribute" : "Save attribute", addButtonOnClickHandler);
 
+    var cancelButton = document.createElement("input");
+	cancelButton.type = "button";
+	cancelButton.value = "Cancel";
+    cancelButton.onclick = function() { showAttributes(); };
+    form.appendChild(cancelButton);
+
     dataElement.appendChild(form);
 
     // When changing the type other fields may become excess
@@ -187,6 +193,8 @@ function fillAttributeValuesOnForm(attribute)
     document.getElementById("attribute-step").value = attribute["step"];
     document.getElementById("attribute-regex").value = attribute["regex"];
     document.getElementById("attribute-lines-count").value = attribute["linesCount"];    
+
+    document.getElementById("attribute-type").onchange();
     
     switch (attribute["type"])
     {

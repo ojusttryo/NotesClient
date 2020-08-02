@@ -368,6 +368,17 @@ function convertArrayToObject(attributes)
 }
 
 
+function convertObjectToArray(attributes)
+{
+	var array = [];
+	for (var property in attributes)
+	{
+		array[property] = attributes[property];
+	}
+	return array;
+}
+
+
 function saveMetaObjectInfo(formId, restUrl, afterSaveHandler)
 {
     var form = document.getElementById(formId);
@@ -511,4 +522,14 @@ function showInputAndLabelIf(inputId, needToShow)
 {
 	//document.getElementById(inputId).parentNode.style.visibility = needToHide ? 'visible' : 'hidden';
 	document.getElementById(inputId).parentNode.style.display = needToShow ? 'block' : 'none';
+}
+
+function valueOrEmptyString(value)
+{
+	return value ? value : "";
+}
+
+function isBoolean(value)
+{
+	return (value == "true" || value == "false");
 }
