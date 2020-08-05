@@ -58,6 +58,9 @@ function createNotesTableHead(attributes)
 	// Attributes
 	for (var i = 0; i < attributes.length; i++)
 	{
+		if (!attributes[i].visible)
+			continue;
+
 		var th = document.createElement("th");
 		th.innerText = attributes[i]["title"];
 		tr.appendChild(th);
@@ -94,8 +97,12 @@ function createNotesTableBody(attributes, notes)
 
 		for (var j = 0; j < attributes.length; j++)
 		{
+			if (!attributes[j].visible)
+				continue;
+
 			var attr = attributes[j];
 			var td = document.createElement("td");
+			td.style.textAlign = attr.alignment;
 			var attributeName = attr[NAME];
 			var attributeId = attr[ID];
 			td.setAttribute(ATTRIBUTE_NAME, attributeName);
@@ -107,6 +114,114 @@ function createNotesTableBody(attributes, notes)
 					a.text = noteAttributes[attributeName] != null ? noteAttributes[attributeName] : "";
 					a.target = "_blank";
 					td.appendChild(a);
+					break;
+				case "save time":
+				case "update time":
+					var time = new Date(noteAttributes[attributeName]);
+					var format = attr.dateFormat;
+					var convertedTime = moment(time).format(format);
+					td.innerHTML = convertedTime;
+					break;
+				case "select":
+					if (attributes[j].editableInTable)
+					{
+						var select = document.createElement("select");
+						if (attr.selectOptions != null)
+						{
+							for (value of attr.selectOptions)
+							{
+								var option = document.createElement("option");
+								option.innerText = value;
+								option.value = value;
+								select.appendChild(option);
+							}
+						}
+		
+						if (note != null)
+							select.value = valueOrEmptyString(note.attributes[attr.name]);
+						else if (attr.defaultValue != null)
+							select.value = attr.defaultValue;
+
+						select.setAttribute(PREVIOUS_VALUE, select.value);
+
+						select.onchange = function()
+						{
+							var objectToSave = new Object();
+							objectToSave[this.parentNode.getAttribute(ATTRIBUTE_NAME)] = this.value;
+							var id = this.parentNode.parentNode.getAttribute(CONTENT_ID);
+
+							fetch(SERVER_ADDRESS + '/rest/notes/' + document.getElementById(CONTENT).getAttribute(CONTENT_TYPE) + "/" + id, {
+								method: "PUT",
+								body: JSON.stringify(objectToSave),
+								headers:
+								{
+									"Accept": "text/plain;charset=UTF-8",
+									"Content-Type": "application/json;charset=UTF-8"
+								}
+							})
+							.then(response => {
+								if (response.status != 200)
+								{
+									this.value = select.getAttribute(PREVIOUS_VALUE);
+									this.style.backgroundColor = "red";
+								}
+								else
+								{
+									this.setAttribute(PREVIOUS_VALUE, this.value);
+									this.style.backgroundColor = "green";
+								}
+							});
+						}
+						td.appendChild(select);
+					}
+					else
+					{
+						td.innerHTML = noteAttributes[attributeName] != null ? noteAttributes[attributeName] : "";
+					}
+					break;
+				case "inc":
+					var numberTd = document.createElement("td");
+					numberTd.setAttribute(ATTRIBUTE_NAME, attributeName);
+					numberTd.innerHTML = noteAttributes[attributeName] != null ? noteAttributes[attributeName] : "";
+					numberTd.style.textAlign = attr.alignment;
+					tr.appendChild(numberTd);
+
+					var incButton = document.createElement("input");
+					incButton.setAttribute(ATTRIBUTE_NAME, attributeName);
+					incButton.type = "button";
+					incButton.value = attr.step > 0 ? "+" : "-";
+					incButton.style.height = "20px";
+					incButton.style.width = "20px";
+					incButton.onclick = function()
+					{
+						var id = this.parentNode.parentNode.getAttribute(CONTENT_ID);
+						var contentType = document.getElementById(CONTENT).getAttribute(CONTENT_TYPE);
+
+						fetch(SERVER_ADDRESS + '/rest/notes/' + contentType + "/" + id + "/inc/" + this.getAttribute(ATTRIBUTE_NAME), {
+							method: "PUT",
+							headers:
+							{
+								"Accept": "text/plain;charset=UTF-8",
+								"Content-Type": "application/json;charset=UTF-8"
+							}
+						})
+						.then(response => {
+							if (response.status != 200)
+							{
+								this.parentNode.previousSibling.style.backgroundColor = "red";
+							}
+							else
+							{
+								response.text()
+								.then(text => {
+									this.parentNode.previousSibling.innerText = parseFloat(text);
+									this.parentNode.previousSibling.style.backgroundColor = "green";
+								})
+							}
+						});
+					}
+					td.appendChild(incButton);
+					
 					break;
 				default:
 					td.innerHTML = noteAttributes[attributeName] != null ? noteAttributes[attributeName] : "";
@@ -296,6 +411,52 @@ function prepareNoteAttributes(form, note, attributes)
 				else if (attribute.defaultValue != null && isBoolean(attribute.defaultValue))
 					input.checked = attribute.defaultValue == "true";
 				break;
+			case "save time":
+			case "update time":
+				input = document.createElement("span");
+				input.setAttribute(ATTRIBUTE_TYPE, attribute.type);
+				
+				// New note
+				if (note == null)
+				{
+					label.style.display = "none";
+					input.style.display = "none";
+				}
+				// Old note but no value
+				else if (note.attributes[attribute.name] == null)
+				{
+					input.innerText = "Required data isn't found";
+				}
+				// Old note and we have time value
+				else
+				{
+					var time = new Date(note.attributes[attribute.name]);
+					var format = attribute.dateFormat;
+					var convertedTime = moment(time).format(format);
+					input.innerText = convertedTime;
+					if (attribute.type == "save time")
+						input.setAttribute(ATTRIBUTE_VALUE, note.attributes[attribute.name]);
+				}
+
+				break;
+			case "user date":
+				input = document.createElement("input");
+				input.type = "date";
+				input.setAttribute(ATTRIBUTE_TYPE, attribute.type);
+
+				if (note != null && note.attributes[attribute.name] != null)
+					input.value = note.attributes[attribute.name];
+
+				break;
+			case "user time":
+				input = document.createElement("input");
+				input.type = "time";
+				input.setAttribute(ATTRIBUTE_TYPE, attribute.type);
+
+				if (note != null && note.attributes[attribute.name] != null)
+					input.value = note.attributes[attribute.name];
+
+				break;
 			// text, url, ...
 			default:
 				input = document.createElement("input");
@@ -343,7 +504,7 @@ function createNoteActionButtons(form, id)
 		}
 		*/
 
-		fetch(saveNoteUrl = SERVER_ADDRESS + '/rest/notes/' + document.getElementById(CONTENT).getAttribute(CONTENT_TYPE), {
+		fetch(SERVER_ADDRESS + '/rest/notes/' + document.getElementById(CONTENT).getAttribute(CONTENT_TYPE), {
 			method: objectToSave.id == null ? "POST" : "PUT",
 			body: JSON.stringify(objectToSave),
 			headers:

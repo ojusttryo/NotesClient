@@ -192,7 +192,12 @@ function getMetaObjectFromForm(form)
 	for (var i = 0; i < allNodes.length; i++)
 	{
 		var currentNode = allNodes[i];
+		if (currentNode.parentNode.style.display == "none")
+			continue;
+
 		var attributeName = currentNode.getAttribute(ATTRIBUTE_NAME);
+		var attributeType = currentNode.getAttribute(ATTRIBUTE_TYPE);
+		var attributeValue = currentNode.getAttribute(ATTRIBUTE_VALUE);
 		if (attributeName != null)
 		{
 			if (currentNode.type && currentNode.type === 'checkbox')
@@ -215,10 +220,6 @@ function getMetaObjectFromForm(form)
 			{
 				result[attributeName] = currentNode.value.split(";");
 			}
-			else if (currentNode.value != null && currentNode.value.length > 0)
-			{
-				result[attributeName] = currentNode.value;
-			}
 			else if (currentNode.id != null && currentNode.id.toString().startsWith("checkboxes-"))
 			{
 				var checkboxes = currentNode.getElementsByTagName("input");
@@ -230,6 +231,19 @@ function getMetaObjectFromForm(form)
 					else if (checkboxes[j].getAttribute("title") != null && checkboxes[j].checked == true)
 						result[attributeName].push(checkboxes[j].getAttribute("title"));
 				}
+			}
+			else if (attributeType && attributeType == "save time" || attributeType == "update time")
+			{
+				result[attributeName] = attributeValue ? parseInt(attributeValue) : Date.now();
+			}
+			// Probably this one might be replaced by default (the last one)
+			else if (attributeType && attributeType == "user date")
+			{
+				result[attributeName] = currentNode.value;
+			}
+			else if (currentNode.value != null && currentNode.value.length > 0)
+			{
+				result[attributeName] = currentNode.value;
 			}
 		}
 	}
@@ -296,6 +310,16 @@ function createMultiselectWithCheckboxes(attrName, options)
 	selectBox.onclick = function() { showCheckboxes(this); };
 
 	var select = document.createElement("select");
+    select.onfocus = function() 
+	{
+		var children = this.parentNode.parentNode.childNodes;
+		for (var i = 0; i < children.length; i++)
+		{
+			if (children[i].id.startsWith("checkboxes-"))
+				children[i].style.display = "block";
+		}
+	}
+
 	var option = document.createElement("option");
 	option.innerText = "Select options...";
 	select.appendChild(option);
@@ -387,19 +411,37 @@ function saveMetaObjectInfo(formId, restUrl, afterSaveHandler)
     if (id)
         objectToSave.id = id;
 
+	var errorLabel = document.getElementById("error-label");
     fetch(SERVER_ADDRESS + restUrl, {
         method: id ? "PUT" : "POST",
         body: JSON.stringify(objectToSave),
         headers:
         {
-            "Accept": "text/plain;charset=UTF-8",
+            "Accept": "application/json;charset=UTF-8",
             "Content-Type": "application/json;charset=UTF-8"
         }
     })
     .then(response => {
-        if (response.status === 200)
+		
+		if (response.status === 200)
+		{
+			errorLabel.style.display = "none";
 			afterSaveHandler();
-    })
+		}
+		else if (response.status == 500)
+		{
+			return response.json();
+
+		}
+	})
+	.then(error => {
+		if (error)
+		{
+			errorLabel.style.display = "block";
+			errorLabel.innerText = error.message;
+			errorLabel.focus();
+		}
+	});
 }
 
 

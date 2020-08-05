@@ -11,6 +11,7 @@
 		<script type="text/javascript" src="database.js"></script>
 		<script type="text/javascript" src="attributes.js"></script>
 		<script type="text/javascript" src="entities.js"></script>
+		<script type="text/javascript" src="moment.js"></script>
 	</head>
 	<body onload="loadMenu(); showLog();">		
 		<div id="header" onclick="showLog(); switchToMainPage();"></div>

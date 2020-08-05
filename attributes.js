@@ -44,6 +44,7 @@ function createAttributesTableHead()
 	appendNewTh(tr, "№");
     appendNewTh(tr, "Name");
     appendNewTh(tr, "Title");
+    appendNewTh(tr, "Type");
 	appendNewTh(tr, "");		// Edit
 	appendNewTh(tr, "");		// Remove
 
@@ -76,6 +77,11 @@ function createAttributesTableBody(attributes)
         title.innerText = attributes[i].title;
         title.onclick = function() { showAttributeInfo(attributes[i].id); };
         tr.appendChild(title);
+
+        var type = document.createElement("td");
+        type.innerText = attributes[i].type;
+        type.onclick = function() { showAttributeInfo(attributes[i].id); };
+        tr.appendChild(type);
 
 		var editButton = document.createElement("td");
 		editButton.className = EDIT_BUTTON;
@@ -132,13 +138,21 @@ function createAttributeForm(attributeId)
     else if (form.hasAttribute(CONTENT_ID))
         form.removeAttribute(CONTENT_ID);
 
-    addTextInputWithLabel(form, "name", "Name", "attribute-name");
+    var errorLabel = document.createElement("label");
+    errorLabel.id = "error-label";
+    errorLabel.style.display = "none";
+    form.appendChild(errorLabel);
+
     addTextInputWithLabel(form, "title", "Title", "attribute-title");
+    addTextInputWithLabel(form, "name", "Name (unique)", "attribute-name");    
     addSelectWithLabel(form, "alignment", "Alignment", "attribute-alignment", [ "left", "right", "center" ]);
-    addSelectWithLabel(form, "type", "Type", "attribute-type", [ "text", "textarea", "number", "select", "multiselect", "checkbox", "inc", "url"]);   
+    addSelectWithLabel(form, "type", "Type", "attribute-type", 
+        [ "text", "textarea", "number", "select", "multiselect", "checkbox", "inc", "url", "save time", "update time", "user date", "user time" ]);   
     addTextInputWithLabel(form, "selectOptions", "Select options", "attribute-select-options");
+    addTextInputWithLabel(form, "dateFormat", "Date format", "attribute-date-format");
     addBooleanInputWithLabel(form, "visible", "Visible in table", "attribute-visible", "visible");
     addBooleanInputWithLabel(form, "required", "Required", "attribute-required", "required");
+    addBooleanInputWithLabel(form, "editableInTable", "Editable in table", "attribute-editable-in-table", "editable");
     addNumberInputWithLabel(form, "linesCount", "Lines count", "attribute-lines-count", 1, 5);
     addSelectWithLabel(form, "method", "Method", "attribute-method", [ "none", "folder name", "avg", "count" ]);
     addTextInputWithLabel(form, "maxWidth", "Max width in table", "attribute-max-width");
@@ -166,12 +180,23 @@ function createAttributeForm(attributeId)
         var type = document.getElementById("attribute-type").value;
         showInputAndLabelIf("attribute-select-options", (type == "select" || type == "multiselect"));
         showInputAndLabelIf("attribute-lines-count", (type == "textarea"));
-        showInputAndLabelIf("attribute-max", (type == "text" || type == "textarea" || type == "number" || type == "inc" || type == "url"));
-        showInputAndLabelIf("attribute-min", (type == "text" || type == "textarea" || type == "number" || type == "inc" || type == "url"));
+        showInputAndLabelIf("attribute-max", (type == "text" || type == "textarea" || type == "number" || type == "inc"));
+        showInputAndLabelIf("attribute-min", (type == "text" || type == "textarea" || type == "number" || type == "inc"));
         showInputAndLabelIf("attribute-step", (type == "number" || type == "inc"));
-        showInputAndLabelIf("attribute-regex", (type == "text" || type == "textarea" || type == "number" || type == "inc" || type == "url"));
+        showInputAndLabelIf("attribute-regex", (type == "text" || type == "textarea" || type == "number" || type == "inc"));
+        showInputAndLabelIf("attribute-editable-in-table", (type == "select" || type == "inc"));
+        showInputAndLabelIf("attribute-date-format", (type == "save time" || type == "update time"));
+        showInputAndLabelIf("attribute-default", (type != "save time" && type != "update time" && type != "user date" && type != "user time"));
+        showInputAndLabelIf("attribute-required", (type != "save time" && type != "update time"));
     }
     document.getElementById("attribute-type").onchange();
+
+    var dateFormat = document.getElementById("attribute-date-format").parentNode;
+    var formatHref = document.createElement("a");
+    formatHref.href = "https://momentjs.com/";
+    formatHref.text = " examples ";
+    formatHref.target = "_blank";
+    dateFormat.insertBefore(formatHref, dateFormat.firstChild.nextSibling);
 }
 
 
@@ -181,8 +206,11 @@ function fillAttributeValuesOnForm(attribute)
     document.getElementById("attribute-title").value = attribute["title"];
     document.getElementById("attribute-type").value = attribute["type"];
     document.getElementById("attribute-select-options").value = attribute["selectOptions"] != null ? attribute["selectOptions"].join("; ") : "";
+    if (attribute["dateFormat"] != null)
+        document.getElementById("attribute-date-format").value = attribute["dateFormat"];
     document.getElementById("attribute-visible").checked = attribute["visible"];
     document.getElementById("attribute-required").checked = attribute["required"];
+    document.getElementById("attribute-editable-in-table").checked = attribute["editableInTable"];
     document.getElementById("attribute-alignment").value = attribute["alignment"];
     document.getElementById("attribute-method").value = attribute["method"];
     document.getElementById("attribute-max-width").value = attribute["maxWidth"];
@@ -192,7 +220,7 @@ function fillAttributeValuesOnForm(attribute)
     document.getElementById("attribute-default").value = attribute["defaultValue"];
     document.getElementById("attribute-step").value = attribute["step"];
     document.getElementById("attribute-regex").value = attribute["regex"];
-    document.getElementById("attribute-lines-count").value = attribute["linesCount"];    
+    document.getElementById("attribute-lines-count").value = attribute["linesCount"];
 
     document.getElementById("attribute-type").onchange();
     

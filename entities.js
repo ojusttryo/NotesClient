@@ -126,8 +126,13 @@ function createEntityForm(entityId)
     else if (form.hasAttribute(CONTENT_ID))
         form.removeAttribute(CONTENT_ID);
 
+    var errorLabel = document.createElement("label");
+    errorLabel.id = "error-label";
+    errorLabel.style.display = "none";
+    form.appendChild(errorLabel);
+
     addTextInputWithLabel(form, "title", "Title", "entity-title");
-    addTextInputWithLabel(form, "collection", "Collection", "entity-collection");
+    addTextInputWithLabel(form, "collection", "Collection (unique)", "entity-collection");
     addBooleanInputWithLabel(form, "visible", "Visible", "entity-visible", "visible");
 
     var addButtonOnClickHandler = function() { saveMetaObjectInfo("entity-form", "/rest/entities", showEntities) };

@@ -17,6 +17,8 @@ const CONTENT_ID = "content-id";
 const CONTENT_LEVEL = "content-level";
 const ATTRIBUTE_NAME = "attribute-name";
 const ATTRIBUTE_ID = "attribute-id";
+const ATTRIBUTE_TYPE = "attribute-type";
+const ATTRIBUTE_VALUE = "attribute-value";
 const CONTENT_TYPE = "content-type";
 const ITEM_TYPE = "item-type";
 const ADD_FORM = "add-form";
@@ -28,6 +30,7 @@ const ATTRIBUTES_MENU = "attributes-menu";
 const NOTES_MENU = "notes-menu";
 const FOLDERS_MENU = "folders-menu";
 const MENU_LIST = "menu-list";
+const PREVIOUS_VALUE = "previous-value";
 
 const NAME = "name";
 const TITLE = "title";

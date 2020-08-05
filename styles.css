@@ -61,6 +61,11 @@ label
 	display: block;
 }
 
+#error-label
+{
+	color: red;
+}
+
 .editButton
 {
 	background-image: url("img/editIcon.svg");
