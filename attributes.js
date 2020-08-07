@@ -147,7 +147,7 @@ function createAttributeForm(attributeId)
     addTextInputWithLabel(form, "name", "Name (unique)", "attribute-name");    
     addSelectWithLabel(form, "alignment", "Alignment", "attribute-alignment", [ "left", "right", "center" ]);
     addSelectWithLabel(form, "type", "Type", "attribute-type", 
-        [ "text", "textarea", "number", "select", "multiselect", "checkbox", "inc", "url", "save time", "update time", "user date", "user time" ]);   
+        [ "text", "textarea", "number", "select", "multiselect", "checkbox", "inc", "url", "save time", "update time", "user date", "user time", "file" ]);   
     addTextInputWithLabel(form, "selectOptions", "Select options", "attribute-select-options");
     addTextInputWithLabel(form, "dateFormat", "Date format", "attribute-date-format");
     addBooleanInputWithLabel(form, "visible", "Visible in table", "attribute-visible", "visible");
@@ -186,8 +186,10 @@ function createAttributeForm(attributeId)
         showInputAndLabelIf("attribute-regex", (type == "text" || type == "textarea" || type == "number" || type == "inc"));
         showInputAndLabelIf("attribute-editable-in-table", (type == "select" || type == "inc"));
         showInputAndLabelIf("attribute-date-format", (type == "save time" || type == "update time"));
-        showInputAndLabelIf("attribute-default", (type != "save time" && type != "update time" && type != "user date" && type != "user time"));
+        showInputAndLabelIf("attribute-default", 
+            (type == "text" || type == "textarea" || type == "number" || type == "select" || type == "multiselect" || type == "checkbox" || type == "inc" || type == "url"));
         showInputAndLabelIf("attribute-required", (type != "save time" && type != "update time"));
+        showInputAndLabelIf("attribute-visible", !isSkippableAttributeInNotesTable(type));
     }
     document.getElementById("attribute-type").onchange();
 
@@ -245,3 +247,8 @@ function fillAttributeValuesOnForm(attribute)
     }
 }
 
+
+function isSkippableAttributeInNotesTable(type)
+{
+    return (type == "textarea" || type == "multiselect" || type == "url" || type == "file");
+}

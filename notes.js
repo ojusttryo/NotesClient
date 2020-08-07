@@ -58,7 +58,7 @@ function createNotesTableHead(attributes)
 	// Attributes
 	for (var i = 0; i < attributes.length; i++)
 	{
-		if (!attributes[i].visible)
+		if (needToSkipAttributeInTable(attributes[i]))
 			continue;
 
 		var th = document.createElement("th");
@@ -97,7 +97,7 @@ function createNotesTableBody(attributes, notes)
 
 		for (var j = 0; j < attributes.length; j++)
 		{
-			if (!attributes[j].visible)
+			if (needToSkipAttributeInTable(attributes[j]))
 				continue;
 
 			var attr = attributes[j];
@@ -327,6 +327,7 @@ function prepareNoteAttributes(form, note, attributes)
 		var attribute = attributes[i];
 		var label = document.createElement("label");
 		label.innerText = attribute[TITLE];
+		form.appendChild(label);
 
 		var input;
 		switch (attribute.type)
@@ -457,6 +458,111 @@ function prepareNoteAttributes(form, note, attributes)
 					input.value = note.attributes[attribute.name];
 
 				break;
+			case "file":
+				input = document.createElement("input");
+				input.type = attribute.type;
+				input.multiple = false;
+				input.setAttribute(ATTRIBUTE_TYPE, attribute.type);
+				input.id = attribute.id;
+				input.style.display = "none";
+				
+				var fileName = document.createElement("label");
+				fileName.id = input.id + "-label";
+				fileName.className = "file";
+				//fileName.setAttribute("for", input.id);
+				fileName.onclick = function()
+				{
+					var fileId = this.getAttribute("file-id");
+					if (fileId)
+					{
+						fetch(SERVER_ADDRESS + "/rest/file/" + fileId + "/content")
+						.then(response => {
+							if (response.status === 200)
+							{
+								return response.blob();
+							}
+						})
+						.then(data => {
+							if (data)
+							{
+								var a = document.createElement("a");
+								var file = window.URL.createObjectURL(data);
+								a.setAttribute("href", file);
+								a.setAttribute("download", this.innerText);
+								a.style.display = "none";
+								document.body.appendChild(a);
+								a.click();
+								setTimeout(() => document.body.removeChild(a), 0);
+    							//window.location.assign(file);
+							}
+							var d = null;
+						});
+					}
+				};
+				form.appendChild(fileName);
+
+				var fileButton = document.createElement("input");
+				fileButton.type = "button";
+				fileButton.setAttribute("related-button-id", input.id);
+				fileButton.className = "fileButton";
+				fileButton.value = "Upload file";
+				fileButton.onclick = function() 
+				{
+					var relatedButtonId = this.getAttribute("related-button-id");
+					document.getElementById(relatedButtonId).click();
+				}
+				form.appendChild(fileButton);
+
+				if (note != null && note.attributes[attribute.name] != null)
+				{
+					fileButton.value = "Upload new file";
+					fileName.setAttribute("file-id", note.attributes[attribute.name]);
+
+					fetch(SERVER_ADDRESS + "/rest/file/" + note.attributes[attribute.name] + "/metadata", {
+						method: "GET",
+						headers:
+						{
+							"Accept": "application/json;charset=UTF-8",
+							"Content-Type": "application/json;charset=UTF-8"
+						}
+					})
+					.then(response => response.json())
+					.then(json => {
+						fileName.innerText = json.title;
+					})
+				}
+
+				input.onchange = function(event)
+				{
+					var formData = new FormData();
+					formData.append("file", event.target.files[0]);
+
+					fetch(SERVER_ADDRESS + '/rest/file', {
+						method: "POST",
+						body: formData,
+						headers:
+						{
+							"Accept": "application/json;charset=UTF-8",
+						}
+					})
+					.then(response => {
+						if (response.status === 200)
+							return response.text()
+						if (response === 500)
+							return response.json();
+					})
+					.then(response => {
+						if (!response.message)
+						{
+							this.setAttribute("file-id", response);
+							this.setAttribute(ATTRIBUTE_VALUE, response);
+							this.previousSibling.value = "Upload new file";
+							this.previousSibling.previousSibling.innerText = event.target.files[0].name;
+						}
+					});
+				};
+
+				break;
 			// text, url, ...
 			default:
 				input = document.createElement("input");
@@ -478,7 +584,6 @@ function prepareNoteAttributes(form, note, attributes)
 		input.setAttribute(ATTRIBUTE_NAME, attribute[NAME]);
 		input.setAttribute(ATTRIBUTE_ID, attribute[ID]);
 		
-		form.appendChild(label);
 		form.appendChild(input);
 	}
 }
@@ -495,6 +600,7 @@ function createNoteActionButtons(form, id)
 		var objectToSave = new Object();
 		objectToSave.id = id;
 		objectToSave.attributes = getMetaObjectFromForm(addForm);
+
 		//objectToSave.attributes = convertObjectToArray(objectToSave.attributes);
 		/*
 		for (var prop in objectToSave.attributes)
@@ -601,3 +707,7 @@ function getNoteAttributesFromForm(form)
 }
 
 
+function needToSkipAttributeInTable(attribute)
+{
+	return (!attribute.visible || isSkippableAttributeInNotesTable(attribute.type))
+}

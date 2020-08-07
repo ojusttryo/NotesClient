@@ -241,6 +241,10 @@ function getMetaObjectFromForm(form)
 			{
 				result[attributeName] = currentNode.value;
 			}
+			else if (attributeType && attributeType == "file")
+			{
+				result[attributeName] = attributeValue;
+			}
 			else if (currentNode.value != null && currentNode.value.length > 0)
 			{
 				result[attributeName] = currentNode.value;
@@ -575,3 +579,4 @@ function isBoolean(value)
 {
 	return (value == "true" || value == "false");
 }
+
