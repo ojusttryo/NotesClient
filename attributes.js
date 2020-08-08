@@ -60,7 +60,7 @@ function createAttributesTableBody(attributes)
 	for (var i = 0; i < attributes.length; i++)
 	{
 		var tr = document.createElement("tr");
-		tr.className = ATTRIBUTE;
+		tr.className += " " + ATTRIBUTE;
 		tr.setAttribute(CONTENT_ID, attributes[i].id);
 
 		var number = document.createElement("td");
@@ -84,7 +84,7 @@ function createAttributesTableBody(attributes)
         tr.appendChild(type);
 
 		var editButton = document.createElement("td");
-		editButton.className = EDIT_BUTTON;
+		editButton.className += " " + EDIT_BUTTON;
         editButton.onclick = function() 
         {
             createEditAttributeForm(this.parentNode.getAttribute(CONTENT_ID));
@@ -93,7 +93,7 @@ function createAttributesTableBody(attributes)
 		tr.appendChild(editButton);		
 
 		var deleteButton = document.createElement("td");
-		deleteButton.className = DELETE_BUTTON;
+		deleteButton.className += " " + DELETE_BUTTON;
         deleteButton.onclick = function() 
         { 
             deleteAttribute(this.parentNode.getAttribute(CONTENT_ID), showAttributes);
@@ -131,74 +131,66 @@ function createEditAttributeForm(id)
 function createAttributeForm(attributeId)
 {
     var dataElement = getEmptyElement(DATA_ELEMENT);
-    var form = document.createElement("form");
-    form.id = "attribute-form";
+
+    createErrorLabel(dataElement);
+
     if (attributeId)
-        form.setAttribute(CONTENT_ID, attributeId);
-    else if (form.hasAttribute(CONTENT_ID))
-        form.removeAttribute(CONTENT_ID);
+        setContentId(attributeId);
+    else
+        clearContentId();
 
-    var errorLabel = document.createElement("label");
-    errorLabel.id = "error-label";
-    errorLabel.style.display = "none";
-    form.appendChild(errorLabel);
+    var alignments = [ "left", "right", "center" ];
+    var types = [ "text", "textarea", "number", "select", "multiselect", "checkbox", "inc", "url", "save time", "update time", "user date", "user time", "file" ];
+    var methods = [ "none", "folder name", "avg", "count" ];
 
-    addTextInputWithLabel(form, "title", "Title", "attribute-title");
-    addTextInputWithLabel(form, "name", "Name (unique)", "attribute-name");    
-    addSelectWithLabel(form, "alignment", "Alignment", "attribute-alignment", [ "left", "right", "center" ]);
-    addSelectWithLabel(form, "type", "Type", "attribute-type", 
-        [ "text", "textarea", "number", "select", "multiselect", "checkbox", "inc", "url", "save time", "update time", "user date", "user time", "file" ]);   
-    addTextInputWithLabel(form, "selectOptions", "Select options", "attribute-select-options");
-    addTextInputWithLabel(form, "dateFormat", "Date format", "attribute-date-format");
-    addBooleanInputWithLabel(form, "visible", "Visible in table", "attribute-visible", "visible");
-    addBooleanInputWithLabel(form, "required", "Required", "attribute-required", "required");
-    addBooleanInputWithLabel(form, "editableInTable", "Editable in table", "attribute-editable-in-table", "editable");
-    addNumberInputWithLabel(form, "linesCount", "Lines count", "attribute-lines-count", 1, 5);
-    addSelectWithLabel(form, "method", "Method", "attribute-method", [ "none", "folder name", "avg", "count" ]);
-    addTextInputWithLabel(form, "maxWidth", "Max width in table", "attribute-max-width");
-    addTextInputWithLabel(form, "minWidth", "Min width in table", "attribute-min-width");
-    addTextInputWithLabel(form, "max", "Max value/length", "attribute-max");
-    addTextInputWithLabel(form, "min", "Min value/length", "attribute-min");
-    addTextInputWithLabel(form, "defaultValue", "Default value", "attribute-default");
-    addNumberInputWithLabel(form, "step", "Step", "attribute-step", 0, 1);
-    addTextInputWithLabel(form, "regex", "Regular expression to check", "attribute-regex");
+    addInputWithLabel("text",     true,  dataElement, "title",           "Title",                       "attribute-title");
+    addInputWithLabel("text",     true,  dataElement, "name",            "Name (unique)",               "attribute-name");    
+    addSelectWithLabel(dataElement, "alignment", "Alignment", "attribute-alignment", alignments);
+    addSelectWithLabel(dataElement, "type", "Type", "attribute-type", types);   
+    addInputWithLabel("text",     true,  dataElement, "selectOptions",   "Select options",              "attribute-select-options");
+    addInputWithLabel("text",     false, dataElement, "dateFormat",      "Date format",                 "attribute-date-format");
+    addInputWithLabel("checkbox", false, dataElement, "visible",         "Visible in table",            "attribute-visible");
+    addInputWithLabel("checkbox", false, dataElement, "required",        "Required",                    "attribute-required");
+    addInputWithLabel("checkbox", false, dataElement, "editableInTable", "Editable in table",           "attribute-editable-in-table");
+    addInputWithLabel("number",   false, dataElement, "linesCount",      "Lines count",                 "attribute-lines-count");
+    addSelectWithLabel(dataElement, "method", "Method", "attribute-method", methods);
+    addInputWithLabel("text",     false, dataElement, "maxWidth",        "Max width in table",          "attribute-max-width");
+    addInputWithLabel("text",     false, dataElement, "minWidth",        "Min width in table",          "attribute-min-width");
+    addInputWithLabel("text",     false, dataElement, "max",             "Max value/length",            "attribute-max");
+    addInputWithLabel("text",     false, dataElement, "min",             "Min value/length",            "attribute-min");
+    addInputWithLabel("text",     true,  dataElement, "defaultValue",    "Default value",               "attribute-default");
+    addInputWithLabel("number",   false, dataElement, "step",            "Step",                        "attribute-step");
+    addInputWithLabel("text",     true,  dataElement, "regex",           "Regular expression to check", "attribute-regex");
 
-    var addButtonOnClickHandler = function() { saveMetaObjectInfo("attribute-form", "/rest/attributes", showAttributes) };
-    addButton(form, attributeId ? "edit-attribute" : "save-attribute", attributeId ? "Edit attribute" : "Save attribute", addButtonOnClickHandler);
-
-    var cancelButton = document.createElement("input");
-	cancelButton.type = "button";
-	cancelButton.value = "Cancel";
-    cancelButton.onclick = function() { showAttributes(); };
-    form.appendChild(cancelButton);
-
-    dataElement.appendChild(form);
+    var saveHandler = function() { saveMetaObjectInfo(DATA_ELEMENT, "/rest/attributes", showAttributes) };
+    var cancelHandler = function() { showAttributes() };
+    addFormButtons(dataElement, attributeId != null, saveHandler, cancelHandler);
 
     // When changing the type other fields may become excess
     document.getElementById("attribute-type").onchange = function() 
     {
         var type = document.getElementById("attribute-type").value;
-        showInputAndLabelIf("attribute-select-options", (type == "select" || type == "multiselect"));
+        showInputAndLabelIf("attribute-select-options", hasOptions(type));
         showInputAndLabelIf("attribute-lines-count", (type == "textarea"));
-        showInputAndLabelIf("attribute-max", (type == "text" || type == "textarea" || type == "number" || type == "inc"));
-        showInputAndLabelIf("attribute-min", (type == "text" || type == "textarea" || type == "number" || type == "inc"));
-        showInputAndLabelIf("attribute-step", (type == "number" || type == "inc"));
-        showInputAndLabelIf("attribute-regex", (type == "text" || type == "textarea" || type == "number" || type == "inc"));
+        showInputAndLabelIf("attribute-max", isTextual(type) || isNumeric(type));
+        showInputAndLabelIf("attribute-min", isTextual(type) || isNumeric(type));
+        showInputAndLabelIf("attribute-step", isNumeric(type));
+        showInputAndLabelIf("attribute-regex", isTextual(type) || isNumeric(type));
         showInputAndLabelIf("attribute-editable-in-table", (type == "select" || type == "inc"));
-        showInputAndLabelIf("attribute-date-format", (type == "save time" || type == "update time"));
-        showInputAndLabelIf("attribute-default", 
-            (type == "text" || type == "textarea" || type == "number" || type == "select" || type == "multiselect" || type == "checkbox" || type == "inc" || type == "url"));
-        showInputAndLabelIf("attribute-required", (type != "save time" && type != "update time"));
+        showInputAndLabelIf("attribute-date-format", hasDateFormat(type));
+        showInputAndLabelIf("attribute-default", (isTextual(type) || isNumeric(type) || hasOptions(type) || type == "checkbox" || type == "url"));
+        showInputAndLabelIf("attribute-required", !hasDateFormat(type) || type == "multiselect" || type == "checkbox");
         showInputAndLabelIf("attribute-visible", !isSkippableAttributeInNotesTable(type));
     }
     document.getElementById("attribute-type").onchange();
-
+    /*
     var dateFormat = document.getElementById("attribute-date-format").parentNode;
     var formatHref = document.createElement("a");
     formatHref.href = "https://momentjs.com/";
     formatHref.text = " examples ";
     formatHref.target = "_blank";
     dateFormat.insertBefore(formatHref, dateFormat.firstChild.nextSibling);
+    */
 }
 
 
@@ -225,30 +217,30 @@ function fillAttributeValuesOnForm(attribute)
     document.getElementById("attribute-lines-count").value = attribute["linesCount"];
 
     document.getElementById("attribute-type").onchange();
-    
-    switch (attribute["type"])
-    {
-        case "text": 
-            break;
-        case "textarea":             
-            break;
-        case "number":
-            break;
-        case "select":
-            break;
-        case "multiselect":
-            break;
-        case "checkbox":
-            break;
-        case "inc":
-            break;
-        case "url":
-            break;
-    }
 }
 
 
 function isSkippableAttributeInNotesTable(type)
 {
     return (type == "textarea" || type == "multiselect" || type == "url" || type == "file");
+}
+
+function hasDateFormat(type)
+{
+    return (type == "save time" || type == "update time");
+}
+
+function hasOptions(type)
+{
+    return (type == "select" || type == "multiselect");
+}
+
+function isTextual(type)
+{
+    return (type == "text" || type == "textarea");
+}
+
+function isNumeric(type)
+{
+    return (type == "number" || type == "inc");
 }

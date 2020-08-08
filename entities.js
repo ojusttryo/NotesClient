@@ -65,7 +65,7 @@ function createEntitiesTableBody(entities)
 	for (var i = 0; i < entities.length; i++)
 	{
 		var tr = document.createElement("tr");
-		tr.className = ENTITY;
+		tr.className += " " + ENTITY;
 		tr.setAttribute(CONTENT_ID, entities[i].id);
 
 		var number = document.createElement("td");
@@ -89,7 +89,7 @@ function createEntitiesTableBody(entities)
         tr.appendChild(visible);
 
 		var editButton = document.createElement("td");
-		editButton.className = EDIT_BUTTON;
+		editButton.className += " " + EDIT_BUTTON;
         editButton.onclick = function() 
         {
             createEntityForm(this.parentNode.getAttribute(CONTENT_ID));
@@ -98,7 +98,7 @@ function createEntitiesTableBody(entities)
 		tr.appendChild(editButton);		
 
 		var deleteButton = document.createElement("td");
-		deleteButton.className = DELETE_BUTTON;
+		deleteButton.className += " " + DELETE_BUTTON;
         deleteButton.onclick = function() 
         {
             fetch(SERVER_ADDRESS + '/rest/entities/' + this.parentNode.getAttribute(CONTENT_ID), { method: "DELETE" })
@@ -119,69 +119,55 @@ function createEntitiesTableBody(entities)
 function createEntityForm(entityId)
 {
     var dataElement = getEmptyElement(DATA_ELEMENT);
-    var form = document.createElement("form");
-    form.id = "entity-form";
+
+    createErrorLabel(dataElement);
+
     if (entityId)
-        form.setAttribute(CONTENT_ID, entityId);
-    else if (form.hasAttribute(CONTENT_ID))
-        form.removeAttribute(CONTENT_ID);
+        setContentId(entityId);
+    else
+        clearContentId();
 
-    var errorLabel = document.createElement("label");
-    errorLabel.id = "error-label";
-    errorLabel.style.display = "none";
-    form.appendChild(errorLabel);
+    addInputWithLabel("text",     true,  dataElement, "title",      "Title",               "entity-title");
+    addInputWithLabel("text",     true,  dataElement, "collection", "Collection (unique)", "entity-collection");
+    addInputWithLabel("checkbox", false, dataElement, "visible",    "Visible",             "entity-visible");
 
-    addTextInputWithLabel(form, "title", "Title", "entity-title");
-    addTextInputWithLabel(form, "collection", "Collection (unique)", "entity-collection");
-    addBooleanInputWithLabel(form, "visible", "Visible", "entity-visible", "visible");
+    var saveHandler = function() { saveMetaObjectInfo(DATA_ELEMENT, "/rest/entities", showEntities) };
+    var cancelHandler = function() { showEntities() };
+    var buttons = addFormButtons(dataElement, entityId != null, saveHandler, cancelHandler);
 
-    var addButtonOnClickHandler = function() { saveMetaObjectInfo("entity-form", "/rest/entities", showEntities) };
-    var saveButton = addButton(form, entityId ? "edit-entity" : "save-entity", entityId ? "Edit entity" : "Save entity", addButtonOnClickHandler);
-
-    var cancelButton = document.createElement("input");
-	cancelButton.type = "button";
-	cancelButton.value = "Cancel";
-    cancelButton.onclick = function() { showEntities(); };
-    form.appendChild(cancelButton);
+    var label = document.createElement("label");
+    label.innerText = "Attributes";
+    label.id = "attributes-label";
+    dataElement.insertBefore(label, buttons);
 
     fetch(SERVER_ADDRESS + "/rest/attributes")
 	.then(response => response.json())
 	.then(attributes => {
-        var label = document.createElement("label");
-        label.innerText = "Attributes";
-        label.id = "attributes-label";
-        form.insertBefore(label, saveButton);
-
         var multiselect = createMultiselectWithCheckboxes("attributes", attributes);
-        label.appendChild(multiselect);
+        dataElement.insertBefore(multiselect, buttons);
 
-        if (entityId)
-        {
-            fetch(SERVER_ADDRESS + '/rest/entities/search?id=' + entityId)
-            .then(response => response.json())
-            .then(entity => {
-                document.getElementById("entity-title").value = entity["title"];
-                document.getElementById("entity-collection").value = entity["collection"];
-                document.getElementById("entity-visible").checked = entity["visible"];
-                var checkboxes = multiselect.getElementsByTagName("input");
-                for (var i = 0; i < entity.attributes.length; i++)
+        if (!entityId)
+            return;
+
+        fetch(SERVER_ADDRESS + '/rest/entities/search?id=' + entityId)
+        .then(response => response.json())
+        .then(entity => {
+            document.getElementById("entity-title").value = entity["title"];
+            document.getElementById("entity-collection").value = entity["collection"];
+            document.getElementById("entity-visible").checked = entity["visible"];
+            var checkboxes = multiselect.getElementsByTagName("input");
+            for (var i = 0; i < entity.attributes.length; i++)
+            {
+                var attribute = entity.attributes[i];
+                for (var j = 0; j < checkboxes.length; j++)
                 {
-                    var attribute = entity.attributes[i];
-                    for (var j = 0; j < checkboxes.length; j++)
+                    if (checkboxes[j].getAttribute("attribute-id") == attribute)
                     {
-                        if (checkboxes[j].getAttribute("attribute-id") == attribute)
-                        {
-                            checkboxes[j].checked = true;
-                            break;
-                        }
+                        checkboxes[j].checked = true;
+                        break;
                     }
                 }
-            });
-        }
-
-        form.insertBefore(multiselect, saveButton);
-        form.insertBefore(document.createElement("br"), saveButton);
+            }
+        });
     });
-
-    dataElement.appendChild(form);
 }

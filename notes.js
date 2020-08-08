@@ -90,7 +90,7 @@ function createNotesTableBody(attributes, notes)
 		var noteAttributes = note.attributes;
 
 		var tr = document.createElement("tr");
-		tr.className = NOTE;
+		tr.className += " " + NOTE;
 		tr.setAttribute(CONTENT_ID, note[ID]);
 
 		//tr.appendChild(createTdWithIcon(NOTE_ICON));
@@ -126,16 +126,7 @@ function createNotesTableBody(attributes, notes)
 					if (attributes[j].editableInTable)
 					{
 						var select = document.createElement("select");
-						if (attr.selectOptions != null)
-						{
-							for (value of attr.selectOptions)
-							{
-								var option = document.createElement("option");
-								option.innerText = value;
-								option.value = value;
-								select.appendChild(option);
-							}
-						}
+						addOptions(select, attr.selectOptions);
 		
 						if (note != null)
 							select.value = valueOrEmptyString(note.attributes[attr.name]);
@@ -243,7 +234,7 @@ function createNotesTableBody(attributes, notes)
 function createButtonToShowNoteEditForm(itemType, id)
 {
 	var editButton = document.createElement("td");
-	editButton.className = EDIT_BUTTON;
+	editButton.className += " " + EDIT_BUTTON;
 	editButton.setAttribute(ITEM_TYPE, itemType);
 	editButton.setAttribute(CONTENT_ID, id);
 	editButton.onclick = function() 
@@ -257,7 +248,7 @@ function createButtonToShowNoteEditForm(itemType, id)
 function createButtonToDeleteNote(itemType, id)
 {
 	var deleteButton = document.createElement("td");
-	deleteButton.className = DELETE_BUTTON;
+	deleteButton.className += " " + DELETE_BUTTON;
 	deleteButton.setAttribute(ITEM_TYPE, itemType);
 	deleteButton.setAttribute(CONTENT_ID, id);
 	deleteButton.onclick = function() 
@@ -289,30 +280,29 @@ function showNoteForm(id)
 {
 	switchToAddEditForm();
 
-	fetch(SERVER_ADDRESS + '/rest/attributes/search?entityId=' + document.getElementById(CONTENT).getAttribute(CONTENT_ID))
+	var u = SERVER_ADDRESS + '/rest/attributes/search?entityId=' + getContentId();
+	fetch(SERVER_ADDRESS + '/rest/attributes/search?entityId=' + getContentId())
 	.then(response => response.json())
 	.then(attributes => {
-		var formContainer = getEmptyElement(DATA_ELEMENT);
-		var form = document.createElement("form");
-		form.id = ADD_FORM;
+		var dataElement = getEmptyElement(DATA_ELEMENT);
+
+		createErrorLabel(dataElement);
 
 		if (id)
 		{
-			fetch(SERVER_ADDRESS + "/rest/notes/" + document.getElementById(CONTENT).getAttribute(CONTENT_TYPE) + "/" + id)
+			var url = SERVER_ADDRESS + "/rest/notes/" + getContentType() + "/" + id;
+			fetch(SERVER_ADDRESS + "/rest/notes/" + getContentType() + "/" + id)
 			.then(response => response.json())
 			.then(note => {
-				//note.attributes = convertArrayToObject(note.attributes);
-				prepareNoteAttributes(form, note, attributes);
-				createNoteActionButtons(form, id);
+				prepareNoteAttributes(dataElement, note, attributes);
+				createNoteActionButtons(dataElement, id);
 			})
 		}
 		else
 		{
-			prepareNoteAttributes(form, null, attributes);
-			createNoteActionButtons(form, id);
+			prepareNoteAttributes(dataElement, null, attributes);
+			createNoteActionButtons(dataElement, id);
 		}
-	
-		formContainer.appendChild(form);
 	});
 }
 
@@ -320,30 +310,22 @@ function showNoteForm(id)
 /**
  * Sets up all attributes settings and fills in current values of note (if not null)
  */
-function prepareNoteAttributes(form, note, attributes)
+function prepareNoteAttributes(dataElement, note, attributes)
 {
 	for (var i = 0; i < attributes.length; i++)
 	{
 		var attribute = attributes[i];
 		var label = document.createElement("label");
 		label.innerText = attribute[TITLE];
-		form.appendChild(label);
+		dataElement.appendChild(label);
 
 		var input;
 		switch (attribute.type)
 		{
 			case "select":
 				input = document.createElement("select");
-				if (attribute.selectOptions != null)
-				{
-					for (value of attribute.selectOptions)
-					{
-						var option = document.createElement("option");
-						option.innerText = value;
-						option.value = value;
-						input.appendChild(option);
-					}
-				}
+				input.required = attribute.required;
+				addOptions(input, attribute.selectOptions);
 
 				if (note != null)
 					input.value = valueOrEmptyString(note.attributes[attribute.name]);
@@ -377,6 +359,7 @@ function prepareNoteAttributes(form, note, attributes)
 				break;
 			case "textarea":
 				input = document.createElement(attribute.type);
+				input.required = attribute.required;
 				input.type = attribute[TYPE];
 				if (attribute.linesCount != null)
 					input.setAttribute("rows", attribute.linesCount);
@@ -390,6 +373,7 @@ function prepareNoteAttributes(form, note, attributes)
 			case "number":
 			case "inc":
 				input = document.createElement("input");
+				input.required = attribute.required;
 				input.type = "number";
 				if (attribute.min != null)
 					input.min = attribute.min;
@@ -415,6 +399,7 @@ function prepareNoteAttributes(form, note, attributes)
 			case "save time":
 			case "update time":
 				input = document.createElement("span");
+				input.required = attribute.required;
 				input.setAttribute(ATTRIBUTE_TYPE, attribute.type);
 				
 				// New note
@@ -442,6 +427,7 @@ function prepareNoteAttributes(form, note, attributes)
 				break;
 			case "user date":
 				input = document.createElement("input");
+				input.required = attribute.required;
 				input.type = "date";
 				input.setAttribute(ATTRIBUTE_TYPE, attribute.type);
 
@@ -451,6 +437,7 @@ function prepareNoteAttributes(form, note, attributes)
 				break;
 			case "user time":
 				input = document.createElement("input");
+				input.required = attribute.required;
 				input.type = "time";
 				input.setAttribute(ATTRIBUTE_TYPE, attribute.type);
 
@@ -460,15 +447,19 @@ function prepareNoteAttributes(form, note, attributes)
 				break;
 			case "file":
 				input = document.createElement("input");
+				input.required = attribute.required;
 				input.type = attribute.type;
 				input.multiple = false;
 				input.setAttribute(ATTRIBUTE_TYPE, attribute.type);
 				input.id = attribute.id;
 				input.style.display = "none";
 				
+				var fileDiv = document.createElement("div");
+
 				var fileName = document.createElement("label");
 				fileName.id = input.id + "-label";
-				fileName.className = "file";
+				fileName.className += " file";
+				fileDiv.appendChild(fileName);
 				//fileName.setAttribute("for", input.id);
 				fileName.onclick = function()
 				{
@@ -499,25 +490,24 @@ function prepareNoteAttributes(form, note, attributes)
 						});
 					}
 				};
-				form.appendChild(fileName);
 
 				var fileButton = document.createElement("input");
 				fileButton.type = "button";
+				fileButton.id = input.id + "-button";
 				fileButton.setAttribute("related-button-id", input.id);
-				fileButton.className = "fileButton";
+				fileButton.className += " fileButton";
 				fileButton.value = "Upload file";
 				fileButton.onclick = function() 
 				{
 					var relatedButtonId = this.getAttribute("related-button-id");
 					document.getElementById(relatedButtonId).click();
 				}
-				form.appendChild(fileButton);
+				fileDiv.appendChild(fileButton);
+
+				dataElement.appendChild(fileDiv);
 
 				if (note != null && note.attributes[attribute.name] != null)
 				{
-					fileButton.value = "Upload new file";
-					fileName.setAttribute("file-id", note.attributes[attribute.name]);
-
 					fetch(SERVER_ADDRESS + "/rest/file/" + note.attributes[attribute.name] + "/metadata", {
 						method: "GET",
 						headers:
@@ -528,7 +518,10 @@ function prepareNoteAttributes(form, note, attributes)
 					})
 					.then(response => response.json())
 					.then(json => {
+						input.setAttribute(ATTRIBUTE_VALUE, note.attributes[attribute.name]);
+						fileName.setAttribute("file-id", note.attributes[attribute.name]);
 						fileName.innerText = json.title;
+						fileButton.value = "Upload new file";
 					})
 				}
 
@@ -554,10 +547,10 @@ function prepareNoteAttributes(form, note, attributes)
 					.then(response => {
 						if (!response.message)
 						{
-							this.setAttribute("file-id", response);
 							this.setAttribute(ATTRIBUTE_VALUE, response);
-							this.previousSibling.value = "Upload new file";
-							this.previousSibling.previousSibling.innerText = event.target.files[0].name;
+							document.getElementById(this.id + "-label").setAttribute("file-id", response);
+							document.getElementById(this.id + "-label").innerText = event.target.files[0].name;
+							document.getElementById(this.id + "-button").value = "Upload new file";
 						}
 					});
 				};
@@ -566,6 +559,7 @@ function prepareNoteAttributes(form, note, attributes)
 			// text, url, ...
 			default:
 				input = document.createElement("input");
+				input.required = attribute.required;
 				input.type = attribute[TYPE];
 				if (note != null)
 					input.value = valueOrEmptyString(note.attributes[attribute.name]);
@@ -574,43 +568,31 @@ function prepareNoteAttributes(form, note, attributes)
 				break;				
 		}
 
-		// Limiting length of text attributes
-		if (attribute.type == "textarea" || attribute.type == "text")
+		if (isTextual(attribute.type))
 		{
 			if (attribute.max != null)
 				input.maxLength = attribute.max;
+			if (attribute.min != null)
+				input.minLength = attribute.min;
 		}
 
 		input.setAttribute(ATTRIBUTE_NAME, attribute[NAME]);
 		input.setAttribute(ATTRIBUTE_ID, attribute[ID]);
 		
-		form.appendChild(input);
+		dataElement.appendChild(input);
 	}
 }
 
 
-function createNoteActionButtons(form, id)
+function createNoteActionButtons(dataElement, id)
 {
-	var saveButton = document.createElement("input");
-	saveButton.type = "button";
-	saveButton.value = "Save";
-	saveButton.onclick = function() 
+	var saveHandler = function() 
 	{
-		var addForm = document.getElementById("add-form");
 		var objectToSave = new Object();
 		objectToSave.id = id;
-		objectToSave.attributes = getMetaObjectFromForm(addForm);
+		objectToSave.attributes = getMetaObjectFromForm(dataElement);
 
-		//objectToSave.attributes = convertObjectToArray(objectToSave.attributes);
-		/*
-		for (var prop in objectToSave.attributes)
-		{
-			if (objectToSave.attributes[prop] instanceof Object)
-				objectToSave.attributes[prop] = JSON.stringify(objectToSave.attributes[prop]) 
-		}
-		*/
-
-		fetch(SERVER_ADDRESS + '/rest/notes/' + document.getElementById(CONTENT).getAttribute(CONTENT_TYPE), {
+		fetch(SERVER_ADDRESS + '/rest/notes/' + getContentType(), {
 			method: objectToSave.id == null ? "POST" : "PUT",
 			body: JSON.stringify(objectToSave),
 			headers:
@@ -624,86 +606,9 @@ function createNoteActionButtons(form, id)
 				showCurrentContent();
 		});
 	};
+	var editHandler = function() { showCurrentContent() };
 
-	var hidden = document.createElement("input");
-	hidden.type = "hidden";
-	hidden.id = CONTENT_ID;
-	hidden.value = id;
-
-	var cancelButton = document.createElement("input");
-	cancelButton.type = "button";
-	cancelButton.value = "Cancel";
-	cancelButton.onclick = function() { showCurrentContent(); };
-
-	form.appendChild(document.createElement("br"));
-	form.appendChild(hidden);
-	form.appendChild(saveButton);
-	form.appendChild(cancelButton);
-}
-
-
-/**
- * Get note from the add/edit form
- * @param {Object} form - <form>, that contains requested data
- */
-function getNoteAttributesFromForm(form)
-{
-	var result = [];
-
-	var allNodes = form.getElementsByTagName('*');
-	for (var i = 0; i < allNodes.length; i++)
-	{
-		var currentNode = allNodes[i];
-		var attributeName = currentNode.getAttribute(ATTRIBUTE_NAME);
-		if (attributeName != null)
-		{
-			var attribute = new Object();
-
-			if (currentNode.type && currentNode.type === 'checkbox')
-			{
-				attribute[attributeName] = currentNode.checked;
-			}
-			else if (currentNode.type && (currentNode.type === 'select'))
-			{
-				var array = [];
-				var length = currentNode.options.length;
-				for (var j = 0; j < length; j++)
-				{
-					var option = currentNode.options[j];
-					if (currentNode.options[j].selected === true)
-						array.push(option.id);
-				}
-				attribute[attributeName] = array;
-			}
-
-			else if (currentNode.id != null && currentNode.id.toString().startsWith("checkboxes-"))
-			{
-				var array = [];				
-				var checkboxes = currentNode.getElementsByTagName("input");
-				//result[attributeName] = new Array();
-				for (var j = 0; j < checkboxes.length; j++)
-				{
-					if (checkboxes[j].type == "checkbox" && checkboxes[j].checked == true)
-						result[attributeName].push(checkboxes[j].getAttribute("title"));
-					else if (checkboxes[j].getAttribute("title") != null && checkboxes[j].checked == true)
-						result[attributeName].push(checkboxes[j].getAttribute("title"));
-				}
-			}
-
-			else if (currentNode.type && currentNode.value.length > 0)
-			{
-				attribute[attributeName] = currentNode.value;
-			}
-			else 
-			{
-				attribute[attributeName] = null;
-			}
-
-			result.push(attribute);
-		}
-	}
-
-	return result;
+	addFormButtons(dataElement, id != null, saveHandler, editHandler);
 }
 
 

@@ -108,7 +108,7 @@ function switchToAddEditForm()
 	hideHtmlElementById(DATA_TABLE);
 	hideHtmlElementById(DATA_MENU);
 	hideHtmlElementById(HISTORY);
-	showHtmlElementById(DATA_ELEMENT);
+	showHtmlGridElementById(DATA_ELEMENT);
 }
 
 
@@ -125,7 +125,7 @@ function switchToMainPage()
 function updateContentTableVisibility()
 {
 	if (document.getElementById(DATA_TABLE).childNodes[1].childNodes.length > 0)
-		showHtmlElementById(DATA_TABLE);
+		showHtmlGridElementById(DATA_TABLE);
 	else
 		hideHtmlElementById(DATA_TABLE);
 }
@@ -182,13 +182,13 @@ function getEmptyElement(id)
 
 /**
  * Get meta object from the add/edit form
- * @param {Object} form - <form>, that contains requested data
+ * @param {Object} form - html element, that contains requested data
  */
-function getMetaObjectFromForm(form)
+function getMetaObjectFromForm(parent)
 {
 	var result = new Object();
 
-	var allNodes = form.getElementsByTagName('*');
+	var allNodes = parent.getElementsByTagName('*');
 	for (var i = 0; i < allNodes.length; i++)
 	{
 		var currentNode = allNodes[i];
@@ -200,11 +200,9 @@ function getMetaObjectFromForm(form)
 		var attributeValue = currentNode.getAttribute(ATTRIBUTE_VALUE);
 		if (attributeName != null)
 		{
-			if (currentNode.type && currentNode.type === 'checkbox')
-			{
+			if (currentNode.type == 'checkbox')
 				result[attributeName] = currentNode.checked;
-			}
-			else if (currentNode.type && (currentNode.type === 'select' || currentNode.type === 'select-multiple'))
+			else if (currentNode.type == 'select')
 			{
 				var array = [];
 				var length = currentNode.options.length;
@@ -214,11 +212,12 @@ function getMetaObjectFromForm(form)
 					if (currentNode.options[j].selected === true)
 						array.push(option.id);
 				}
+				if (array.length == 0 && currentNode.required)
+				{
+					showError("Required value is not set (" + attributeName + ")");
+					throw "Required value is not set";
+				}
 				result[attributeName] = array;
-			}
-			else if (currentNode.id == "attribute-select-options")
-			{
-				result[attributeName] = currentNode.value.split(";");
 			}
 			else if (currentNode.id != null && currentNode.id.toString().startsWith("checkboxes-"))
 			{
@@ -232,22 +231,18 @@ function getMetaObjectFromForm(form)
 						result[attributeName].push(checkboxes[j].getAttribute("title"));
 				}
 			}
+			else if (currentNode.id == "attribute-select-options")
+				result[attributeName] = currentNode.value.split(";");
 			else if (attributeType && attributeType == "save time" || attributeType == "update time")
-			{
 				result[attributeName] = attributeValue ? parseInt(attributeValue) : Date.now();
-			}
-			// Probably this one might be replaced by default (the last one)
-			else if (attributeType && attributeType == "user date")
-			{
-				result[attributeName] = currentNode.value;
-			}
-			else if (attributeType && attributeType == "file")
-			{
+			else if (attributeType && attributeType == "file" && attributeValue && attributeValue.length > 0)
 				result[attributeName] = attributeValue;
-			}
 			else if (currentNode.value != null && currentNode.value.length > 0)
-			{
 				result[attributeName] = currentNode.value;
+			else if (currentNode.required)
+			{
+				showError("Required value is not set (" + attributeName + ")");
+				throw "Required value is not set";
 			}
 		}
 	}
@@ -264,6 +259,12 @@ function getMetaObjectFromForm(form)
 function showHtmlElementById(id)
 {
 	document.getElementById(id).style.display = "block";
+}
+
+
+function showHtmlGridElementById(id)
+{
+	document.getElementById(id).style.display = "grid";
 }
 
 
@@ -306,11 +307,11 @@ function addLeadingZeroIfLessThan10(number)
 function createMultiselectWithCheckboxes(attrName, options)
 {
 	var multiselect = document.createElement("div");
-	multiselect.className = "multiselect";
+	multiselect.className += " multiselect doNotStretch";
 
 	var selectBox = document.createElement("div");
-	selectBox.className = "selectBox";
-	selectBox.setAttribute("attribute", attrName);	// not ATTRIBUTE_NAME, but "attribute", to extract this element from search when the object is being created from form
+	selectBox.className += " selectBox doNotStretch";
+	selectBox.setAttribute("attribute", attrName);
 	selectBox.onclick = function() { showCheckboxes(this); };
 
 	var select = document.createElement("select");
@@ -320,7 +321,7 @@ function createMultiselectWithCheckboxes(attrName, options)
 		for (var i = 0; i < children.length; i++)
 		{
 			if (children[i].id.startsWith("checkboxes-"))
-				children[i].style.display = "block";
+				children[i].style.display = "grid";
 		}
 	}
 
@@ -329,7 +330,7 @@ function createMultiselectWithCheckboxes(attrName, options)
 	select.appendChild(option);
 
 	var overSelect = document.createElement("div");
-	overSelect.className = "overSelect";
+	overSelect.className += " overSelect";
 
 	selectBox.appendChild(select);
 	selectBox.appendChild(overSelect);
@@ -374,7 +375,142 @@ function showCheckboxes(selectBox)
 {
 	var attrName = selectBox.getAttribute("attribute");
 	var checkboxes = document.getElementById("checkboxes-" + attrName);
-	checkboxes.style.display = checkboxes.style.display == "block" ? "none" : "block";
+	checkboxes.style.display = checkboxes.style.display == "grid" ? "none" : "grid";
+}
+
+
+
+function saveMetaObjectInfo(parentId, restUrl, afterSaveHandler)
+{
+    var parent = document.getElementById(parentId);
+    var objectToSave = getMetaObjectFromForm(parent);
+    var id = getContentId();
+    if (id)
+        objectToSave.id = id;
+
+    fetch(SERVER_ADDRESS + restUrl, {
+        method: id ? "PUT" : "POST",
+        body: JSON.stringify(objectToSave),
+        headers:
+        {
+            "Accept": "application/json;charset=UTF-8",
+            "Content-Type": "application/json;charset=UTF-8"
+        }
+    })
+    .then(response => {
+		
+		if (response.status === 200)
+		{
+			hideError();
+			afterSaveHandler();
+		}
+		else if (response.status == 500)
+		{
+			return response.json();
+
+		}
+	})
+	.then(error => {
+		if (error)
+			showError(error.message);
+	});
+}
+
+
+function addInputWithLabel(type, stretch, parent, attrName, labelText, inputId)
+{
+    var input = document.createElement("input");
+    input.type = type;
+    input.id = inputId;
+	input.setAttribute(ATTRIBUTE_NAME, attrName);
+	if (!stretch)
+		input.className += " doNotStretch";
+
+	var label = document.createElement("label");
+	label.innerText = labelText;
+	label.setAttribute("for", input.id);
+
+	parent.appendChild(label);
+    parent.appendChild(input);    
+}
+
+
+function addSelectWithLabel(parent, attrName, labelText, inputId, options)
+{
+    var select = document.createElement("select");
+    select.id = inputId;
+	select.setAttribute(ATTRIBUTE_NAME, attrName);
+	select.className += " doNotStretch";
+
+	addOptions(select, options);
+
+    var label = document.createElement("label");
+	label.innerText = labelText;
+	label.setAttribute("for", inputId);
+
+	parent.appendChild(label);
+    parent.appendChild(select);
+}
+
+
+function addButton(parent, buttonId, buttonValue, onclick)
+{
+    var input = document.createElement("input");
+    input.type = "button";
+    input.id = buttonId;
+	input.value = buttonValue;
+	input.style.display = "grid";
+	input.className += " doNotStretch";
+    input.onclick = onclick;
+
+    parent.appendChild(input);
+
+    return input;
+}
+
+
+function createTdWithIcon(iconClassName)
+{
+	var icon = document.createElement("td");
+	icon.className += " " + iconClassName;
+	return icon;
+}
+
+function drawHeader(name)
+{
+	var header = document.getElementById("header");
+	header.innerHTML = "";
+
+	var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+	svg.setAttribute("width", header.clientWidth);
+	svg.setAttribute("height", header.clientHeight);
+
+	var text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+	text.setAttribute("fill", "red");
+	text.setAttribute("text-anchor", "middle");
+	text.setAttribute("dominant-baseline", "middle");
+	text.textContent = name;
+	text.setAttribute("x", "50%");
+	text.setAttribute("y", "50%");
+
+	svg.appendChild(text);	
+	header.appendChild(svg);
+}
+
+function showInputAndLabelIf(inputId, needToShow)
+{
+	document.getElementById(inputId).previousSibling.style.display = needToShow ? 'grid' : 'none';
+	document.getElementById(inputId).style.display = needToShow ? 'grid' : 'none';
+}
+
+function valueOrEmptyString(value)
+{
+	return value ? value : "";
+}
+
+function isBoolean(value)
+{
+	return (value == "true" || value == "false");
 }
 
 /**
@@ -407,176 +543,67 @@ function convertObjectToArray(attributes)
 }
 
 
-function saveMetaObjectInfo(formId, restUrl, afterSaveHandler)
+function getContentId()
 {
-    var form = document.getElementById(formId);
-    var objectToSave = getMetaObjectFromForm(form);
-    var id = form.getAttribute(CONTENT_ID);
-    if (id)
-        objectToSave.id = id;
+	return document.getElementById(CONTENT).getAttribute(CONTENT_ID);
+}
 
+function setContentId(id)
+{
+	document.getElementById(CONTENT).setAttribute(CONTENT_ID, id);
+}
+
+function clearContentId()
+{
+	document.getElementById(CONTENT).removeAttribute(CONTENT_ID);
+}
+
+function getContentType()
+{
+	return document.getElementById(CONTENT).getAttribute(CONTENT_TYPE);
+}
+
+function addOptions(select, options)
+{
+	for (var value of options)
+	{
+		var option = document.createElement("option");
+		option.innerText = value;
+		option.value = value;
+		select.appendChild(option);
+	}
+}
+
+function showError(message)
+{
 	var errorLabel = document.getElementById("error-label");
-    fetch(SERVER_ADDRESS + restUrl, {
-        method: id ? "PUT" : "POST",
-        body: JSON.stringify(objectToSave),
-        headers:
-        {
-            "Accept": "application/json;charset=UTF-8",
-            "Content-Type": "application/json;charset=UTF-8"
-        }
-    })
-    .then(response => {
-		
-		if (response.status === 200)
-		{
-			errorLabel.style.display = "none";
-			afterSaveHandler();
-		}
-		else if (response.status == 500)
-		{
-			return response.json();
-
-		}
-	})
-	.then(error => {
-		if (error)
-		{
-			errorLabel.style.display = "block";
-			errorLabel.innerText = error.message;
-			errorLabel.focus();
-		}
-	});
+	errorLabel.style.display = "inline-grid";
+	errorLabel.innerText = message;
+	errorLabel.focus();
 }
 
-
-/**
- * Adds to parent following HTML:
- * <label>[labelText]<input type="checkbox" attribute-name=[attrName] id=[inputId] value=[value]></label>
- */
-function addBooleanInputWithLabel(parent, attrName, labelText, inputId, value)
+function hideError()
 {
-    var label = document.createElement("label");
-    label.innerText = labelText;
-
-    var input = document.createElement("input");
-    input.type = "checkbox";
-    input.id = inputId;
-    input.value = value;
-    input.setAttribute(ATTRIBUTE_NAME, attrName);
-
-    label.appendChild(input);
-    parent.appendChild(label);
+	document.getElementById("error-label").style.display = "none";
 }
 
-
-function addTextInputWithLabel(parent, attrName, labelText, inputId)
+function createErrorLabel(dataElement)
 {
-    var label = document.createElement("label");
-    label.innerText = labelText;
-
-    var input = document.createElement("input");
-    input.type = "text";
-    input.id = inputId;
-	input.setAttribute(ATTRIBUTE_NAME, attrName);
-
-    label.appendChild(input);
-    parent.appendChild(label);
+	var errorLabel = document.createElement("label");
+    errorLabel.id = "error-label";
+    errorLabel.style.display = "none";
+    errorLabel.className += " twoCols";
+    dataElement.appendChild(errorLabel);
 }
 
-
-function addNumberInputWithLabel(parent, attrName, labelText, inputId)
+function addFormButtons(parent, isNewObject, saveHandler, cancelHandler)
 {
-    var label = document.createElement("label");
-    label.innerText = labelText;
-
-    var input = document.createElement("input");
-    input.type = "number";
-    input.id = inputId;
-    input.setAttribute(ATTRIBUTE_NAME, attrName);
-
-    label.appendChild(input);
-    parent.appendChild(label);
+	var buttons = document.createElement("div");
+    buttons.className += " objectButtons";
+    buttons.className += " twoCols";
+    addButton(buttons, "save-button", isNewObject ? "Edit" : "Save", saveHandler);
+    addButton(buttons, "cancel-button", "Cancel", cancelHandler);
+	parent.appendChild(buttons);
+	
+	return buttons;
 }
-
-
-function addSelectWithLabel(parent, attrName, labelText, inputId, options)
-{
-    var label = document.createElement("label");
-    label.innerText = labelText;
-
-    var select = document.createElement("select");
-    select.id = inputId;
-	select.setAttribute(ATTRIBUTE_NAME, attrName);
-
-    var values = options.values();
-    for (value of values)
-    {
-        var option = document.createElement("option");
-        option.innerText = value;
-        option.value = value;
-        select.appendChild(option);
-    }
-
-    label.appendChild(select);
-    parent.appendChild(label);
-}
-
-
-function addButton(parent, buttonId, buttonValue, onclick)
-{
-    var input = document.createElement("input");
-    input.type = "button";
-    input.id = buttonId;
-    input.value = buttonValue;
-    input.onclick = onclick;
-
-    parent.appendChild(input);
-
-    return input;
-}
-
-
-function createTdWithIcon(iconClassName)
-{
-	var icon = document.createElement("td");
-	icon.className = iconClassName;
-	return icon;
-}
-
-function drawHeader(name)
-{
-	var header = document.getElementById("header");
-	header.innerHTML = "";
-
-	var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-	svg.setAttribute("width", header.clientWidth);
-	svg.setAttribute("height", header.clientHeight);
-
-	var text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-	text.setAttribute("fill", "red");
-	text.setAttribute("text-anchor", "middle");
-	text.setAttribute("dominant-baseline", "middle");
-	text.textContent = name;
-	text.setAttribute("x", "50%");
-	text.setAttribute("y", "50%");
-
-	svg.appendChild(text);	
-	header.appendChild(svg);
-}
-
-function showInputAndLabelIf(inputId, needToShow)
-{
-	//document.getElementById(inputId).parentNode.style.visibility = needToHide ? 'visible' : 'hidden';
-	document.getElementById(inputId).parentNode.style.display = needToShow ? 'block' : 'none';
-}
-
-function valueOrEmptyString(value)
-{
-	return value ? value : "";
-}
-
-function isBoolean(value)
-{
-	return (value == "true" || value == "false");
-}
-

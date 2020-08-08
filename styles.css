@@ -4,12 +4,11 @@
 	padding: 0;
 }
 
-#body
+body
 {
-	background-color: yellow;;
+	background-color: yellow;
+	font-size: 20px;
 }
-
-
 
 
 #header
@@ -35,6 +34,7 @@
 #menu
 {
 	width: 200px;
+	max-width: 15%;
 	order: 1;
 	background-color: green;
 }
@@ -45,8 +45,6 @@
 }
 
 
-
-
 #content
 {
 	order: 2;
@@ -55,10 +53,52 @@
 }
 
 
-
-label
+input, select
 {
-	display: block;
+	font-size: 15px;
+}
+
+input[type=checkbox]
+{
+	transform: scale(1.5);
+	width: 1.5vw;
+}
+
+
+#data-table, #data-element
+{
+	display: grid;
+	grid-template-columns: min-content auto;
+	grid-row-gap: 5px;
+	grid-column-gap: 20px;
+	margin: 15px;
+}
+
+
+.twoCols
+{
+	grid-column-start: 1;
+	grid-column-end: 3;
+}
+
+.objectButtons
+{
+	display: grid;
+	grid-template-columns: min-content min-content;
+	grid-column-gap: 1vw;
+	justify-items: left;
+	justify-self: left;
+	justify-content: start;
+}
+
+.doNotStretch
+{
+	justify-self: left;
+}
+
+#data-element label
+{
+	white-space: nowrap;
 }
 
 #error-label
@@ -135,6 +175,15 @@ label
 	right: 0;
 	top: 0;
 	bottom: 0;
+}
+
+#checkboxes-attributes
+{
+	display: grid;
+	grid-template-columns: min-content;
+	justify-items: left;
+	justify-self: left;
+	justify-content: start;
 }
 
 .checkboxes
