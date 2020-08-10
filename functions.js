@@ -235,7 +235,7 @@ function getMetaObjectFromForm(parent)
 				result[attributeName] = currentNode.value.split(";");
 			else if (attributeType && attributeType == "save time" || attributeType == "update time")
 				result[attributeName] = attributeValue ? parseInt(attributeValue) : Date.now();
-			else if (attributeType && attributeType == "file" && attributeValue && attributeValue.length > 0)
+			else if (attributeType && isFile(attributeType) && attributeValue && attributeValue.length > 0)
 				result[attributeName] = attributeValue;
 			else if (currentNode.value != null && currentNode.value.length > 0)
 				result[attributeName] = currentNode.value;

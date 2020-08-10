@@ -140,7 +140,7 @@ function createAttributeForm(attributeId)
         clearContentId();
 
     var alignments = [ "left", "right", "center" ];
-    var types = [ "text", "textarea", "number", "select", "multiselect", "checkbox", "inc", "url", "save time", "update time", "user date", "user time", "file" ];
+    var types = [ "text", "textarea", "number", "select", "multiselect", "checkbox", "inc", "url", "save time", "update time", "user date", "user time", "file", "image" ];
     var methods = [ "none", "folder name", "avg", "count" ];
 
     addInputWithLabel("text",     true,  dataElement, "title",           "Title",                       "attribute-title");
@@ -154,10 +154,10 @@ function createAttributeForm(attributeId)
     addInputWithLabel("checkbox", false, dataElement, "editableInTable", "Editable in table",           "attribute-editable-in-table");
     addInputWithLabel("number",   false, dataElement, "linesCount",      "Lines count",                 "attribute-lines-count");
     addSelectWithLabel(dataElement, "method", "Method", "attribute-method", methods);
-    addInputWithLabel("text",     false, dataElement, "maxWidth",        "Max width in table",          "attribute-max-width");
-    addInputWithLabel("text",     false, dataElement, "minWidth",        "Min width in table",          "attribute-min-width");
-    addInputWithLabel("text",     false, dataElement, "max",             "Max value/length",            "attribute-max");
-    addInputWithLabel("text",     false, dataElement, "min",             "Min value/length",            "attribute-min");
+    addInputWithLabel("text",     false, dataElement, "maxWidth",        "Max width",                   "attribute-max-width");
+    addInputWithLabel("text",     false, dataElement, "minWidth",        "Min width",                   "attribute-min-width");
+    addInputWithLabel("text",     false, dataElement, "max",             "Max value/length/size",       "attribute-max");
+    addInputWithLabel("text",     false, dataElement, "min",             "Min value/length/size",       "attribute-min");
     addInputWithLabel("text",     true,  dataElement, "defaultValue",    "Default value",               "attribute-default");
     addInputWithLabel("number",   false, dataElement, "step",            "Step",                        "attribute-step");
     addInputWithLabel("text",     true,  dataElement, "regex",           "Regular expression to check", "attribute-regex");
@@ -172,14 +172,14 @@ function createAttributeForm(attributeId)
         var type = document.getElementById("attribute-type").value;
         showInputAndLabelIf("attribute-select-options", hasOptions(type));
         showInputAndLabelIf("attribute-lines-count", (type == "textarea"));
-        showInputAndLabelIf("attribute-max", isTextual(type) || isNumeric(type));
-        showInputAndLabelIf("attribute-min", isTextual(type) || isNumeric(type));
+        showInputAndLabelIf("attribute-max", isTextual(type) || isNumeric(type) || isFile(type));
+        showInputAndLabelIf("attribute-min", isTextual(type) || isNumeric(type) || isFile(type));
         showInputAndLabelIf("attribute-step", isNumeric(type));
         showInputAndLabelIf("attribute-regex", isTextual(type) || isNumeric(type));
         showInputAndLabelIf("attribute-editable-in-table", (type == "select" || type == "inc"));
         showInputAndLabelIf("attribute-date-format", hasDateFormat(type));
         showInputAndLabelIf("attribute-default", (isTextual(type) || isNumeric(type) || hasOptions(type) || type == "checkbox" || type == "url"));
-        showInputAndLabelIf("attribute-required", !hasDateFormat(type) || type == "multiselect" || type == "checkbox");
+        showInputAndLabelIf("attribute-required", !(hasDateFormat(type) || type == "multiselect" || type == "checkbox"));
         showInputAndLabelIf("attribute-visible", !isSkippableAttributeInNotesTable(type));
     }
     document.getElementById("attribute-type").onchange();
@@ -222,7 +222,7 @@ function fillAttributeValuesOnForm(attribute)
 
 function isSkippableAttributeInNotesTable(type)
 {
-    return (type == "textarea" || type == "multiselect" || type == "url" || type == "file");
+    return (type == "textarea" || type == "multiselect" || type == "url" || isFile(type));
 }
 
 function hasDateFormat(type)
@@ -243,4 +243,9 @@ function isTextual(type)
 function isNumeric(type)
 {
     return (type == "number" || type == "inc");
+}
+
+function isFile(type)
+{
+    return (type == "file" || type == "image" || type == "video");
 }

@@ -446,13 +446,16 @@ function prepareNoteAttributes(dataElement, note, attributes)
 
 				break;
 			case "file":
+			case "image":
 				input = document.createElement("input");
 				input.required = attribute.required;
-				input.type = attribute.type;
+				input.type = "file";
 				input.multiple = false;
 				input.setAttribute(ATTRIBUTE_TYPE, attribute.type);
 				input.id = attribute.id;
 				input.style.display = "none";
+				if (attribute.type == "image")
+					input.setAttribute("accept", "image/*")
 				
 				var fileDiv = document.createElement("div");
 
@@ -460,7 +463,6 @@ function prepareNoteAttributes(dataElement, note, attributes)
 				fileName.id = input.id + "-label";
 				fileName.className += " file";
 				fileDiv.appendChild(fileName);
-				//fileName.setAttribute("for", input.id);
 				fileName.onclick = function()
 				{
 					var fileId = this.getAttribute("file-id");
@@ -486,7 +488,6 @@ function prepareNoteAttributes(dataElement, note, attributes)
 								setTimeout(() => document.body.removeChild(a), 0);
     							//window.location.assign(file);
 							}
-							var d = null;
 						});
 					}
 				};
@@ -505,24 +506,24 @@ function prepareNoteAttributes(dataElement, note, attributes)
 				fileDiv.appendChild(fileButton);
 
 				dataElement.appendChild(fileDiv);
+				if (attribute.type == "image")
+				{
+					var image = document.createElement("img");
+					image.id = input.id + "-image";
+					image.style.display = "none";
+					image.className += " twoCols";
+					image.alt = attribute.title;
+					if (attribute.maxWidth)
+						image.style.maxWidth = attribute.maxWidth;
+					if (attribute.maxHeight)
+						image.style.maxHeight = attribute.maxHeight;
+					image.style.justifySelf = attribute.alignment;
+					dataElement.appendChild(image);
+				}
 
 				if (note != null && note.attributes[attribute.name] != null)
 				{
-					fetch(SERVER_ADDRESS + "/rest/file/" + note.attributes[attribute.name] + "/metadata", {
-						method: "GET",
-						headers:
-						{
-							"Accept": "application/json;charset=UTF-8",
-							"Content-Type": "application/json;charset=UTF-8"
-						}
-					})
-					.then(response => response.json())
-					.then(json => {
-						input.setAttribute(ATTRIBUTE_VALUE, note.attributes[attribute.name]);
-						fileName.setAttribute("file-id", note.attributes[attribute.name]);
-						fileName.innerText = json.title;
-						fileButton.value = "Upload new file";
-					})
+					asyncDownloadCurrentFileInfo(note.attributes[attribute.name], attribute.id, attribute.type);
 				}
 
 				input.onchange = function(event)
@@ -533,10 +534,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 					fetch(SERVER_ADDRESS + '/rest/file', {
 						method: "POST",
 						body: formData,
-						headers:
-						{
-							"Accept": "application/json;charset=UTF-8",
-						}
+						headers: { "Accept": "application/json;charset=UTF-8" }
 					})
 					.then(response => {
 						if (response.status === 200)
@@ -547,10 +545,29 @@ function prepareNoteAttributes(dataElement, note, attributes)
 					.then(response => {
 						if (!response.message)
 						{
-							this.setAttribute(ATTRIBUTE_VALUE, response);
-							document.getElementById(this.id + "-label").setAttribute("file-id", response);
+							var newFileId = response;
+							this.setAttribute(ATTRIBUTE_VALUE, newFileId);
+							document.getElementById(this.id + "-label").setAttribute("file-id", newFileId);
 							document.getElementById(this.id + "-label").innerText = event.target.files[0].name;
 							document.getElementById(this.id + "-button").value = "Upload new file";
+							if (this.getAttribute(ATTRIBUTE_TYPE) == "image")
+							{
+								fetch(SERVER_ADDRESS + "/rest/file/" + newFileId + "/content")
+								.then(response => {
+									if (response.status === 200)
+										return response.blob();
+								})
+								.then(data => {
+									if (data)
+									{
+										var file = window.URL.createObjectURL(data);
+										var img = document.getElementById(this.id + "-image");
+										img.setAttribute("download", event.target.files[0].name);
+										img.setAttribute("src", file);
+										img.style.display = "grid";
+									}
+								});
+							}
 						}
 					});
 				};
@@ -581,6 +598,43 @@ function prepareNoteAttributes(dataElement, note, attributes)
 		
 		dataElement.appendChild(input);
 	}
+}
+
+
+function asyncDownloadCurrentFileInfo(fileId, inputId, attributeType)
+{
+	fetch(SERVER_ADDRESS + "/rest/file/" + fileId + "/metadata", {
+		method: "GET",
+		headers: { "Accept": "application/json;charset=UTF-8", "Content-Type": "application/json;charset=UTF-8" }
+	})
+	.then(response => response.json())
+	.then(json => {
+		document.getElementById(inputId).setAttribute(ATTRIBUTE_VALUE, fileId);
+		document.getElementById(inputId + "-label").setAttribute("file-id", fileId);
+		document.getElementById(inputId + "-label").innerText = json.title;
+		document.getElementById(inputId + "-button").value = "Upload new file";
+
+		if (attributeType == "image")
+		{
+			fetch(SERVER_ADDRESS + "/rest/file/" + fileId + "/content")
+			.then(response => {
+				if (response.status === 200)
+				{
+					return response.blob();
+				}
+			})
+			.then(data => {
+				if (data)
+				{
+					var file = window.URL.createObjectURL(data);
+					var img = document.getElementById(inputId + "-image");
+					img.setAttribute("download", json.title);
+					img.setAttribute("src", file);
+					img.style.display = "grid";
+				}
+			});
+		}
+	})
 }
 
 
