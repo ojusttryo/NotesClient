@@ -363,6 +363,8 @@ function prepareNoteAttributes(dataElement, note, attributes)
 				input.type = attribute[TYPE];
 				if (attribute.linesCount != null)
 					input.setAttribute("rows", attribute.linesCount);
+				if (attribute.regex != null)
+					input.placeholder = attribute.regex;
 
 				if (note != null)
 					input.value = valueOrEmptyString(note.attributes[attribute.name]);
@@ -452,6 +454,10 @@ function prepareNoteAttributes(dataElement, note, attributes)
 				input.type = "file";
 				input.multiple = false;
 				input.setAttribute(ATTRIBUTE_TYPE, attribute.type);
+				if (attribute.max)
+					input.setAttribute(MAX_SIZE, attribute.max);
+				if (attribute.min)
+					input.setAttribute(MIN_SIZE, attribute.min);
 				input.id = attribute.id;
 				input.style.display = "none";
 				if (attribute.type == "image")
@@ -486,7 +492,6 @@ function prepareNoteAttributes(dataElement, note, attributes)
 								document.body.appendChild(a);
 								a.click();
 								setTimeout(() => document.body.removeChild(a), 0);
-    							//window.location.assign(file);
 							}
 						});
 					}
@@ -494,10 +499,8 @@ function prepareNoteAttributes(dataElement, note, attributes)
 
 				var fileButton = document.createElement("input");
 				fileButton.type = "button";
-				fileButton.id = input.id + "-button";
 				fileButton.setAttribute("related-button-id", input.id);
-				fileButton.className += " fileButton";
-				fileButton.value = "Upload file";
+				fileButton.className += " " + UPLOAD_FILE_BUTTON;
 				fileButton.onclick = function() 
 				{
 					var relatedButtonId = this.getAttribute("related-button-id");
@@ -505,7 +508,34 @@ function prepareNoteAttributes(dataElement, note, attributes)
 				}
 				fileDiv.appendChild(fileButton);
 
+				var deleteFileButton = document.createElement("input");
+				deleteFileButton.type = "button";
+				deleteFileButton.id = input.id + "-delete";
+				deleteFileButton.setAttribute("related-input-id", input.id);
+				deleteFileButton.className += " " + DELETE_FILE_BUTTON;
+				deleteFileButton.onclick = function() 
+				{
+					var relatedInputId = this.getAttribute("related-input-id");
+					var relatedInput = document.getElementById(relatedInputId);
+					relatedInput.removeAttribute(ATTRIBUTE_VALUE);
+					if (relatedInput.getAttribute(ATTRIBUTE_TYPE) == "image")
+					{
+						var relatedImage = document.getElementById(relatedInputId + "-image");
+						relatedImage.removeAttribute("src");
+						relatedImage.style.display = "none";
+					}
+
+					var relatedLabel = document.getElementById(relatedInputId + "-label");
+					relatedLabel.removeAttribute("file-id");
+					relatedLabel.innerText = "";
+
+					this.style.display = "none";
+				}
+				deleteFileButton.style.display = "none";
+				fileDiv.appendChild(deleteFileButton);
+
 				dataElement.appendChild(fileDiv);
+
 				if (attribute.type == "image")
 				{
 					var image = document.createElement("img");
@@ -528,8 +558,23 @@ function prepareNoteAttributes(dataElement, note, attributes)
 
 				input.onchange = function(event)
 				{
+					var file = event.target.files[0];
+					var fileSize = file.size / 1024;
+					var max = this.getAttribute(MAX_SIZE);
+					var min = this.getAttribute(MIN_SIZE);
+					if (max && fileSize > max)
+					{
+						showError("File size is greater than " + max.toString());
+						throw "File size is greater than " + max.toString();
+					}
+					if (min && fileSize < min)
+					{
+						showError("File size is less than " + min.toString());
+						throw "File size is less than " + min.toString();
+					}
+
 					var formData = new FormData();
-					formData.append("file", event.target.files[0]);
+					formData.append("file", file);
 
 					fetch(SERVER_ADDRESS + '/rest/file', {
 						method: "POST",
@@ -549,7 +594,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 							this.setAttribute(ATTRIBUTE_VALUE, newFileId);
 							document.getElementById(this.id + "-label").setAttribute("file-id", newFileId);
 							document.getElementById(this.id + "-label").innerText = event.target.files[0].name;
-							document.getElementById(this.id + "-button").value = "Upload new file";
+							document.getElementById(this.id + "-delete").style.display = "inline-grid";
 							if (this.getAttribute(ATTRIBUTE_TYPE) == "image")
 							{
 								fetch(SERVER_ADDRESS + "/rest/file/" + newFileId + "/content")
@@ -578,6 +623,8 @@ function prepareNoteAttributes(dataElement, note, attributes)
 				input = document.createElement("input");
 				input.required = attribute.required;
 				input.type = attribute[TYPE];
+				if (attribute.regex)
+					input.placeholder = attribute.regex;
 				if (note != null)
 					input.value = valueOrEmptyString(note.attributes[attribute.name]);
 				else if (attribute.defaultValue != null)
@@ -612,7 +659,7 @@ function asyncDownloadCurrentFileInfo(fileId, inputId, attributeType)
 		document.getElementById(inputId).setAttribute(ATTRIBUTE_VALUE, fileId);
 		document.getElementById(inputId + "-label").setAttribute("file-id", fileId);
 		document.getElementById(inputId + "-label").innerText = json.title;
-		document.getElementById(inputId + "-button").value = "Upload new file";
+		document.getElementById(inputId + "-delete").style.display = "inline-grid";
 
 		if (attributeType == "image")
 		{

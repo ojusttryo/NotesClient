@@ -428,6 +428,7 @@ function addInputWithLabel(type, stretch, parent, attrName, labelText, inputId)
 
 	var label = document.createElement("label");
 	label.innerText = labelText;
+	label.id = inputId + "-label";
 	label.setAttribute("for", input.id);
 
 	parent.appendChild(label);

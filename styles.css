@@ -52,7 +52,6 @@ body
 	background-color: indianred;
 }
 
-
 input, select
 {
 	font-size: 15px;
@@ -131,6 +130,39 @@ input[type=checkbox]
 	background-position: left center;
 	background-repeat: no-repeat;	
 }
+
+
+.uploadFileButton
+{
+	border: 0;
+	background-image: url("img/uploadFile.svg");
+	max-width: 100%;
+	max-height: 100%;
+	width: 1.5em;
+	height: 1.5em;
+	clear: both;
+	background-size: 1.5em 100%;
+	background-position: left center;
+	background-repeat: no-repeat;
+	background-color: indianred;
+}
+
+
+.deleteFileButton
+{
+	border: 0;
+	background-image: url("img/deleteFile.svg");
+	max-width: 100%;
+	max-height: 100%;
+	width: 1.5em;
+	height: 1.5em;
+	clear: both;
+	background-size: 1.5em 100%;
+	background-position: left center;
+	background-repeat: no-repeat;
+	background-color: indianred;
+}
+
 
 #attributes-label
 {

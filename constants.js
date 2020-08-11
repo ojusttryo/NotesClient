@@ -31,6 +31,8 @@ const NOTES_MENU = "notes-menu";
 const FOLDERS_MENU = "folders-menu";
 const MENU_LIST = "menu-list";
 const PREVIOUS_VALUE = "previous-value";
+const MAX_SIZE = "maxSize";
+const MIN_SIZE = "minSize";
 
 const NAME = "name";
 const TITLE = "title";
@@ -57,6 +59,8 @@ const ATTRIBUTE = "attribute";
 const ENTITY = "entity";
 const EDIT_BUTTON = "editButton";
 const DELETE_BUTTON = "deleteButton";
+const UPLOAD_FILE_BUTTON = "uploadFileButton";
+const DELETE_FILE_BUTTON = "deleteFileButton";
 
 const DATA = "Data";
 const NOTES = "Notes";

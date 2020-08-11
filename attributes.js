@@ -154,8 +154,8 @@ function createAttributeForm(attributeId)
     addInputWithLabel("checkbox", false, dataElement, "editableInTable", "Editable in table",           "attribute-editable-in-table");
     addInputWithLabel("number",   false, dataElement, "linesCount",      "Lines count",                 "attribute-lines-count");
     addSelectWithLabel(dataElement, "method", "Method", "attribute-method", methods);
-    addInputWithLabel("text",     false, dataElement, "maxWidth",        "Max width",                   "attribute-max-width");
-    addInputWithLabel("text",     false, dataElement, "minWidth",        "Min width",                   "attribute-min-width");
+    addInputWithLabel("text",     false, dataElement, "maxWidth",        "Max width in table",          "attribute-max-width");
+    addInputWithLabel("text",     false, dataElement, "minWidth",        "Min width in table",          "attribute-min-width");
     addInputWithLabel("text",     false, dataElement, "max",             "Max value/length/size",       "attribute-max");
     addInputWithLabel("text",     false, dataElement, "min",             "Min value/length/size",       "attribute-min");
     addInputWithLabel("text",     true,  dataElement, "defaultValue",    "Default value",               "attribute-default");
@@ -172,15 +172,37 @@ function createAttributeForm(attributeId)
         var type = document.getElementById("attribute-type").value;
         showInputAndLabelIf("attribute-select-options", hasOptions(type));
         showInputAndLabelIf("attribute-lines-count", (type == "textarea"));
+        showInputAndLabelIf("attribute-max-width", type != "file");
+        showInputAndLabelIf("attribute-min-width", type != "file");
         showInputAndLabelIf("attribute-max", isTextual(type) || isNumeric(type) || isFile(type));
         showInputAndLabelIf("attribute-min", isTextual(type) || isNumeric(type) || isFile(type));
         showInputAndLabelIf("attribute-step", isNumeric(type));
-        showInputAndLabelIf("attribute-regex", isTextual(type) || isNumeric(type));
+        showInputAndLabelIf("attribute-regex", isTextual(type));
         showInputAndLabelIf("attribute-editable-in-table", (type == "select" || type == "inc"));
         showInputAndLabelIf("attribute-date-format", hasDateFormat(type));
         showInputAndLabelIf("attribute-default", (isTextual(type) || isNumeric(type) || hasOptions(type) || type == "checkbox" || type == "url"));
         showInputAndLabelIf("attribute-required", !(hasDateFormat(type) || type == "multiselect" || type == "checkbox"));
         showInputAndLabelIf("attribute-visible", !isSkippableAttributeInNotesTable(type));
+
+        document.getElementById("attribute-max-width-label").innerText = (type == "image") ? "Max width at page" : "Max width in table";
+        document.getElementById("attribute-min-width-label").innerText = (type == "image") ? "Min width at page" : "Min width in table";
+        var max = document.getElementById("attribute-max-label");
+        var min = document.getElementById("attribute-min-label");
+        if (isFile(type))
+        {
+            max.innerText = "Max size (Kb)";
+            min.innerText = "Min size (Kb)";
+        }
+        else if (isTextual(type))
+        {
+            max.innerText = "Max length";
+            min.innerText = "Min length";
+        }
+        else if (isNumeric(type))
+        {
+            max.innerText = "Max value";
+            min.innerText = "Min value";
+        }
     }
     document.getElementById("attribute-type").onchange();
     /*
