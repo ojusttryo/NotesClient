@@ -22,9 +22,7 @@ function showAttributesMenu()
 {
 	var dataMenu = getEmptyElement(DATA_MENU);
 
-	var addAttributeButton = document.createElement("input");
-	addAttributeButton.type = "button";
-	addAttributeButton.id = "add-attribute-button";
+	var addAttributeButton = createInputButton("add-attribute-button");
 	addAttributeButton.value = "New attribute";
     addAttributeButton.onclick = function() 
     { 
@@ -140,7 +138,8 @@ function createAttributeForm(attributeId)
         clearContentId();
 
     var alignments = [ "left", "right", "center" ];
-    var types = [ "text", "textarea", "number", "select", "multiselect", "checkbox", "inc", "url", "save time", "update time", "user date", "user time", "file", "image" ];
+    var types = [ "text", "textarea", "number", "select", "multiselect", "checkbox", "inc", "url", "save time", "update time", "user date", "user time", "file", "image",
+        "files", "gallery"];
     var methods = [ "none", "folder name", "avg", "count" ];
 
     addInputWithLabel("text",     true,  dataElement, "title",           "Title",                       "attribute-title");
@@ -174,24 +173,25 @@ function createAttributeForm(attributeId)
         showInputAndLabelIf("attribute-lines-count", (type == "textarea"));
         showInputAndLabelIf("attribute-max-width", type != "file");
         showInputAndLabelIf("attribute-min-width", type != "file");
-        showInputAndLabelIf("attribute-max", isTextual(type) || isNumeric(type) || isFile(type));
-        showInputAndLabelIf("attribute-min", isTextual(type) || isNumeric(type) || isFile(type));
+        showInputAndLabelIf("attribute-max", isTextual(type) || isNumeric(type) || isFile(type) || isMultifile(type));
+        showInputAndLabelIf("attribute-min", isTextual(type) || isNumeric(type) || isFile(type) || isMultifile(type));
         showInputAndLabelIf("attribute-step", isNumeric(type));
         showInputAndLabelIf("attribute-regex", isTextual(type));
         showInputAndLabelIf("attribute-editable-in-table", (type == "select" || type == "inc"));
         showInputAndLabelIf("attribute-date-format", hasDateFormat(type));
         showInputAndLabelIf("attribute-default", (isTextual(type) || isNumeric(type) || hasOptions(type) || type == "checkbox" || type == "url"));
-        showInputAndLabelIf("attribute-required", !(hasDateFormat(type) || type == "multiselect" || type == "checkbox"));
+        showInputAndLabelIf("attribute-required", !(hasDateFormat(type) || type == "multiselect" || type == "checkbox" || isMultifile(type)));
         showInputAndLabelIf("attribute-visible", !isSkippableAttributeInNotesTable(type));
+        showInputAndLabelIf("attribute-method",  !isSkippableAttributeInNotesTable(type));
 
-        document.getElementById("attribute-max-width-label").innerText = (type == "image") ? "Max width at page" : "Max width in table";
-        document.getElementById("attribute-min-width-label").innerText = (type == "image") ? "Min width at page" : "Min width in table";
+        document.getElementById("attribute-max-width-label").innerText = (type == "image" || type == "files" || type == "gallery") ? "Max width at page" : "Max width in table";
+        document.getElementById("attribute-min-width-label").innerText = (type == "image" || type == "files" || type == "gallery") ? "Min width at page" : "Min width in table";
         var max = document.getElementById("attribute-max-label");
         var min = document.getElementById("attribute-min-label");
-        if (isFile(type))
+        if (isFile(type) || isMultifile(type))
         {
-            max.innerText = "Max size (Kb)";
-            min.innerText = "Min size (Kb)";
+            max.innerText = "Max file size (Kb)";
+            min.innerText = "Min file size (Kb)";
         }
         else if (isTextual(type))
         {
@@ -244,7 +244,7 @@ function fillAttributeValuesOnForm(attribute)
 
 function isSkippableAttributeInNotesTable(type)
 {
-    return (type == "textarea" || type == "multiselect" || type == "url" || isFile(type));
+    return (type == "textarea" || type == "multiselect" || type == "url" || isMultifile(type));
 }
 
 function hasDateFormat(type)
@@ -269,5 +269,10 @@ function isNumeric(type)
 
 function isFile(type)
 {
-    return (type == "file" || type == "image" || type == "video");
+    return (type == "file" || type == "image");
+}
+
+function isMultifile(type)
+{
+    return (type == "files" || type == "gallery");
 }

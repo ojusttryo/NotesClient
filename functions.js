@@ -213,10 +213,7 @@ function getMetaObjectFromForm(parent)
 						array.push(option.id);
 				}
 				if (array.length == 0 && currentNode.required)
-				{
 					showError("Required value is not set (" + attributeName + ")");
-					throw "Required value is not set";
-				}
 				result[attributeName] = array;
 			}
 			else if (currentNode.id != null && currentNode.id.toString().startsWith("checkboxes-"))
@@ -237,13 +234,17 @@ function getMetaObjectFromForm(parent)
 				result[attributeName] = attributeValue ? parseInt(attributeValue) : Date.now();
 			else if (attributeType && isFile(attributeType) && attributeValue && attributeValue.length > 0)
 				result[attributeName] = attributeValue;
+			else if (attributeType && attributeType == "gallery")
+			{
+				var images = currentNode.getElementsByTagName("img");
+				result[attributeName] = new Array();
+				for (var j = 0; j < images.length; j++)
+					result[attributeName].push(images[j].getAttribute(CONTENT_ID));
+			}
 			else if (currentNode.value != null && currentNode.value.length > 0)
 				result[attributeName] = currentNode.value;
 			else if (currentNode.required)
-			{
 				showError("Required value is not set (" + attributeName + ")");
-				throw "Required value is not set";
-			}
 		}
 	}
 
@@ -456,9 +457,7 @@ function addSelectWithLabel(parent, attrName, labelText, inputId, options)
 
 function addButton(parent, buttonId, buttonValue, onclick)
 {
-    var input = document.createElement("input");
-    input.type = "button";
-    input.id = buttonId;
+    var input = createInputButton(buttonId);
 	input.value = buttonValue;
 	input.style.display = "grid";
 	input.className += " doNotStretch";
@@ -581,6 +580,8 @@ function showError(message)
 	errorLabel.style.display = "inline-grid";
 	errorLabel.innerText = message;
 	errorLabel.focus();
+
+	throw message;
 }
 
 function hideError()
@@ -607,4 +608,14 @@ function addFormButtons(parent, isNewObject, saveHandler, cancelHandler)
 	parent.appendChild(buttons);
 	
 	return buttons;
+}
+
+
+function createInputButton(id)
+{
+	var button = document.createElement("input");
+	button.type = "button";
+	if (id)
+		button.id = id;
+	return button;
 }

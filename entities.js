@@ -24,9 +24,7 @@ function showEntitiesMenu()
 {
 	var dataMenu = getEmptyElement(DATA_MENU);
 
-	var addEntityButton = document.createElement("input");
-	addEntityButton.type = "button";
-	addEntityButton.id = "add-entity-button";
+	var addEntityButton = createInputButton("add-entity-button");
 	addEntityButton.value = "New entity";
     addEntityButton.onclick = function() 
     { 

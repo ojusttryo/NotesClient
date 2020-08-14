@@ -33,6 +33,7 @@ const MENU_LIST = "menu-list";
 const PREVIOUS_VALUE = "previous-value";
 const MAX_SIZE = "maxSize";
 const MIN_SIZE = "minSize";
+const FILE_ID = "file-id";
 
 const NAME = "name";
 const TITLE = "title";

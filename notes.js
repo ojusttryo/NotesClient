@@ -18,6 +18,7 @@ async function showContentTableWithNotes(contentType, contentId)
 		fetch(SERVER_ADDRESS + '/rest/notes/' + contentType)
 		.then(response => response.json())
 		.then(notes => {
+			getEmptyElement(DATA_ELEMENT);
 			var table = getEmptyElement(DATA_TABLE);
 			table.appendChild(createNotesTableHead(attributes));
 			table.appendChild(createNotesTableBody(attributes, notes));		
@@ -33,15 +34,11 @@ function createUpperButtonsForContent()
 {
 	var dataMenu = getEmptyElement(DATA_MENU);
 
-	var addNoteButton = document.createElement("input");
-	addNoteButton.type = "button";
-	addNoteButton.id = "add-note-button";
+	var addNoteButton = createInputButton("add-note-button");
 	addNoteButton.value = "New note";
 	addNoteButton.onclick = function() { showNoteForm(null, NOTE) };
 
-	var addFolderButton = document.createElement("input");
-	addFolderButton.type = "button";
-	addFolderButton.id = "add-folder-button";
+	var addFolderButton = createInputButton("add-folder-button");
 	addFolderButton.value = "New folder";
 	addFolderButton.onclick = function() { showNoteForm(null, FOLDER) };
 
@@ -86,7 +83,6 @@ function createNotesTableBody(attributes, notes)
 	for (var i = 0; i < notes.length; i++)
 	{
 		var note = notes[i];
-		//var noteAttributes = convertArrayToObject(note.attributes);
 		var noteAttributes = note.attributes;
 
 		var tr = document.createElement("tr");
@@ -100,13 +96,14 @@ function createNotesTableBody(attributes, notes)
 			if (needToSkipAttributeInTable(attributes[j]))
 				continue;
 
-			var attr = attributes[j];
+			var attribute = attributes[j];
+
 			var td = document.createElement("td");
-			td.style.textAlign = attr.alignment;
-			var attributeName = attr[NAME];
-			var attributeId = attr[ID];
+			td.style.textAlign = attribute.alignment;
+			var attributeName = attribute.name;
 			td.setAttribute(ATTRIBUTE_NAME, attributeName);
-			switch(attr.type)
+
+			switch(attribute.type)
 			{
 				case "url":
 					var a = document.createElement("a");
@@ -118,7 +115,7 @@ function createNotesTableBody(attributes, notes)
 				case "save time":
 				case "update time":
 					var time = new Date(noteAttributes[attributeName]);
-					var format = attr.dateFormat;
+					var format = attribute.dateFormat;
 					var convertedTime = moment(time).format(format);
 					td.innerHTML = convertedTime;
 					break;
@@ -126,12 +123,12 @@ function createNotesTableBody(attributes, notes)
 					if (attributes[j].editableInTable)
 					{
 						var select = document.createElement("select");
-						addOptions(select, attr.selectOptions);
+						addOptions(select, attribute.selectOptions);
 		
 						if (note != null)
-							select.value = valueOrEmptyString(note.attributes[attr.name]);
-						else if (attr.defaultValue != null)
-							select.value = attr.defaultValue;
+							select.value = valueOrEmptyString(note.attributes[attribute.name]);
+						else if (attribute.defaultValue != null)
+							select.value = attribute.defaultValue;
 
 						select.setAttribute(PREVIOUS_VALUE, select.value);
 
@@ -174,13 +171,12 @@ function createNotesTableBody(attributes, notes)
 					var numberTd = document.createElement("td");
 					numberTd.setAttribute(ATTRIBUTE_NAME, attributeName);
 					numberTd.innerHTML = noteAttributes[attributeName] != null ? noteAttributes[attributeName] : "";
-					numberTd.style.textAlign = attr.alignment;
+					numberTd.style.textAlign = attribute.alignment;
 					tr.appendChild(numberTd);
 
-					var incButton = document.createElement("input");
+					var incButton = createInputButton();
 					incButton.setAttribute(ATTRIBUTE_NAME, attributeName);
-					incButton.type = "button";
-					incButton.value = attr.step > 0 ? "+" : "-";
+					incButton.value = attribute.step > 0 ? "+" : "-";
 					incButton.style.height = "20px";
 					incButton.style.width = "20px";
 					incButton.onclick = function()
@@ -214,6 +210,51 @@ function createNotesTableBody(attributes, notes)
 					td.appendChild(incButton);
 					
 					break;
+
+				case "file":
+				case "image":
+					if (noteAttributes[attributeName] == null)
+						break;
+
+					var download = document.createElement("a");
+					download.href = "#";
+					download.id = attribute.id + "-label";
+					download.className += " download-image";
+					download.setAttribute(FILE_ID, noteAttributes[attributeName]);
+					download.style.margin = "auto";
+					download.onclick = function()
+					{
+						var fileId = this.getAttribute(FILE_ID);
+						if (fileId)
+						{
+							fetch(SERVER_ADDRESS + "/rest/file/" + fileId + "/content")
+							.then(response => {
+								if (response.status === 200)
+								{
+									return response.blob();
+								}
+							})
+							.then(data => {
+								if (data)
+								{
+									var a = document.createElement("a");
+									var file = window.URL.createObjectURL(data);
+									a.setAttribute("href", file);
+									a.setAttribute("download", this.getAttribute("title"));
+									a.style.display = "none";
+									document.body.appendChild(a);
+									a.click();
+									setTimeout(() => document.body.removeChild(a), 0);
+								}
+							});
+						}
+					};
+
+					asyncSetTitleFromMetadata(noteAttributes[attributeName], download.id);
+
+					td.appendChild(download);
+					break;
+
 				default:
 					td.innerHTML = noteAttributes[attributeName] != null ? noteAttributes[attributeName] : "";
 					break;
@@ -284,6 +325,7 @@ function showNoteForm(id)
 	fetch(SERVER_ADDRESS + '/rest/attributes/search?entityId=' + getContentId())
 	.then(response => response.json())
 	.then(attributes => {
+		getEmptyElement(DATA_TABLE);
 		var dataElement = getEmptyElement(DATA_ELEMENT);
 
 		createErrorLabel(dataElement);
@@ -319,90 +361,79 @@ function prepareNoteAttributes(dataElement, note, attributes)
 		label.innerText = attribute[TITLE];
 		dataElement.appendChild(label);
 
-		var input;
 		switch (attribute.type)
 		{
 			case "select":
-				input = document.createElement("select");
-				input.required = attribute.required;
+				var input = createInput("select", attribute);
 				addOptions(input, attribute.selectOptions);
+				input.value = getStringValueOrDefault(note, attribute);				
+				dataElement.appendChild(input);
+				break;
+
+			case "multiselect":
+				var input = createMultiselectWithCheckboxes(attribute.name, attribute.selectOptions);
+				input.setAttribute(ATTRIBUTE_NAME, attribute.name);
+				input.setAttribute(ATTRIBUTE_ID, attribute.id);
 
 				if (note != null)
-					input.value = valueOrEmptyString(note.attributes[attribute.name]);
-				else if (attribute.defaultValue != null)
-					input.value = attribute.defaultValue;
-
-				break;
-			case "multiselect":
-				input = createMultiselectWithCheckboxes(attribute.name, attribute.selectOptions);
-
-				if (note == null)
-					break;
-
-				var checkboxes = input.getElementsByTagName("input");
-				var noteOptions = note.attributes[attribute.name];
-				if (noteOptions == null || noteOptions.length == 0)
-					break;
-
-				for (var k = 0; k < noteOptions.length; k++)
 				{
-					var option = noteOptions[k];
-					for (var j = 0; j < checkboxes.length; j++)
+					var checkboxes = input.getElementsByTagName("input");
+					var noteOptions = note.attributes[attribute.name];
+					if (noteOptions == null || noteOptions.length == 0)
+						break;
+
+					for (var k = 0; k < noteOptions.length; k++)
 					{
-						if (checkboxes[j].getAttribute("title") == option)
+						var option = noteOptions[k];
+						for (var j = 0; j < checkboxes.length; j++)
 						{
-							checkboxes[j].checked = true;
-							break;
+							if (checkboxes[j].getAttribute("title") == option)
+							{
+								checkboxes[j].checked = true;
+								break;
+							}
 						}
 					}
 				}
+				
+				dataElement.appendChild(input);
 				break;
+
 			case "textarea":
-				input = document.createElement(attribute.type);
-				input.required = attribute.required;
-				input.type = attribute[TYPE];
+				var input = createInput(attribute.type, attribute)
+				input.value = getStringValueOrDefault(note, attribute);
 				if (attribute.linesCount != null)
 					input.setAttribute("rows", attribute.linesCount);
 				if (attribute.regex != null)
 					input.placeholder = attribute.regex;
-
-				if (note != null)
-					input.value = valueOrEmptyString(note.attributes[attribute.name]);
-				else if (attribute.defaultValue != null)
-					input.value = attribute.defaultValue;
-
+				dataElement.appendChild(input);
 				break;
+
 			case "number":
 			case "inc":
-				input = document.createElement("input");
-				input.required = attribute.required;
-				input.type = "number";
+				var input = createInput("input", attribute, "number");
+				input.value = getStringValueOrDefault(note, attribute);
 				if (attribute.min != null)
 					input.min = attribute.min;
 				if (attribute.max != null)
 					input.max = attribute.max;
 				if (attribute.step != null)
 					input.step = attribute.step;
-
-				if (note != null)
-					input.value = valueOrEmptyString(note.attributes[attribute.name]);
-				else if (attribute.defaultValue != null)
-					input.value = attribute.defaultValue;
-
+				dataElement.appendChild(input);
 				break;
+
 			case "checkbox":
-				input = document.createElement("input");
-				input.type = attribute.type;
+				var input = createInput("input", attribute, attribute.type);
 				if (note != null && isBoolean(note.attributes[attribute.name]))
 					input.checked = note.attributes[attribute.name] == "true";
 				else if (attribute.defaultValue != null && isBoolean(attribute.defaultValue))
 					input.checked = attribute.defaultValue == "true";
+				dataElement.appendChild(input);
 				break;
+
 			case "save time":
 			case "update time":
-				input = document.createElement("span");
-				input.required = attribute.required;
-				input.setAttribute(ATTRIBUTE_TYPE, attribute.type);
+				var input = createInput("span", attribute);
 				
 				// New note
 				if (note == null)
@@ -426,42 +457,30 @@ function prepareNoteAttributes(dataElement, note, attributes)
 						input.setAttribute(ATTRIBUTE_VALUE, note.attributes[attribute.name]);
 				}
 
+				dataElement.appendChild(input);
 				break;
+				
 			case "user date":
-				input = document.createElement("input");
-				input.required = attribute.required;
-				input.type = "date";
-				input.setAttribute(ATTRIBUTE_TYPE, attribute.type);
-
-				if (note != null && note.attributes[attribute.name] != null)
-					input.value = note.attributes[attribute.name];
-
+				var input = createInput("input", attribute, "date");
+				input.value = getStringValueOrDefault(note, attribute);
+				dataElement.appendChild(input);
 				break;
+
 			case "user time":
-				input = document.createElement("input");
-				input.required = attribute.required;
-				input.type = "time";
-				input.setAttribute(ATTRIBUTE_TYPE, attribute.type);
-
-				if (note != null && note.attributes[attribute.name] != null)
-					input.value = note.attributes[attribute.name];
-
+				var input = createInput("input", attribute, "time");
+				input.value = getStringValueOrDefault(note, attribute);
+				dataElement.appendChild(input);
 				break;
+
 			case "file":
 			case "image":
-				input = document.createElement("input");
-				input.required = attribute.required;
-				input.type = "file";
+				var input = createInput("input", attribute, "file");
 				input.multiple = false;
-				input.setAttribute(ATTRIBUTE_TYPE, attribute.type);
-				if (attribute.max)
-					input.setAttribute(MAX_SIZE, attribute.max);
-				if (attribute.min)
-					input.setAttribute(MIN_SIZE, attribute.min);
+				setFileSizeAttributes(input, attribute);
 				input.id = attribute.id;
 				input.style.display = "none";
 				if (attribute.type == "image")
-					input.setAttribute("accept", "image/*")
+					input.setAttribute("accept", "image/*");
 				
 				var fileDiv = document.createElement("div");
 
@@ -471,7 +490,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 				fileDiv.appendChild(fileName);
 				fileName.onclick = function()
 				{
-					var fileId = this.getAttribute("file-id");
+					var fileId = this.getAttribute(FILE_ID);
 					if (fileId)
 					{
 						fetch(SERVER_ADDRESS + "/rest/file/" + fileId + "/content")
@@ -497,8 +516,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 					}
 				};
 
-				var fileButton = document.createElement("input");
-				fileButton.type = "button";
+				var fileButton = createInputButton();
 				fileButton.setAttribute("related-button-id", input.id);
 				fileButton.className += " " + UPLOAD_FILE_BUTTON;
 				fileButton.onclick = function() 
@@ -508,9 +526,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 				}
 				fileDiv.appendChild(fileButton);
 
-				var deleteFileButton = document.createElement("input");
-				deleteFileButton.type = "button";
-				deleteFileButton.id = input.id + "-delete";
+				var deleteFileButton = createInputButton(input.id + "-delete");
 				deleteFileButton.setAttribute("related-input-id", input.id);
 				deleteFileButton.className += " " + DELETE_FILE_BUTTON;
 				deleteFileButton.onclick = function() 
@@ -526,7 +542,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 					}
 
 					var relatedLabel = document.getElementById(relatedInputId + "-label");
-					relatedLabel.removeAttribute("file-id");
+					relatedLabel.removeAttribute(FILE_ID);
 					relatedLabel.innerText = "";
 
 					this.style.display = "none";
@@ -543,10 +559,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 					image.style.display = "none";
 					image.className += " twoCols";
 					image.alt = attribute.title;
-					if (attribute.maxWidth)
-						image.style.maxWidth = attribute.maxWidth;
-					if (attribute.maxHeight)
-						image.style.maxHeight = attribute.maxHeight;
+					setElementSize(image, attribute);
 					image.style.justifySelf = attribute.alignment;
 					dataElement.appendChild(image);
 				}
@@ -559,40 +572,15 @@ function prepareNoteAttributes(dataElement, note, attributes)
 				input.onchange = function(event)
 				{
 					var file = event.target.files[0];
-					var fileSize = file.size / 1024;
-					var max = this.getAttribute(MAX_SIZE);
-					var min = this.getAttribute(MIN_SIZE);
-					if (max && fileSize > max)
-					{
-						showError("File size is greater than " + max.toString());
-						throw "File size is greater than " + max.toString();
-					}
-					if (min && fileSize < min)
-					{
-						showError("File size is less than " + min.toString());
-						throw "File size is less than " + min.toString();
-					}
+					checkFileSize(this.getAttribute(MIN_SIZE), this.getAttribute(MAX_SIZE), file.size / 1024);
 
-					var formData = new FormData();
-					formData.append("file", file);
-
-					fetch(SERVER_ADDRESS + '/rest/file', {
-						method: "POST",
-						body: formData,
-						headers: { "Accept": "application/json;charset=UTF-8" }
-					})
-					.then(response => {
-						if (response.status === 200)
-							return response.text()
-						if (response === 500)
-							return response.json();
-					})
+					saveFile(file)
 					.then(response => {
 						if (!response.message)
 						{
 							var newFileId = response;
 							this.setAttribute(ATTRIBUTE_VALUE, newFileId);
-							document.getElementById(this.id + "-label").setAttribute("file-id", newFileId);
+							document.getElementById(this.id + "-label").setAttribute(FILE_ID, newFileId);
 							document.getElementById(this.id + "-label").innerText = event.target.files[0].name;
 							document.getElementById(this.id + "-delete").style.display = "inline-grid";
 							if (this.getAttribute(ATTRIBUTE_TYPE) == "image")
@@ -617,18 +605,77 @@ function prepareNoteAttributes(dataElement, note, attributes)
 					});
 				};
 
+				dataElement.appendChild(input);
 				break;
-			// text, url, ...
+
+			case "gallery":
+				var input = document.createElement("input");
+				input.type = "file";
+				input.multiple = true;
+				setFileSizeAttributes(input, attribute);
+				input.id = attribute.id;
+				input.style.display = "none";
+				input.setAttribute("accept", "image/*");
+
+				var addButton = createInputButton();
+				addButton.setAttribute("related-button-id", attribute.id);
+				addButton.className += " " + UPLOAD_FILE_BUTTON;
+				addButton.style.justifySelf = "right";
+				addButton.onclick = function() 
+				{
+					var relatedButtonId = this.getAttribute("related-button-id");
+					document.getElementById(relatedButtonId).click();
+				}
+				dataElement.appendChild(addButton);
+				
+				var gallery = createInput("div", attribute);
+				gallery.className += " gallery twoCols";
+				gallery.id = attribute.id + "-gallery";
+				setElementSize(gallery, attribute);
+				gallery.style.justifySelf = attribute.alignment;
+				dataElement.appendChild(gallery);
+
+				if (note != null && note.attributes[attribute.name] != null)
+				{
+					note.attributes[attribute.name].forEach(function (item, index) {
+						asyncDownloadImage(item, attribute.id, 100);
+					})
+				}
+
+				input.onchange = function(event)
+				{
+					for (var j = 0; j < event.target.files.length; j++)
+						checkFileSize(this.getAttribute(MIN_SIZE), this.getAttribute(MAX_SIZE), event.target.files[j].size / 1024);
+
+					for (var j = 0; j < event.target.files.length; j++)
+					{
+						saveFile(event.target.files[j])
+						.then(response => {
+							if (!response.message)
+							{
+								var currentImages = document.getElementById(this.id + "-gallery").getElementsByTagName("img");
+								for (var k = 0; k < currentImages.length; k++)
+								{
+									if (currentImages[k].getAttribute(CONTENT_ID) == response)
+										showError("Image is already exists");
+								}
+	
+								asyncDownloadImage(response, this.id, 100)
+							}
+						});
+					}
+				};
+				
+				dataElement.appendChild(input);
+				break;
+
+			// text, url, etc.
 			default:
-				input = document.createElement("input");
-				input.required = attribute.required;
-				input.type = attribute[TYPE];
+				var input = createInput("input", attribute, attribute.type);
+				input.value = getStringValueOrDefault(note, attribute);
 				if (attribute.regex)
 					input.placeholder = attribute.regex;
-				if (note != null)
-					input.value = valueOrEmptyString(note.attributes[attribute.name]);
-				else if (attribute.defaultValue != null)
-					input.value = attribute.defaultValue;
+				dataElement.appendChild(input);
 				break;				
 		}
 
@@ -639,25 +686,75 @@ function prepareNoteAttributes(dataElement, note, attributes)
 			if (attribute.min != null)
 				input.minLength = attribute.min;
 		}
-
-		input.setAttribute(ATTRIBUTE_NAME, attribute[NAME]);
-		input.setAttribute(ATTRIBUTE_ID, attribute[ID]);
-		
-		dataElement.appendChild(input);
 	}
+}
+
+
+function createInput(elementType, attribute, type)
+{
+	var input = document.createElement(elementType);
+	if (type)
+		input.type = type;
+	if (attribute.required != null)
+		input.required = attribute.required;
+	input.setAttribute(ATTRIBUTE_TYPE, attribute.type);
+	input.setAttribute(ATTRIBUTE_NAME, attribute.name);
+	input.setAttribute(ATTRIBUTE_ID, attribute.id);
+	return input;
+}
+
+
+function saveFile(file)
+{
+	var formData = new FormData();
+	formData.append("file", file);
+
+	return fetch(SERVER_ADDRESS + '/rest/file', {
+		method: "POST",
+		body: formData,
+		headers: { "Accept": "application/json;charset=UTF-8" }
+	})
+	.then(response => {
+		if (response.status === 200)
+			return response.text()
+		if (response === 500)
+			return response.json();
+	})
+}
+
+
+function downloadMetadata(fileId)
+{
+	return fetch(SERVER_ADDRESS + "/rest/file/" + fileId + "/metadata", {
+		method: "GET",
+		headers: { "Accept": "application/json;charset=UTF-8", "Content-Type": "application/json;charset=UTF-8" }
+	})
+	.then(response => response.json());
+}
+
+
+function asyncSetTitleFromMetadata(fileId, elementId)
+{
+	return downloadMetadata(fileId)
+	.then(metadata => { document.getElementById(elementId).setAttribute("title", metadata.title); })
+}
+
+
+function asyncSetDownloadFromMetadata(fileId, elementId)
+{
+	return downloadMetadata(fileId)
+	.then(metadata => { 
+		document.getElementById(elementId).setAttribute("title", metadata.title);
+	})
 }
 
 
 function asyncDownloadCurrentFileInfo(fileId, inputId, attributeType)
 {
-	fetch(SERVER_ADDRESS + "/rest/file/" + fileId + "/metadata", {
-		method: "GET",
-		headers: { "Accept": "application/json;charset=UTF-8", "Content-Type": "application/json;charset=UTF-8" }
-	})
-	.then(response => response.json())
+	downloadMetadata(fileId)
 	.then(json => {
 		document.getElementById(inputId).setAttribute(ATTRIBUTE_VALUE, fileId);
-		document.getElementById(inputId + "-label").setAttribute("file-id", fileId);
+		document.getElementById(inputId + "-label").setAttribute(FILE_ID, fileId);
 		document.getElementById(inputId + "-label").innerText = json.title;
 		document.getElementById(inputId + "-delete").style.display = "inline-grid";
 
@@ -685,8 +782,153 @@ function asyncDownloadCurrentFileInfo(fileId, inputId, attributeType)
 }
 
 
+function asyncDownloadImage(fileId, inputId, size)
+{
+	fetch(SERVER_ADDRESS + "/rest/file/image/" + fileId + "/" + size, {
+		method: "POST",
+		body: JSON.stringify({
+			originalId: fileId,
+			size: 100
+		}),
+		headers: { "Accept": "multipart/form-data", "Content-Type": "application/json;charset=UTF-8" }
+	})
+	.then(getImagesResponse => {
+		if (getImagesResponse.status === 200)
+			return getImagesResponse.blob();
+	})
+	.then(downloadedImage => {
+		if (downloadedImage)
+		{
+			var imageDiv = document.createElement("div");
+			//imageDiv.id = inputId + "-" + fileId; // duplicate id
+
+			var file = window.URL.createObjectURL(downloadedImage);
+			var img = document.createElement("img");
+			img.setAttribute(CONTENT_ID, fileId);
+			img.setAttribute("src", file);
+			img.style.display = "inline-flex";
+			img.onclick = function()
+			{
+				var popup = document.createElement("div");
+				popup.className += " popup";
+				popup.onclick = function() { setTimeout(() => this.parentNode.removeChild(this), 0); }
+				var popupImage = document.createElement("img");
+				popupImage.className += "poput-image";
+				popupImage.onclick = function() { setTimeout(() => this.parentNode.parentNode.removeChild(this.parentNode), 0); }
+				popup.appendChild(popupImage);
+
+				fetch(SERVER_ADDRESS + "/rest/file/" + fileId + "/content")
+				.then(response => {
+					if (response.status === 200)
+					{
+						return response.blob();
+					}
+				})
+				.then(originalImage => {
+					if (originalImage)
+					{
+						var file = window.URL.createObjectURL(originalImage);
+						popupImage.setAttribute("src", file);
+						popupImage.style.display = "flex";
+						popup.style.display = "flex";
+
+						document.body.appendChild(popup);
+					}
+				});
+			}
+
+			var buttons = document.createElement("span");
+			buttons.className += " icon-buttons";
+
+			var download = document.createElement("a");
+			download.id = inputId + "-" + fileId;
+			download.className += " download-image ";
+			download.href = "#";
+			download.setAttribute(CONTENT_ID, fileId);
+			download.onclick = function() 
+			{
+				fetch(SERVER_ADDRESS + "/rest/file/" + this.getAttribute(CONTENT_ID) + "/content")
+				.then(response => {
+					if (response.status === 200)
+					{
+						return response.blob();
+					}
+				})
+				.then(data => {
+					if (data)
+					{
+						var a = document.createElement("a");
+						var file = window.URL.createObjectURL(data);
+						a.setAttribute("href", file);
+						a.setAttribute("download", this.getAttribute("title"));
+						a.style.display = "none";
+						document.body.appendChild(a);
+						a.click();
+						setTimeout(() => document.body.removeChild(a), 0);
+					}
+				});
+			}
+
+			var remove = document.createElement("a");
+			remove.className += " remove-image";
+			remove.href = "#";
+			remove.setAttribute("related-input-id", inputId + "-" + fileId);
+			remove.onclick = function() 
+			{ 
+				setTimeout(() => {
+					var toRemove = document.getElementById(this.getAttribute("related-input-id"));	
+					toRemove.parentNode.removeChild(toRemove);
+				}, 0
+			)}
+
+			buttons.appendChild(download);
+			buttons.appendChild(remove);
+			imageDiv.appendChild(img);
+			imageDiv.appendChild(buttons);
+			document.getElementById(inputId + "-gallery").appendChild(imageDiv);
+			
+			asyncSetDownloadFromMetadata(fileId, download.id);
+		}
+	});
+}
+
+
+function checkFileSize(min, max, fileSize)
+{
+	if (max != null && fileSize > max)
+		showError("File size is greater than " + max.toString());
+	if (min != null && fileSize < min)
+		showError("File size is less than " + min.toString());
+}
+
+
+function getStringValueOrDefault(note, attribute)
+{
+	return (note != null) ? valueOrEmptyString(note.attributes[attribute.name]) : valueOrEmptyString(attribute.defaultValue);
+}
+
+
+function setFileSizeAttributes(input, attribute)
+{
+	if (attribute.max != null)
+		input.setAttribute(MAX_SIZE, attribute.max);
+	if (attribute.min != null)
+		input.setAttribute(MIN_SIZE, attribute.min);
+}
+
+
+function setElementSize(element, attribute)
+{
+	if (attribute.maxWidth)
+		element.style.maxWidth = attribute.maxWidth;
+	if (attribute.maxHeight)
+		element.style.maxHeight = attribute.maxHeight;
+}
+
+
 function createNoteActionButtons(dataElement, id)
 {
+	var editHandler = function() { showCurrentContent() };
 	var saveHandler = function() 
 	{
 		var objectToSave = new Object();
@@ -707,7 +949,6 @@ function createNoteActionButtons(dataElement, id)
 				showCurrentContent();
 		});
 	};
-	var editHandler = function() { showCurrentContent() };
 
 	addFormButtons(dataElement, id != null, saveHandler, editHandler);
 }

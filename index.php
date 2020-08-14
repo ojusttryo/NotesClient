@@ -3,7 +3,7 @@
 	<head>
 		<title>Notes</title>
 		<meta charset="utf-8" />
-		<link rel="stylesheet" type="text/css" href="styles.css" />
+		<link rel="stylesheet" type="text/css" href="styles.css?<?php echo date('l jS \of F Y h:i:s A'); ?>" />
 		<script type="text/javascript" src="notes.js"></script>
 		<script type="text/javascript" src="testdata.js"></script>
 		<script type="text/javascript" src="constants.js"></script>
