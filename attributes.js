@@ -155,6 +155,8 @@ function createAttributeForm(attributeId)
     addSelectWithLabel(dataElement, "method", "Method", "attribute-method", methods);
     addInputWithLabel("text",     false, dataElement, "maxWidth",        "Max width in table",          "attribute-max-width");
     addInputWithLabel("text",     false, dataElement, "minWidth",        "Min width in table",          "attribute-min-width");
+    addInputWithLabel("text",     false, dataElement, "maxHeight",       "Max height at page",          "attribute-max-height");
+    addInputWithLabel("text",     false, dataElement, "minHeight",       "Min height at page",          "attribute-min-height");
     addInputWithLabel("text",     false, dataElement, "max",             "Max value/length/size",       "attribute-max");
     addInputWithLabel("text",     false, dataElement, "min",             "Min value/length/size",       "attribute-min");
     addInputWithLabel("text",     true,  dataElement, "defaultValue",    "Default value",               "attribute-default");
@@ -173,6 +175,8 @@ function createAttributeForm(attributeId)
         showInputAndLabelIf("attribute-lines-count", (type == "textarea"));
         showInputAndLabelIf("attribute-max-width", type != "file");
         showInputAndLabelIf("attribute-min-width", type != "file");
+        showInputAndLabelIf("attribute-max-height", type == "image" || type == "gallery" || type == "files");
+        showInputAndLabelIf("attribute-min-height", type == "image" || type == "gallery" || type == "files");
         showInputAndLabelIf("attribute-max", isTextual(type) || isNumeric(type) || isFile(type) || isMultifile(type));
         showInputAndLabelIf("attribute-min", isTextual(type) || isNumeric(type) || isFile(type) || isMultifile(type));
         showInputAndLabelIf("attribute-step", isNumeric(type));
@@ -231,6 +235,8 @@ function fillAttributeValuesOnForm(attribute)
     document.getElementById("attribute-method").value = attribute["method"];
     document.getElementById("attribute-max-width").value = attribute["maxWidth"];
     document.getElementById("attribute-min-width").value = attribute["minWidth"];
+    document.getElementById("attribute-max-height").value = attribute["maxHeight"];
+    document.getElementById("attribute-min-height").value = attribute["minHeight"];
     document.getElementById("attribute-max").value = attribute["max"];
     document.getElementById("attribute-min").value = attribute["min"];
     document.getElementById("attribute-default").value = attribute["defaultValue"];

@@ -483,6 +483,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 					input.setAttribute("accept", "image/*");
 				
 				var fileDiv = document.createElement("div");
+				fileDiv.style.wordBreak = "break-all";
 
 				var fileName = document.createElement("label");
 				fileName.id = input.id + "-label";
@@ -559,7 +560,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 					image.style.display = "none";
 					image.className += " twoCols";
 					image.alt = attribute.title;
-					setElementSize(image, attribute);
+					setElementSizeAtPage(image, attribute);
 					image.style.justifySelf = attribute.alignment;
 					dataElement.appendChild(image);
 				}
@@ -631,7 +632,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 				var gallery = createInput("div", attribute);
 				gallery.className += " gallery twoCols";
 				gallery.id = attribute.id + "-gallery";
-				setElementSize(gallery, attribute);
+				setElementSizeAtPage(gallery, attribute);
 				gallery.style.justifySelf = attribute.alignment;
 				dataElement.appendChild(gallery);
 
@@ -917,12 +918,17 @@ function setFileSizeAttributes(input, attribute)
 }
 
 
-function setElementSize(element, attribute)
+function setElementSizeAtPage(element, attribute)
 {
 	if (attribute.maxWidth)
 		element.style.maxWidth = attribute.maxWidth;
+	if (attribute.minWidth)
+		element.style.minWidth = attribute.minWidth;
+
 	if (attribute.maxHeight)
 		element.style.maxHeight = attribute.maxHeight;
+	if (attribute.minHeight)
+		element.style.minHeight;
 }
 
 

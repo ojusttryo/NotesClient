@@ -88,12 +88,14 @@ input[type=checkbox]
     justify-content: flex-start;
 	align-items: flex-start;
 	justify-content: flex-start;
+	overflow-y: scroll;
+	overflow-x: visible;
 }
 
 .gallery div
 {
-	margin-bottom: 1vw;
-	margin-right: 1vw;
+	margin-bottom: 0.5em;
+	margin-right: 0.5em;
 }
 
 .gallery div 
