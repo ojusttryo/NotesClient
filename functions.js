@@ -628,3 +628,10 @@ function createInputButton(id)
 		button.id = id;
 	return button;
 }
+
+
+// https://stackoverflow.com/questions/1484506/random-color-generator
+function randomHsl() 
+{
+    return 'hsla(' + (Math.random() * 360) + ', 100%, 50%, 1)';
+}

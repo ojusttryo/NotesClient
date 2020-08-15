@@ -254,7 +254,7 @@ function fillAttributeValuesOnForm(attribute)
 
 function isSkippableAttributeInNotesTable(type)
 {
-    return (type == "textarea" || type == "multiselect" || type == "url" || isMultifile(type));
+    return (type == "textarea" || isMultifile(type));
 }
 
 function hasDateFormat(type)

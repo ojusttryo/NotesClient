@@ -59,7 +59,7 @@ input, select
 
 input[type=checkbox]
 {
-	transform: scale(1.5);
+	transform: scale(2);
 	width: 1.5vw;
 }
 
@@ -138,13 +138,12 @@ input[type=checkbox]
 
 .remove-image
 {
-
+	display: block;
 	width: 1.5vw;
 	height: 1.5vw;
 	text-decoration: none;
 	background-image: url("img/quit.svg");
 	background-size: contain;
-
 	z-index: 100;
 }
 
@@ -157,7 +156,30 @@ input[type=checkbox]
 	text-decoration: none;
 	background-image: url("img/download.svg");
 	background-size: contain;
+	z-index: 100;
+}
 
+
+.link-image
+{
+	display: block;
+	width: 1.5vw;
+	height: 1.5vw;
+	text-decoration: none;
+	background-image: url("img/link.svg");
+	background-size: contain;
+	z-index: 100;
+}
+
+
+.plus-image
+{
+	display: block;
+	width: 1.5vw;
+	height: 1.5vw;
+	text-decoration: none;
+	background-image: url("img/more.svg");
+	background-size: contain;
 	z-index: 100;
 }
 
@@ -170,6 +192,18 @@ input[type=checkbox]
 	justify-items: left;
 	justify-self: left;
 	justify-content: start;
+}
+
+.colored-select
+{
+	font-size: 15px;
+	border-width: 2px;
+	border-style: solid;
+	display: inline-block;
+	margin-right: 0.2em;
+	margin-bottom: 0.1em;
+	margin-top: 0.1em;
+	padding: 2px;
 }
 
 .doNotStretch

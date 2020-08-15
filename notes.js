@@ -1,4 +1,4 @@
-
+COLORS = new Object();
 
 
 /**
@@ -61,6 +61,9 @@ function createNotesTableHead(attributes)
 		var th = document.createElement("th");
 		th.innerText = attributes[i]["title"];
 		tr.appendChild(th);
+
+		if (attributes[i].type == "inc" && attributes[i].editableInTable)
+			tr.appendChild(document.createElement("td"));
 	}
 
 	// Edit and Delete buttons
@@ -106,18 +109,25 @@ function createNotesTableBody(attributes, notes)
 			switch(attribute.type)
 			{
 				case "url":
-					var a = document.createElement("a");
-					a.href = noteAttributes[attributeName] != null ? noteAttributes[attributeName] : "";
-					a.text = noteAttributes[attributeName] != null ? noteAttributes[attributeName] : "";
-					a.target = "_blank";
-					td.appendChild(a);
+					if (noteAttributes[attributeName] != null)
+					{
+						var a = document.createElement("a");
+						a.href = noteAttributes[attributeName];
+						a.className += " link-image";
+						a.style.margin = "auto";
+						a.target = "_blank";
+						td.appendChild(a);
+					}
 					break;
 				case "save time":
 				case "update time":
-					var time = new Date(noteAttributes[attributeName]);
-					var format = attribute.dateFormat;
-					var convertedTime = moment(time).format(format);
-					td.innerHTML = convertedTime;
+					if (noteAttributes[attributeName])
+					{
+						var time = new Date(noteAttributes[attributeName]);
+						var format = attribute.dateFormat;
+						var convertedTime = moment(time).format(format);
+						td.innerHTML = convertedTime;
+					}
 					break;
 				case "checkbox":
 					if (attribute.editableInTable)
@@ -138,12 +148,15 @@ function createNotesTableBody(attributes, notes)
 								if (response.status != 200)
 								{
 									this.value = this.getAttribute(PREVIOUS_VALUE);
-									this.style.backgroundColor = "red";
+
+									if (response.status == 500)
+										response.text().then(error => { showError(error.message); });
+									else
+										response.text().then(error => { showError(error); });
 								}
 								else
 								{
-									this.setAttribute(PREVIOUS_VALUE, this.value);
-									this.style.backgroundColor = "green";
+									response.text().then(text => { this.setAttribute(PREVIOUS_VALUE, this.value); })
 								}
 							});
 						}
@@ -162,6 +175,8 @@ function createNotesTableBody(attributes, notes)
 						addOptions(select, attribute.selectOptions);
 						select.value = valueOrEmptyString(note.attributes[attribute.name]);
 						select.setAttribute(PREVIOUS_VALUE, select.value);
+						select.style.overflow = "visible";
+						select.style.minWidth = "100%";
 
 						select.onchange = function()
 						{
@@ -172,13 +187,16 @@ function createNotesTableBody(attributes, notes)
 							.then(response => {
 								if (response.status != 200)
 								{
-									this.value = select.getAttribute(PREVIOUS_VALUE);
-									this.style.backgroundColor = "red";
+									this.value = this.getAttribute(PREVIOUS_VALUE);
+
+									if (response.status == 500)
+										response.text().then(error => { showError(error.message); });
+									else
+										response.text().then(error => { showError(error); });
 								}
 								else
 								{
-									this.setAttribute(PREVIOUS_VALUE, this.value);
-									this.style.backgroundColor = "green";
+									response.text().then(text => { this.setAttribute(PREVIOUS_VALUE, this.value); })
 								}
 							});
 						}
@@ -189,18 +207,38 @@ function createNotesTableBody(attributes, notes)
 						td.innerHTML = noteAttributes[attributeName] != null ? noteAttributes[attributeName] : "";
 					}
 					break;
+
+				case "multiselect":
+					if (noteAttributes[attributeName] != null)
+					{
+						for (var k = 0; k < noteAttributes[attributeName].length; k++)
+						{
+							var text = noteAttributes[attributeName][k];
+							var elem = document.createElement("span");
+							elem.className += " colored-select";
+							elem.innerText = text;
+
+							if (COLORS[text] == null)
+								COLORS[text] = randomHsl();
+							
+							elem.style.borderColor = COLORS[text];
+
+							td.appendChild(elem);
+						}
+					}
+
+					break;
+
 				case "inc":
 					var numberTd = document.createElement("td");
 					numberTd.setAttribute(ATTRIBUTE_NAME, attributeName);
-					numberTd.innerHTML = noteAttributes[attributeName] != null ? noteAttributes[attributeName] : "";
+					numberTd.innerHTML = noteAttributes[attributeName] != null ? noteAttributes[attributeName] : attribute.defaultValue;
 					numberTd.style.textAlign = attribute.alignment;
 					tr.appendChild(numberTd);
 
-					var incButton = createInputButton();
+					var incButton = document.createElement("a");
 					incButton.setAttribute(ATTRIBUTE_NAME, attributeName);
-					incButton.value = attribute.step > 0 ? "+" : "-";
-					incButton.style.height = "20px";
-					incButton.style.width = "20px";
+					incButton.className += " plus-image";
 					incButton.onclick = function()
 					{
 						var id = this.parentNode.parentNode.getAttribute(CONTENT_ID);
@@ -217,15 +255,14 @@ function createNotesTableBody(attributes, notes)
 						.then(response => {
 							if (response.status != 200)
 							{
-								this.parentNode.previousSibling.style.backgroundColor = "red";
+								if (response.status == 500)
+									response.text().then(error => { showError(error.message); });
+								else
+									response.text().then(error => { showError(error); });
 							}
 							else
 							{
-								response.text()
-								.then(text => {
-									this.parentNode.previousSibling.innerText = parseFloat(text);
-									this.parentNode.previousSibling.style.backgroundColor = "green";
-								})
+								response.text().then(text => { this.parentNode.previousSibling.innerText = parseFloat(text); })
 							}
 						});
 					}
@@ -240,7 +277,7 @@ function createNotesTableBody(attributes, notes)
 
 					var download = document.createElement("a");
 					download.href = "#";
-					download.id = attribute.id + "-label";
+					download.id = note.id + "-" + attribute.id + "-label";
 					download.className += " download-image";
 					download.setAttribute(FILE_ID, noteAttributes[attributeName]);
 					download.style.margin = "auto";
@@ -400,18 +437,18 @@ function prepareNoteAttributes(dataElement, note, attributes)
 				{
 					var checkboxes = input.getElementsByTagName("input");
 					var noteOptions = note.attributes[attribute.name];
-					if (noteOptions == null || noteOptions.length == 0)
-						break;
-
-					for (var k = 0; k < noteOptions.length; k++)
+					if (noteOptions != null && noteOptions.length > 0)
 					{
-						var option = noteOptions[k];
-						for (var j = 0; j < checkboxes.length; j++)
+						for (var k = 0; k < noteOptions.length; k++)
 						{
-							if (checkboxes[j].getAttribute("title") == option)
+							var option = noteOptions[k];
+							for (var j = 0; j < checkboxes.length; j++)
 							{
-								checkboxes[j].checked = true;
-								break;
+								if (checkboxes[j].getAttribute("title") == option)
+								{
+									checkboxes[j].checked = true;
+									break;
+								}
 							}
 						}
 					}
