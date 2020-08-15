@@ -141,6 +141,7 @@ function createAttributeForm(attributeId)
     var types = [ "text", "textarea", "number", "select", "multiselect", "checkbox", "inc", "url", "save time", "update time", "user date", "user time", "file", "image",
         "files", "gallery"];
     var methods = [ "none", "folder name", "avg", "count" ];
+    var imageSizes = [ "50x50", "100x100", "200x200" ];
 
     addInputWithLabel("text",     true,  dataElement, "title",           "Title",                       "attribute-title");
     addInputWithLabel("text",     true,  dataElement, "name",            "Name (unique)",               "attribute-name");    
@@ -153,6 +154,7 @@ function createAttributeForm(attributeId)
     addInputWithLabel("checkbox", false, dataElement, "editableInTable", "Editable in table",           "attribute-editable-in-table");
     addInputWithLabel("number",   false, dataElement, "linesCount",      "Lines count",                 "attribute-lines-count");
     addSelectWithLabel(dataElement, "method", "Method", "attribute-method", methods);
+    addSelectWithLabel(dataElement, "imagesSize", "Images size", "attribute-images-size", imageSizes);
     addInputWithLabel("text",     false, dataElement, "maxWidth",        "Max width in table",          "attribute-max-width");
     addInputWithLabel("text",     false, dataElement, "minWidth",        "Min width in table",          "attribute-min-width");
     addInputWithLabel("text",     false, dataElement, "maxHeight",       "Max height at page",          "attribute-max-height");
@@ -172,7 +174,8 @@ function createAttributeForm(attributeId)
     {
         var type = document.getElementById("attribute-type").value;
         showInputAndLabelIf("attribute-select-options", hasOptions(type));
-        showInputAndLabelIf("attribute-lines-count", (type == "textarea"));
+        showInputAndLabelIf("attribute-lines-count", type == "textarea");
+        showInputAndLabelIf("attribute-images-size", type == "gallery");
         showInputAndLabelIf("attribute-max-width", type != "file");
         showInputAndLabelIf("attribute-min-width", type != "file");
         showInputAndLabelIf("attribute-max-height", type == "image" || type == "gallery" || type == "files");
@@ -181,7 +184,7 @@ function createAttributeForm(attributeId)
         showInputAndLabelIf("attribute-min", isTextual(type) || isNumeric(type) || isFile(type) || isMultifile(type));
         showInputAndLabelIf("attribute-step", isNumeric(type));
         showInputAndLabelIf("attribute-regex", isTextual(type));
-        showInputAndLabelIf("attribute-editable-in-table", (type == "select" || type == "inc"));
+        showInputAndLabelIf("attribute-editable-in-table", (type == "select" || type == "inc" || type == "checkbox"));
         showInputAndLabelIf("attribute-date-format", hasDateFormat(type));
         showInputAndLabelIf("attribute-default", (isTextual(type) || isNumeric(type) || hasOptions(type) || type == "checkbox" || type == "url"));
         showInputAndLabelIf("attribute-required", !(hasDateFormat(type) || type == "multiselect" || type == "checkbox" || isMultifile(type)));
@@ -233,6 +236,7 @@ function fillAttributeValuesOnForm(attribute)
     document.getElementById("attribute-editable-in-table").checked = attribute["editableInTable"];
     document.getElementById("attribute-alignment").value = attribute["alignment"];
     document.getElementById("attribute-method").value = attribute["method"];
+    document.getElementById("attribute-images-size").value = getImagesSize(attribute["imagesSize"]);
     document.getElementById("attribute-max-width").value = attribute["maxWidth"];
     document.getElementById("attribute-min-width").value = attribute["minWidth"];
     document.getElementById("attribute-max-height").value = attribute["maxHeight"];
@@ -281,4 +285,15 @@ function isFile(type)
 function isMultifile(type)
 {
     return (type == "files" || type == "gallery");
+}
+
+function getImagesSize(size)
+{
+    switch (size)
+    {
+        case 50: return "50x50";
+        case 100: return "100x100";
+        case 200: return "200x200";
+        default: return "50x50";
+    }
 }

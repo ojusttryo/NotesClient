@@ -6,8 +6,8 @@
  */
 async function showContentTableWithNotes(contentType, contentId)
 {
-	document.getElementById(CONTENT).setAttribute(CONTENT_TYPE, contentType);
-	document.getElementById(CONTENT).setAttribute(CONTENT_ID, contentId);
+	setContentType(contentType);
+	setContentId(contentId);
 	//drawHeader(name);
 	switchToContent();
 	createUpperButtonsForContent();
@@ -119,34 +119,56 @@ function createNotesTableBody(attributes, notes)
 					var convertedTime = moment(time).format(format);
 					td.innerHTML = convertedTime;
 					break;
+				case "checkbox":
+					if (attribute.editableInTable)
+					{
+						var checkbox = document.createElement("input");
+						checkbox.type = "checkbox";
+						if (noteAttributes[attributeName] != null)
+							checkbox.checked = isTrue(noteAttributes[attributeName]);
+						checkbox.setAttribute(PREVIOUS_VALUE, checkbox.checked);
+						
+						checkbox.onchange = function()
+						{
+							var objectToSave = new Object();
+							objectToSave[this.parentNode.getAttribute(ATTRIBUTE_NAME)] = this.checked;
+
+							updateNote(objectToSave, this.parentNode.parentNode.getAttribute(CONTENT_ID))
+							.then(response => {
+								if (response.status != 200)
+								{
+									this.value = this.getAttribute(PREVIOUS_VALUE);
+									this.style.backgroundColor = "red";
+								}
+								else
+								{
+									this.setAttribute(PREVIOUS_VALUE, this.value);
+									this.style.backgroundColor = "green";
+								}
+							});
+						}
+
+						td.appendChild(checkbox);
+					}
+					else
+					{
+						td.innerText = valueOrEmptyString(noteAttributes[attributeName]);
+					}
+					break;
 				case "select":
 					if (attributes[j].editableInTable)
 					{
 						var select = document.createElement("select");
 						addOptions(select, attribute.selectOptions);
-		
-						if (note != null)
-							select.value = valueOrEmptyString(note.attributes[attribute.name]);
-						else if (attribute.defaultValue != null)
-							select.value = attribute.defaultValue;
-
+						select.value = valueOrEmptyString(note.attributes[attribute.name]);
 						select.setAttribute(PREVIOUS_VALUE, select.value);
 
 						select.onchange = function()
 						{
 							var objectToSave = new Object();
 							objectToSave[this.parentNode.getAttribute(ATTRIBUTE_NAME)] = this.value;
-							var id = this.parentNode.parentNode.getAttribute(CONTENT_ID);
 
-							fetch(SERVER_ADDRESS + '/rest/notes/' + document.getElementById(CONTENT).getAttribute(CONTENT_TYPE) + "/" + id, {
-								method: "PUT",
-								body: JSON.stringify(objectToSave),
-								headers:
-								{
-									"Accept": "text/plain;charset=UTF-8",
-									"Content-Type": "application/json;charset=UTF-8"
-								}
-							})
+							updateNote(objectToSave, this.parentNode.parentNode.getAttribute(CONTENT_ID))
 							.then(response => {
 								if (response.status != 200)
 								{
@@ -182,7 +204,7 @@ function createNotesTableBody(attributes, notes)
 					incButton.onclick = function()
 					{
 						var id = this.parentNode.parentNode.getAttribute(CONTENT_ID);
-						var contentType = document.getElementById(CONTENT).getAttribute(CONTENT_TYPE);
+						var contentType = getContentType();
 
 						fetch(SERVER_ADDRESS + '/rest/notes/' + contentType + "/" + id + "/inc/" + this.getAttribute(ATTRIBUTE_NAME), {
 							method: "PUT",
@@ -308,8 +330,7 @@ function createButtonToDeleteNote(itemType, id)
 
 function deleteNote(id)
 {
-	var contentType = document.getElementById(CONTENT).getAttribute(CONTENT_TYPE);
-	fetch(SERVER_ADDRESS + '/rest/notes/' + contentType + '/' + id, { method: "DELETE" })
+	fetch(SERVER_ADDRESS + '/rest/notes/' + getContentType() + '/' + id, { method: "DELETE" })
 	.then(response => {
 		if (response.status === 200)
 			showCurrentContent();
@@ -364,7 +385,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 		switch (attribute.type)
 		{
 			case "select":
-				var input = createInput("select", attribute);
+				var input = createFormInput("select", attribute);
 				addOptions(input, attribute.selectOptions);
 				input.value = getStringValueOrDefault(note, attribute);				
 				dataElement.appendChild(input);
@@ -400,7 +421,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 				break;
 
 			case "textarea":
-				var input = createInput(attribute.type, attribute)
+				var input = createFormInput(attribute.type, attribute)
 				input.value = getStringValueOrDefault(note, attribute);
 				if (attribute.linesCount != null)
 					input.setAttribute("rows", attribute.linesCount);
@@ -411,7 +432,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 
 			case "number":
 			case "inc":
-				var input = createInput("input", attribute, "number");
+				var input = createFormInput("input", attribute, "number");
 				input.value = getStringValueOrDefault(note, attribute);
 				if (attribute.min != null)
 					input.min = attribute.min;
@@ -423,17 +444,17 @@ function prepareNoteAttributes(dataElement, note, attributes)
 				break;
 
 			case "checkbox":
-				var input = createInput("input", attribute, attribute.type);
-				if (note != null && isBoolean(note.attributes[attribute.name]))
-					input.checked = note.attributes[attribute.name] == "true";
-				else if (attribute.defaultValue != null && isBoolean(attribute.defaultValue))
-					input.checked = attribute.defaultValue == "true";
+				var input = createFormInput("input", attribute, attribute.type);
+				if (note != null)
+					input.checked = isTrue(note.attributes[attribute.name]);
+				else if (attribute.defaultValue != null)
+					input.checked = isTrue(attribute.defaultValue);
 				dataElement.appendChild(input);
 				break;
 
 			case "save time":
 			case "update time":
-				var input = createInput("span", attribute);
+				var input = createFormInput("span", attribute);
 				
 				// New note
 				if (note == null)
@@ -461,20 +482,20 @@ function prepareNoteAttributes(dataElement, note, attributes)
 				break;
 				
 			case "user date":
-				var input = createInput("input", attribute, "date");
+				var input = createFormInput("input", attribute, "date");
 				input.value = getStringValueOrDefault(note, attribute);
 				dataElement.appendChild(input);
 				break;
 
 			case "user time":
-				var input = createInput("input", attribute, "time");
+				var input = createFormInput("input", attribute, "time");
 				input.value = getStringValueOrDefault(note, attribute);
 				dataElement.appendChild(input);
 				break;
 
 			case "file":
 			case "image":
-				var input = createInput("input", attribute, "file");
+				var input = createFormInput("input", attribute, "file");
 				input.multiple = false;
 				setFileSizeAttributes(input, attribute);
 				input.id = attribute.id;
@@ -629,7 +650,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 				}
 				dataElement.appendChild(addButton);
 				
-				var gallery = createInput("div", attribute);
+				var gallery = createFormInput("div", attribute);
 				gallery.className += " gallery twoCols";
 				gallery.id = attribute.id + "-gallery";
 				setElementSizeAtPage(gallery, attribute);
@@ -639,7 +660,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 				if (note != null && note.attributes[attribute.name] != null)
 				{
 					note.attributes[attribute.name].forEach(function (item, index) {
-						asyncDownloadImage(item, attribute.id, 100);
+						asyncDownloadImage(item, attribute.id, attribute.imagesSize);
 					})
 				}
 
@@ -661,7 +682,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 										showError("Image is already exists");
 								}
 	
-								asyncDownloadImage(response, this.id, 100)
+								asyncDownloadImage(response, this.id, attribute.imagesSize)
 							}
 						});
 					}
@@ -672,7 +693,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 
 			// text, url, etc.
 			default:
-				var input = createInput("input", attribute, attribute.type);
+				var input = createFormInput("input", attribute, attribute.type);
 				input.value = getStringValueOrDefault(note, attribute);
 				if (attribute.regex)
 					input.placeholder = attribute.regex;
@@ -691,7 +712,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 }
 
 
-function createInput(elementType, attribute, type)
+function createFormInput(elementType, attribute, type)
 {
 	var input = document.createElement(elementType);
 	if (type)
@@ -787,10 +808,6 @@ function asyncDownloadImage(fileId, inputId, size)
 {
 	fetch(SERVER_ADDRESS + "/rest/file/image/" + fileId + "/" + size, {
 		method: "POST",
-		body: JSON.stringify({
-			originalId: fileId,
-			size: 100
-		}),
 		headers: { "Accept": "multipart/form-data", "Content-Type": "application/json;charset=UTF-8" }
 	})
 	.then(getImagesResponse => {
@@ -963,4 +980,18 @@ function createNoteActionButtons(dataElement, id)
 function needToSkipAttributeInTable(attribute)
 {
 	return (!attribute.visible || isSkippableAttributeInNotesTable(attribute.type))
+}
+
+
+function updateNote(objectToSave, id)
+{
+	return fetch(SERVER_ADDRESS + '/rest/notes/' + getContentType() + "/" + id, {
+		method: "PUT",
+		body: JSON.stringify(objectToSave),
+		headers:
+		{
+			"Accept": "text/plain;charset=UTF-8",
+			"Content-Type": "application/json;charset=UTF-8"
+		}
+	})
 }

@@ -230,6 +230,8 @@ function getMetaObjectFromForm(parent)
 			}
 			else if (currentNode.id == "attribute-select-options")
 				result[attributeName] = currentNode.value.split(";");
+			else if (currentNode.id == "attribute-images-size")
+				result[attributeName] = currentNode.value.substr(0, currentNode.value.indexOf("x"));
 			else if (attributeType && attributeType == "save time" || attributeType == "update time")
 				result[attributeName] = attributeValue ? parseInt(attributeValue) : Date.now();
 			else if (attributeType && isFile(attributeType) && attributeValue && attributeValue.length > 0)
@@ -508,10 +510,12 @@ function valueOrEmptyString(value)
 	return value ? value : "";
 }
 
-function isBoolean(value)
+
+function isTrue(value)
 {
-	return (value == "true" || value == "false");
+	return (value != null && value === "true") || (typeof value === 'boolean' && value == true);
 }
+
 
 /**
  * Converts array like [ { "a": 5 }, { "b": "c" } ] to object { "a": 5, "b": "c" }
@@ -561,6 +565,11 @@ function clearContentId()
 function getContentType()
 {
 	return document.getElementById(CONTENT).getAttribute(CONTENT_TYPE);
+}
+
+function setContentType(contentType)
+{
+	document.getElementById(CONTENT).setAttribute(CONTENT_TYPE, contentType);
 }
 
 function addOptions(select, options)
