@@ -2,6 +2,7 @@
 {
 	--fontSize: 20px;
 	--tableColumnsCount: 1;
+	--padding: 15px;
 }
 
 
@@ -38,6 +39,13 @@ body
 }
 
 
+#data-menu
+{
+	text-align: end;
+	padding-right: var(--padding);
+}
+
+
 #menu
 {
 	width: 200px;
@@ -49,6 +57,19 @@ body
 #menu ul li
 {
 	list-style: none;
+}
+
+
+#history
+{
+	display: grid;
+	max-width: 100%;
+}
+
+#history p
+{
+	display: inline-block;
+    word-break: break-word;
 }
 
 
@@ -79,7 +100,7 @@ input[type=checkbox]
 	grid-column-gap: 10px;	
 	width: 100%;
 	box-sizing: border-box;
-	padding: 15px;
+	padding: var(--padding);;
 	align-items: center;
 }
 
@@ -94,7 +115,7 @@ input[type=checkbox]
 	grid-template-columns: min-content auto;
 	grid-row-gap: 5px;
 	grid-column-gap: 20px;
-	padding: 15px;
+	padding: var(--padding);;
 }
 
 
@@ -109,7 +130,6 @@ input[type=checkbox]
 	display: flex;
     flex-direction: row;
     flex-wrap: wrap;
-    justify-content: flex-start;
 	align-items: flex-start;
 	justify-content: flex-start;
 	overflow-y: scroll;

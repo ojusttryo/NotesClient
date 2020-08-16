@@ -124,7 +124,7 @@ function switchToAddEditForm()
 function switchToMainPage()
 {
 	hideHtmlElementById(DATA_ELEMENT);
-	showHtmlElementById(HISTORY);
+	showHtmlGridElementById(HISTORY);
 	showHtmlGridElementById(DATA_TABLE);
 	hideHtmlElementById(DATA_MENU);
 }

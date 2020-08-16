@@ -437,27 +437,25 @@ function prepareNoteAttributes(dataElement, note, attributes)
 				input.setAttribute(ATTRIBUTE_NAME, attribute.name);
 				input.setAttribute(ATTRIBUTE_ID, attribute.id);
 
-				if (note != null)
+				var defaultOptions = (attribute.defaultValue != null) ? attribute.defaultValue.split(";").map(function (x) { return x.trim() }) : null;
+				var checkboxes = input.getElementsByTagName("input");
+				var noteOptions = (note != null) ? note.attributes[attribute.name] : defaultOptions;
+				if (noteOptions != null && noteOptions.length > 0)
 				{
-					var checkboxes = input.getElementsByTagName("input");
-					var noteOptions = note.attributes[attribute.name];
-					if (noteOptions != null && noteOptions.length > 0)
+					for (var k = 0; k < noteOptions.length; k++)
 					{
-						for (var k = 0; k < noteOptions.length; k++)
+						var option = noteOptions[k];
+						for (var j = 0; j < checkboxes.length; j++)
 						{
-							var option = noteOptions[k];
-							for (var j = 0; j < checkboxes.length; j++)
+							if (checkboxes[j].getAttribute("title") == option)
 							{
-								if (checkboxes[j].getAttribute("title") == option)
-								{
-									checkboxes[j].checked = true;
-									break;
-								}
+								checkboxes[j].checked = true;
+								break;
 							}
 						}
 					}
 				}
-				
+
 				dataElement.appendChild(input);
 				break;
 
