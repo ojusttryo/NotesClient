@@ -1,8 +1,9 @@
 :root
 {
-	--fontSize: 20px;
+	--fontSize: 12px;
+	--selectSize: 10px;
 	--tableColumnsCount: 1;
-	--padding: 15px;
+	--padding: 10px;
 }
 
 
@@ -19,18 +20,9 @@ body
 }
 
 
-#header
-{
-	background-color: black;
-	display: block;
-	height: 100px;
-	width: 100%;
-}
-
-
 #main
 {
-    height: calc(100vh-100px);
+    height: calc(100vh);
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
@@ -43,15 +35,17 @@ body
 {
 	text-align: end;
 	padding-right: var(--padding);
+	padding-top: var(--padding);
 }
 
 
 #menu
 {
-	width: 200px;
+	width: 10vw;
 	max-width: 15%;
 	order: 1;
 	background-color: green;
+	padding-right: 2vw;
 }
 
 #menu ul li
@@ -69,7 +63,8 @@ body
 #history p
 {
 	display: inline-block;
-    word-break: break-word;
+	word-break: break-word;
+	padding: 0.5vw 1vw;
 }
 
 
@@ -82,7 +77,7 @@ body
 
 input, select
 {
-	font-size: 15px;
+	font-size: var(--selectSize);
 }
 
 input[type=checkbox]
@@ -240,7 +235,7 @@ input[type=checkbox]
 
 .colored-select
 {
-	font-size: 15px;
+	font-size: var(--selectSize);
 	border-width: 2px;
 	border-style: solid;
 	display: inline-block;
@@ -270,8 +265,8 @@ input[type=checkbox]
 	background-image: url("img/editIcon.svg");
 	max-width: 100%;
 	max-height: 100%;
-	width: 30px;
-	height: 30px;
+	width: 1.5vw;
+	height: 1.5vw;
 	clear: both;
 	background-size: contain;
 	background-position: left center;
@@ -283,8 +278,8 @@ input[type=checkbox]
 	background-image: url("img/deleteIcon.svg");
 	max-width: 100%;
 	max-height: 100%;
-	width: 30px;
-	height: 30px;
+	width: 1.5vw;
+	height: 1.5vw;
 	clear: both;
 	background-size: contain;
 	background-position: left center;
