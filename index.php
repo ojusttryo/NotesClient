@@ -13,8 +13,7 @@
 		<script type="text/javascript" src="entities.js"></script>
 		<script type="text/javascript" src="moment.js"></script>
 	</head>
-	<body onload="loadMenu(); showLog();">		
-		<div id="header" onclick="showLog(); switchToMainPage();"></div>
+	<body onload="loadMenu(); showLog(); switchToMainPage();">
 		<div id="main">
 			<div id="menu">
 				<ul id="menu-list"></ul>
@@ -22,7 +21,7 @@
 			<div id="content">
 				<div id="history"></div>
 				<div id="data-menu"></div>
-				<table id="data-table"></table>
+				<div id="data-table"></div>
 				<div id="data-element"></div>
 			</div>
 		</div>

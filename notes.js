@@ -20,8 +20,8 @@ async function showContentTableWithNotes(contentType, contentId)
 		.then(notes => {
 			getEmptyElement(DATA_ELEMENT);
 			var table = getEmptyElement(DATA_TABLE);
-			table.appendChild(createNotesTableHead(attributes));
-			table.appendChild(createNotesTableBody(attributes, notes));		
+			createNotesTableHead(table, attributes);
+			createNotesTableBody(table, attributes, notes);		
 		});
 	});
 }
@@ -47,52 +47,55 @@ function createUpperButtonsForContent()
 }
 
 
-function createNotesTableHead(attributes)
+function createNotesTableHead(table, attributes)
 {
-	var thead = document.createElement("thead");
-	var tr = document.createElement("tr");
+	var count = countColumns(attributes);
+	document.documentElement.style.setProperty("--tableColumnsCount", count);
 
-	// Attributes
+	// Headers for attributes
 	for (var i = 0; i < attributes.length; i++)
 	{
 		if (needToSkipAttributeInTable(attributes[i]))
 			continue;
 
-		var th = document.createElement("th");
-		th.innerText = attributes[i]["title"];
-		tr.appendChild(th);
+		appendNewSpanAligning(table, attributes[i]["title"], "center");
 
+		// Plus or minus sign for inc
 		if (attributes[i].type == "inc" && attributes[i].editableInTable)
-			tr.appendChild(document.createElement("td"));
+			appendNewSpan(table, "");
 	}
 
 	// Edit and Delete buttons
-	tr.appendChild(document.createElement("th"));
-	tr.appendChild(document.createElement("th"));
-
-	thead.appendChild(tr);
-
-	return thead;
+	appendNewSpan(table, "");
+	appendNewSpan(table, "");
 }
 
 
-function createNotesTableBody(attributes, notes)
+function countColumns(attributes)
 {
-	var tbody = document.createElement("tbody");
+	var count = 0; 		// without buttons
+	for (var i = 0; i < attributes.length; i++)
+	{
+		if (!needToSkipAttributeInTable(attributes[i]))
+		{
+			count++;
+			if (attributes[i].type == "inc" && attributes[i].editableInTable)
+				count++;
+		}
+	}
+	return count;
+}
 
+
+function createNotesTableBody(table, attributes, notes)
+{
 	if (notes == null)
-		return tbody;
+		return;
 
 	for (var i = 0; i < notes.length; i++)
 	{
 		var note = notes[i];
 		var noteAttributes = note.attributes;
-
-		var tr = document.createElement("tr");
-		tr.className += " " + NOTE;
-		tr.setAttribute(CONTENT_ID, note[ID]);
-
-		//tr.appendChild(createTdWithIcon(NOTE_ICON));
 
 		for (var j = 0; j < attributes.length; j++)
 		{
@@ -100,35 +103,37 @@ function createNotesTableBody(attributes, notes)
 				continue;
 
 			var attribute = attributes[j];
-
-			var td = document.createElement("td");
-			td.style.textAlign = attribute.alignment;
+			var td = document.createElement("div");
 			var attributeName = attribute.name;
+			td.style.textAlign = attribute.alignment;
 			td.setAttribute(ATTRIBUTE_NAME, attributeName);
+			td.setAttribute(CONTENT_ID, note.id);
 
 			switch(attribute.type)
 			{
 				case "url":
-					if (noteAttributes[attributeName] != null)
-					{
-						var a = document.createElement("a");
-						a.href = noteAttributes[attributeName];
-						a.className += " link-image";
-						a.style.margin = "auto";
-						a.target = "_blank";
-						td.appendChild(a);
-					}
+					if (noteAttributes[attributeName] == null)
+						break;
+
+					var a = document.createElement("a");
+					a.href = noteAttributes[attributeName];
+					a.className += " link-image";
+					a.style.margin = "auto";
+					a.target = "_blank";
+					td.appendChild(a);
 					break;
+					
 				case "save time":
 				case "update time":
-					if (noteAttributes[attributeName])
-					{
-						var time = new Date(noteAttributes[attributeName]);
-						var format = attribute.dateFormat;
-						var convertedTime = moment(time).format(format);
-						td.innerHTML = convertedTime;
-					}
+					if (noteAttributes[attributeName] == null)
+						break;
+					
+					var time = new Date(noteAttributes[attributeName]);
+					var format = attribute.dateFormat;
+					var convertedTime = moment(time).format(format);
+					td.innerHTML = convertedTime;
 					break;
+
 				case "checkbox":
 					if (attribute.editableInTable)
 					{
@@ -143,7 +148,7 @@ function createNotesTableBody(attributes, notes)
 							var objectToSave = new Object();
 							objectToSave[this.parentNode.getAttribute(ATTRIBUTE_NAME)] = this.checked;
 
-							updateNote(objectToSave, this.parentNode.parentNode.getAttribute(CONTENT_ID))
+							updateNote(objectToSave, this.parentNode.getAttribute(CONTENT_ID))
 							.then(response => {
 								if (response.status != 200)
 								{
@@ -168,6 +173,7 @@ function createNotesTableBody(attributes, notes)
 						td.innerText = valueOrEmptyString(noteAttributes[attributeName]);
 					}
 					break;
+					
 				case "select":
 					if (attributes[j].editableInTable)
 					{
@@ -183,7 +189,7 @@ function createNotesTableBody(attributes, notes)
 							var objectToSave = new Object();
 							objectToSave[this.parentNode.getAttribute(ATTRIBUTE_NAME)] = this.value;
 
-							updateNote(objectToSave, this.parentNode.parentNode.getAttribute(CONTENT_ID))
+							updateNote(objectToSave, this.parentNode.getAttribute(CONTENT_ID))
 							.then(response => {
 								if (response.status != 200)
 								{
@@ -209,24 +215,25 @@ function createNotesTableBody(attributes, notes)
 					break;
 
 				case "multiselect":
-					if (noteAttributes[attributeName] != null)
+					if (noteAttributes[attributeName] == null)
+						break;
+					
+					for (var k = 0; k < noteAttributes[attributeName].length; k++)
 					{
-						for (var k = 0; k < noteAttributes[attributeName].length; k++)
-						{
-							var text = noteAttributes[attributeName][k];
-							var elem = document.createElement("span");
-							elem.className += " colored-select";
-							elem.innerText = text;
+						var text = noteAttributes[attributeName][k];
+						var elem = document.createElement("span");
+						elem.className += " colored-select";
+						elem.innerText = text;
 
-							if (COLORS[text] == null)
-								COLORS[text] = randomHsl();
-							
-							elem.style.borderColor = COLORS[text];
+						if (COLORS[text] == null)
+							COLORS[text] = randomHsl();
+						
+						elem.style.borderColor = COLORS[text];
 
-							td.appendChild(elem);
-						}
+						td.style.display = "flex";
+						td.style.flexWrap = "wrap";
+						td.appendChild(elem);
 					}
-
 					break;
 
 				case "inc":
@@ -234,14 +241,17 @@ function createNotesTableBody(attributes, notes)
 					numberTd.setAttribute(ATTRIBUTE_NAME, attributeName);
 					numberTd.innerHTML = noteAttributes[attributeName] != null ? noteAttributes[attributeName] : attribute.defaultValue;
 					numberTd.style.textAlign = attribute.alignment;
-					tr.appendChild(numberTd);
+					numberTd.style.alignSelf = "center";
+					table.appendChild(numberTd);
 
 					var incButton = document.createElement("a");
 					incButton.setAttribute(ATTRIBUTE_NAME, attributeName);
 					incButton.className += " plus-image";
+					incButton.style.justifySelf = "start";
+					//incButton.style.alignSelf = "center";
 					incButton.onclick = function()
 					{
-						var id = this.parentNode.parentNode.getAttribute(CONTENT_ID);
+						var id = this.parentNode.getAttribute(CONTENT_ID);
 						var contentType = getContentType();
 
 						fetch(SERVER_ADDRESS + '/rest/notes/' + contentType + "/" + id + "/inc/" + this.getAttribute(ATTRIBUTE_NAME), {
@@ -267,7 +277,6 @@ function createNotesTableBody(attributes, notes)
 						});
 					}
 					td.appendChild(incButton);
-					
 					break;
 
 				case "file":
@@ -310,24 +319,19 @@ function createNotesTableBody(attributes, notes)
 					};
 
 					asyncSetTitleFromMetadata(noteAttributes[attributeName], download.id);
-
 					td.appendChild(download);
 					break;
 
 				default:
 					td.innerHTML = noteAttributes[attributeName] != null ? noteAttributes[attributeName] : "";
 					break;
-			}			
-			tr.appendChild(td);
+			}
+			table.appendChild(td);
 		}
 
-		tr.appendChild(createButtonToShowNoteEditForm(NOTE, note[ID]));
-		tr.appendChild(createButtonToDeleteNote(NOTE, note[ID]));
-
-		tbody.appendChild(tr);
+		table.appendChild(createButtonToShowNoteEditForm(NOTE, note.id));
+		table.appendChild(createButtonToDeleteNote(NOTE, note.id));
 	}
-
-	return tbody;
 }
 
 

@@ -39,6 +39,15 @@ function loadMenu()
 		entitiesLi.innerText = "Entities";
 		entitiesLi.onclick = function() { showEntities(); };
 		menuList.appendChild(entitiesLi);
+
+		var logLi = document.createElement("li");
+		logLi.innerText = "Log";
+		logLi.onclick = function() 
+		{
+			showLog();
+			switchToMainPage();
+		};
+		menuList.appendChild(logLi);
 	});
 }
 
@@ -97,7 +106,7 @@ function switchToContent()
 {
 	hideHtmlElementById(DATA_ELEMENT);
 	hideHtmlElementById(HISTORY);
-	showHtmlElementById(DATA_TABLE);
+	showHtmlGridElementById(DATA_TABLE);
 	showHtmlElementById(DATA_MENU);
 }
 
@@ -116,7 +125,7 @@ function switchToMainPage()
 {
 	hideHtmlElementById(DATA_ELEMENT);
 	showHtmlElementById(HISTORY);
-	hideHtmlElementById(DATA_TABLE);
+	showHtmlGridElementById(DATA_TABLE);
 	hideHtmlElementById(DATA_MENU);
 }
 
@@ -142,17 +151,20 @@ function appendNewElement(elementName, parentNode, innerText)
 	var element = document.createElement(elementName);
 	element.innerText = innerText;
 	parentNode.appendChild(element);
+	return element;
 }
 
 
-/**
- * Create new <th>, set inner text, and append element to the parent <tr>
- * @param {Object} tr - HTML element <tr>
- * @param {String} innerText - inner text of element
- */
-function appendNewTh(tr, innerText)
+function appendNewSpan(parent, innerText)
 {
-	appendNewElement("th", tr, innerText);
+	return appendNewElement("span", parent, innerText);
+}
+
+
+function appendNewSpanAligning(parent, innerText, alignment)
+{
+	var element = appendNewSpan(parent, innerText);
+	element.style.justifySelf = alignment;
 }
 
 

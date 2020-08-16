@@ -13,8 +13,8 @@ function showAttributes()
 		    return;
 
         var table = getEmptyElement(DATA_TABLE);
-        table.appendChild(createAttributesTableHead());
-        table.appendChild(createAttributesTableBody(attributes));
+        createAttributesTableHead(table);
+        createAttributesTableBody(table, attributes);
     })
 }
 
@@ -34,74 +34,46 @@ function showAttributesMenu()
 }
 
 
-function createAttributesTableHead()
+function createAttributesTableHead(table)
 {
-	var thead = document.createElement("thead");
-	var tr = document.createElement("tr");
+    document.documentElement.style.setProperty("--tableColumnsCount", 4);   // 4 - without buttons
 
-	appendNewTh(tr, "№");
-    appendNewTh(tr, "Name");
-    appendNewTh(tr, "Title");
-    appendNewTh(tr, "Type");
-	appendNewTh(tr, "");		// Edit
-	appendNewTh(tr, "");		// Remove
-
-	thead.appendChild(tr);
-
-	return thead;
+	appendNewSpan(table, "№");
+    appendNewSpan(table, "Name");
+    appendNewSpan(table, "Title");
+    appendNewSpan(table, "Type");
+	appendNewSpan(table, "");		// Edit
+	appendNewSpan(table, "");		// Remove
 }
 
-function createAttributesTableBody(attributes)
+function createAttributesTableBody(table, attributes)
 {
-	var tbody = document.createElement("tbody");
-
 	for (var i = 0; i < attributes.length; i++)
 	{
-		var tr = document.createElement("tr");
-		tr.className += " " + ATTRIBUTE;
-		tr.setAttribute(CONTENT_ID, attributes[i].id);
-
-		var number = document.createElement("td");
-		number.innerText = i + 1;
-		number.onclick = function() { showAttributeInfo(attributes[i].id); };
-		tr.appendChild(number);
-
-		var name = document.createElement("td");
-		name.innerText = attributes[i].name;
-		name.onclick = function() { showAttributeInfo(attributes[i].id); };
-        tr.appendChild(name);
-        
-        var title = document.createElement("td");
-        title.innerText = attributes[i].title;
-        title.onclick = function() { showAttributeInfo(attributes[i].id); };
-        tr.appendChild(title);
-
-        var type = document.createElement("td");
-        type.innerText = attributes[i].type;
-        type.onclick = function() { showAttributeInfo(attributes[i].id); };
-        tr.appendChild(type);
+        appendNewSpan(table, (i + 1).toString());
+        appendNewSpan(table, attributes[i].name);
+        appendNewSpan(table, attributes[i].title);
+        appendNewSpan(table, attributes[i].type);
 
 		var editButton = document.createElement("td");
-		editButton.className += " " + EDIT_BUTTON;
+        editButton.className += " " + EDIT_BUTTON;
+        editButton.setAttribute(CONTENT_ID, attributes[i].id);
         editButton.onclick = function() 
         {
-            createEditAttributeForm(this.parentNode.getAttribute(CONTENT_ID));
+            createEditAttributeForm(this.getAttribute(CONTENT_ID));
             switchToAddEditForm();
         };
-		tr.appendChild(editButton);		
+		table.appendChild(editButton);		
 
 		var deleteButton = document.createElement("td");
-		deleteButton.className += " " + DELETE_BUTTON;
+        deleteButton.className += " " + DELETE_BUTTON;
+        deleteButton.setAttribute(CONTENT_ID, attributes[i].id);
         deleteButton.onclick = function() 
         { 
-            deleteAttribute(this.parentNode.getAttribute(CONTENT_ID), showAttributes);
+            deleteAttribute(this.getAttribute(CONTENT_ID), showAttributes);
         };
-		tr.appendChild(deleteButton);
-
-		tbody.appendChild(tr);
+		table.appendChild(deleteButton);
 	}
-
-	return tbody;
 }
 
 
@@ -178,8 +150,8 @@ function createAttributeForm(attributeId)
         showInputAndLabelIf("attribute-images-size", type == "gallery");
         showInputAndLabelIf("attribute-max-width", type != "file");
         showInputAndLabelIf("attribute-min-width", type != "file");
-        showInputAndLabelIf("attribute-max-height", type == "image" || type == "gallery" || type == "files");
-        showInputAndLabelIf("attribute-min-height", type == "image" || type == "gallery" || type == "files");
+        showInputAndLabelIf("attribute-max-height", isSizableOnForm);
+        showInputAndLabelIf("attribute-min-height", isSizableOnForm);
         showInputAndLabelIf("attribute-max", isTextual(type) || isNumeric(type) || isFile(type) || isMultifile(type));
         showInputAndLabelIf("attribute-min", isTextual(type) || isNumeric(type) || isFile(type) || isMultifile(type));
         showInputAndLabelIf("attribute-step", isNumeric(type));
@@ -191,8 +163,8 @@ function createAttributeForm(attributeId)
         showInputAndLabelIf("attribute-visible", !isSkippableAttributeInNotesTable(type));
         showInputAndLabelIf("attribute-method",  !isSkippableAttributeInNotesTable(type));
 
-        document.getElementById("attribute-max-width-label").innerText = (type == "image" || type == "files" || type == "gallery") ? "Max width at page" : "Max width in table";
-        document.getElementById("attribute-min-width-label").innerText = (type == "image" || type == "files" || type == "gallery") ? "Min width at page" : "Min width in table";
+        document.getElementById("attribute-max-width-label").innerText = isSizableOnForm(type) ? "Max width at page" : "Max width in table";
+        document.getElementById("attribute-min-width-label").innerText = isSizableOnForm(type) ? "Min width at page" : "Min width in table";
         var max = document.getElementById("attribute-max-label");
         var min = document.getElementById("attribute-min-label");
         if (isFile(type) || isMultifile(type))
@@ -255,6 +227,11 @@ function fillAttributeValuesOnForm(attribute)
 function isSkippableAttributeInNotesTable(type)
 {
     return (type == "textarea" || isMultifile(type));
+}
+
+function isSizableOnForm(type)
+{
+    return (type == "image" || isMultifile(type));
 }
 
 function hasDateFormat(type)

@@ -12,8 +12,8 @@ function showEntities()
 		    return;
 
         var table = getEmptyElement(DATA_TABLE);
-        table.appendChild(createEntitiesTableHead(entities));
-        table.appendChild(createEntitiesTableBody(entities));
+        createEntitiesTableHead(table, entities);
+        createEntitiesTableBody(table, entities);
         
         loadMenu();
         switchToContent();
@@ -36,81 +36,52 @@ function showEntitiesMenu()
 }
 
 
-// This method is the same as in attributes.js, but will differ in future.
-function createEntitiesTableHead()
+function createEntitiesTableHead(table)
 {
-	var thead = document.createElement("thead");
-	var tr = document.createElement("tr");
+    document.documentElement.style.setProperty("--tableColumnsCount", 4);   // 4 - without buttons
 
-	appendNewTh(tr, "№");
-    appendNewTh(tr, "Title");
-    appendNewTh(tr, "Collection");
-    appendNewTh(tr, "Visible");
-	appendNewTh(tr, "");		    // Edit
-	appendNewTh(tr, "");		    // Remove
-
-	thead.appendChild(tr);
-
-	return thead;
+	appendNewSpan(table, "№");
+    appendNewSpan(table, "Title");
+    appendNewSpan(table, "Collection");
+    appendNewSpan(table, "Visible");
+	appendNewSpan(table, "");		     // Edit
+	appendNewSpan(table, "");		     // Remove
 }
 
-// This method is the same as in attributes.js, but will differ in future.
-function createEntitiesTableBody(entities)
-{
-	var tbody = document.createElement("tbody");
 
+function createEntitiesTableBody(table, entities)
+{
     // Inside loop elements should be ordered as in createEntitiesTableHead()
 	for (var i = 0; i < entities.length; i++)
 	{
-		var tr = document.createElement("tr");
-		tr.className += " " + ENTITY;
-		tr.setAttribute(CONTENT_ID, entities[i].id);
-
-		var number = document.createElement("td");
-		number.innerText = i + 1;
-		number.onclick = function() { showEntityInfo(entities[i].id); };
-		tr.appendChild(number);
-
-		var title = document.createElement("td");
-		title.innerText = entities[i].title;
-		title.onclick = function() { showEntitiesInfo(entities[i].id); };
-        tr.appendChild(title);
-        
-        var collection = document.createElement("td");
-		collection.innerText = entities[i].collection;
-		collection.onclick = function() { showEntitiesInfo(entities[i].id); };
-        tr.appendChild(collection);
-        
-        var visible = document.createElement("td");
-        visible.innerText = entities[i].visible;
-        visible.onclick = function() { showEntitiesInfo(entities[i].id); };
-        tr.appendChild(visible);
+        appendNewSpan(table, (i + 1).toString());
+        appendNewSpan(table, entities[i].title);
+        appendNewSpan(table, entities[i].collection);
+        appendNewSpan(table, entities[i].visible);
 
 		var editButton = document.createElement("td");
-		editButton.className += " " + EDIT_BUTTON;
+        editButton.className += " " + EDIT_BUTTON;
+        editButton.setAttribute(CONTENT_ID, entities[i].id);
         editButton.onclick = function() 
         {
-            createEntityForm(this.parentNode.getAttribute(CONTENT_ID));
+            createEntityForm(this.getAttribute(CONTENT_ID));
             switchToAddEditForm();
         };
-		tr.appendChild(editButton);		
+		table.appendChild(editButton);		
 
 		var deleteButton = document.createElement("td");
-		deleteButton.className += " " + DELETE_BUTTON;
+        deleteButton.className += " " + DELETE_BUTTON;
+        deleteButton.setAttribute(CONTENT_ID, entities[i].id);
         deleteButton.onclick = function() 
         {
-            fetch(SERVER_ADDRESS + '/rest/entities/' + this.parentNode.getAttribute(CONTENT_ID), { method: "DELETE" })
+            fetch(SERVER_ADDRESS + '/rest/entities/' + this.getAttribute(CONTENT_ID), { method: "DELETE" })
             .then(response => {
                 if (response.status === 200)
                     showEntities();
             })
         };
-		tr.appendChild(deleteButton);
-
-		tbody.appendChild(tr);
+		table.appendChild(deleteButton);
 	}
-
-	return tbody;
 }
 
 
