@@ -255,6 +255,12 @@ function getMetaObjectFromForm(parent)
 				for (var j = 0; j < images.length; j++)
 					result[attributeName].push(images[j].getAttribute(CONTENT_ID));
 			}
+			else if (attributeType && attributeType == "files")
+			{
+				var buttons = currentNode.getElementsByClassName(DELETE_BUTTON);
+				var identifiers = [...buttons].map(x => x.getAttribute(CONTENT_ID));
+				result[attributeName] = identifiers;
+			}
 			else if (currentNode.value != null && currentNode.value.length > 0)
 				result[attributeName] = currentNode.value;
 			else if (currentNode.required)
@@ -643,7 +649,10 @@ function createInputButton(id)
 
 
 // https://stackoverflow.com/questions/1484506/random-color-generator
+// https://css-tricks.com/snippets/javascript/random-hex-color/
 function randomHsl() 
 {
-    return 'hsla(' + (Math.random() * 360) + ', 100%, 50%, 1)';
+	return '#' + Math.floor(Math.random()*16777215).toString(16);
+	//return '#'+(0x1000000+(Math.random())*0xffffff).toString(16).substr(1,6);
+    //return 'hsla(' + (Math.random() * 360) + ', 100%, 50%, 1)';
 }

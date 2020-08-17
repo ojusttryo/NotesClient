@@ -82,7 +82,7 @@ input, select
 
 input[type=checkbox]
 {
-	transform: scale(2);
+	transform: scale(1.5);
 	width: 1.5vw;
 }
 
@@ -99,6 +99,20 @@ input[type=checkbox]
 	align-items: center;
 }
 
+.files-collection
+{
+	display: grid;
+	grid-template-columns: min-content auto auto auto auto min-content min-content;		/* number title type size uploaded download delete */
+	grid-row-gap: 5px;
+	grid-column-gap: 10px;	
+	width: 100%;
+	box-sizing: border-box;
+	padding: var(--padding);;
+	align-items: center;
+	overflow-y: scroll;
+	overflow-x: visible;
+}
+
 #data-table *
 {
 	display: inline-grid;
@@ -107,7 +121,7 @@ input[type=checkbox]
 #data-element
 {
 	display: grid;
-	grid-template-columns: min-content auto;
+	grid-template-columns: min-content 1fr;
 	grid-row-gap: 5px;
 	grid-column-gap: 20px;
 	padding: var(--padding);;

@@ -730,6 +730,101 @@ function prepareNoteAttributes(dataElement, note, attributes)
 				dataElement.appendChild(input);
 				break;
 
+			case "files":
+
+				var input = document.createElement("input");
+				input.type = "file";
+				input.multiple = true;
+				setFileSizeAttributes(input, attribute);
+				input.id = attribute.id;
+				input.style.display = "none";
+
+				var addButton = createInputButton();
+				addButton.setAttribute("related-button-id", attribute.id);
+				addButton.className += " " + UPLOAD_FILE_BUTTON;
+				addButton.style.justifySelf = "right";
+				addButton.onclick = function() 
+				{
+					var relatedButtonId = this.getAttribute("related-button-id");
+					document.getElementById(relatedButtonId).click();
+				}
+				dataElement.appendChild(addButton);
+
+				var filesCollection = createFormInput("div", attribute);
+				filesCollection.className += " files-collection twoCols";
+				filesCollection.id = attribute.id + "-files";
+				setElementSizeAtPage(filesCollection, attribute);
+				filesCollection.style.justifySelf = attribute.alignment;
+				filesCollection.setAttribute(FILES_COUNT, 0);
+				appendNewSpanAligning(filesCollection, "№", "right");
+				appendNewSpanAligning(filesCollection, "Title", "left");
+				appendNewSpanAligning(filesCollection, "Type", "center");
+				appendNewSpanAligning(filesCollection, "Size", "right");
+				appendNewSpanAligning(filesCollection, "Uploaded", "center");
+				appendNewSpan(filesCollection, "");			 // Download
+				appendNewSpan(filesCollection, "");		     // Remove
+				dataElement.appendChild(filesCollection);
+
+				if (note != null && note.attributes[attribute.name] != null)
+				{
+					var identifiers = new Object();
+					identifiers["identifiers"] = note.attributes[attribute.name];
+
+					asyncDownloadFiles(note.attributes[attribute.name], filesCollection);
+				}
+
+				input.onchange = function(event)
+				{
+					for (var j = 0; j < event.target.files.length; j++)
+						checkFileSize(this.getAttribute(MIN_SIZE), this.getAttribute(MAX_SIZE), event.target.files[j].size / 1024);
+
+					var promise = function(value, index) 
+					{ 
+						return new Promise((resolve, reject) => {
+							saveFile(value)
+							.then(response => { 
+								return (response.message) ? reject(response.message) : resolve(response);
+							})
+						})
+					};
+
+					Promise.all([...event.target.files].map(promise))
+					.then(identifiers => {
+						var a = 0;
+
+						/*
+							var collection = document.getElementById(this.id + "-files");
+							var buttons = collection.getElementsByClassName(DELETE_BUTTON);
+							if ([...buttons].every(x => x.getAttribute(CONTENT_ID) != response))
+								identifiers.push(response);
+*/
+						asyncDownloadFiles(identifiers, document.getElementById(this.id + "-files"));
+						
+						
+					})
+
+					/*
+					var identifiers = [];
+					for (const file of event.target.files)
+					{
+						saveFile(file)
+						.then(response => {
+							if (!response.message)
+							{
+								var collection = document.getElementById(this.id + "-files");
+								var buttons = collection.getElementsByClassName(DELETE_BUTTON);
+								if ([...buttons].every(x => x.getAttribute(CONTENT_ID) != response))
+									identifiers.push(response);
+							}
+						});
+					}*/
+
+					//asyncDownloadFiles(identifiers, document.getElementById(this.id + "-files"));
+				};
+
+				dataElement.appendChild(input);
+				break;
+
 			// text, url, etc.
 			default:
 				var input = createFormInput("input", attribute, attribute.type);
@@ -786,7 +881,7 @@ function saveFile(file)
 
 function downloadMetadata(fileId)
 {
-	return fetch(SERVER_ADDRESS + "/rest/file/" + fileId + "/metadata", {
+	return fetch(SERVER_ADDRESS + "/rest/file/metadata/" + fileId, {
 		method: "GET",
 		headers: { "Accept": "application/json;charset=UTF-8", "Content-Type": "application/json;charset=UTF-8" }
 	})
@@ -947,6 +1042,77 @@ function asyncDownloadImage(fileId, inputId, size)
 			asyncSetDownloadFromMetadata(fileId, download.id);
 		}
 	});
+}
+
+
+function asyncDownloadFiles(identifiers, filesCollection)
+{
+	fetch(SERVER_ADDRESS + "/rest/file/metadata", {
+		method: "POST",
+		body: JSON.stringify(identifiers),
+		headers: { "Accept": "application/json;charset=UTF-8", "Content-Type": "application/json;charset=UTF-8" }
+	})
+	.then(response => response.json())
+	.then(metadata => {
+		for (var i = 0; i < metadata.length; i++)
+			addFileRow(metadata[i], filesCollection);
+	});
+}
+
+
+function addFileRow(metadata, filesCollection)
+{
+	var number = parseInt(filesCollection.getAttribute(FILES_COUNT)) + 1;
+	appendNewSpanAligning(filesCollection, number, "right");
+	appendNewSpanAligning(filesCollection, metadata.title, "left");
+	appendNewSpanAligning(filesCollection, metadata.contentType, "center");
+	appendNewSpanAligning(filesCollection, metadata.size, "right");
+	appendNewSpanAligning(filesCollection, moment(metadata.uploaded).format('LLL'), "center");
+
+	var downloadButton = document.createElement("a");
+	downloadButton.className += " download-image ";
+	downloadButton.href = "#";
+	downloadButton.setAttribute(CONTENT_ID, metadata.id);
+	downloadButton.setAttribute("title", metadata.title);
+	downloadButton.onclick = function() 
+	{
+		fetch(SERVER_ADDRESS + "/rest/file/" + this.getAttribute(CONTENT_ID) + "/content")
+		.then(response => {
+			if (response.status === 200)
+			{
+				return response.blob();
+			}
+		})
+		.then(data => {
+			if (data)
+			{
+				var a = document.createElement("a");
+				var file = window.URL.createObjectURL(data);
+				a.setAttribute("href", file);
+				a.setAttribute("download", this.getAttribute("title"));
+				a.style.display = "none";
+				document.body.appendChild(a);
+				a.click();
+				setTimeout(() => document.body.removeChild(a), 0);
+			}
+		});
+	}
+	filesCollection.appendChild(downloadButton);
+
+	var deleteButton = document.createElement("span");
+	deleteButton.className += " " + DELETE_BUTTON;
+	deleteButton.setAttribute(CONTENT_ID, metadata.id);
+	deleteButton.onclick = function() 
+	{
+		var elementsOnRow = 7;
+		for (var i = 0; i < (elementsOnRow - 1); i++)
+			this.parentNode.removeChild(deleteButton.previousSibling);
+
+		setTimeout(() => this.parentNode.removeChild(this), 0);
+	};
+	filesCollection.appendChild(deleteButton);
+
+	filesCollection.setAttribute(FILES_COUNT, number);
 }
 
 
