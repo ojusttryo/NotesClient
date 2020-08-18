@@ -1,4 +1,4 @@
-COLORS = new Object();
+
 
 
 /**
@@ -8,9 +8,8 @@ async function showContentTableWithNotes(contentType, contentId)
 {
 	setContentType(contentType);
 	setContentId(contentId);
-	//drawHeader(name);
 	switchToContent();
-	createUpperButtonsForContent();
+	createUpperMenuForContent();
 
 	fetch(SERVER_ADDRESS + '/rest/attributes/search?entityId=' + contentId)
 	.then(response => response.json())
@@ -27,30 +26,23 @@ async function showContentTableWithNotes(contentType, contentId)
 }
 
 
-/**
- * Create buttons like 'New note' and 'New folder'
- */
-function createUpperButtonsForContent()
+function createUpperMenuForContent()
 {
 	var dataMenu = getEmptyElement(DATA_MENU);
 
-	var addNoteButton = createInputButton("add-note-button");
-	addNoteButton.value = "New note";
-	addNoteButton.onclick = function() { showNoteForm(null, NOTE) };
-
-	var addFolderButton = createInputButton("add-folder-button");
-	addFolderButton.value = "New folder";
-	addFolderButton.onclick = function() { showNoteForm(null, FOLDER) };
+	var addNoteButton = document.createElement("a");
+	addNoteButton.className += " new-note-image";
+	addNoteButton.href = "#";
+	addNoteButton.onclick = function() { showNoteForm(null) };
 
 	dataMenu.appendChild(addNoteButton);
-	dataMenu.appendChild(addFolderButton);
 }
 
 
 function createNotesTableHead(table, attributes)
 {
-	var count = countColumns(attributes);
-	document.documentElement.style.setProperty("--tableColumnsCount", count);
+	var count = countColumnsWithoutButtons(attributes);
+	setContentColumnsCount(count);
 
 	// Headers for attributes
 	for (var i = 0; i < attributes.length; i++)
@@ -71,9 +63,9 @@ function createNotesTableHead(table, attributes)
 }
 
 
-function countColumns(attributes)
+function countColumnsWithoutButtons(attributes)
 {
-	var count = 0; 		// without buttons
+	var count = 0;
 	for (var i = 0; i < attributes.length; i++)
 	{
 		if (!needToSkipAttributeInTable(attributes[i]))
@@ -95,43 +87,43 @@ function createNotesTableBody(table, attributes, notes)
 	for (var i = 0; i < notes.length; i++)
 	{
 		var note = notes[i];
-		var noteAttributes = note.attributes;
-
 		for (var j = 0; j < attributes.length; j++)
 		{
 			if (needToSkipAttributeInTable(attributes[j]))
 				continue;
 
 			var attribute = attributes[j];
-			var td = document.createElement("div");
 			var attributeName = attribute.name;
-			td.style.textAlign = attribute.alignment;
-			td.setAttribute(ATTRIBUTE_NAME, attributeName);
-			td.setAttribute(CONTENT_ID, note.id);
+			var currentValue = note.attributes[attributeName];
+			
+			var cell = document.createElement("div");
+			cell.style.textAlign = attribute.alignment;
+			cell.setAttribute(ATTRIBUTE_NAME, attributeName);
+			cell.setAttribute(CONTENT_ID, note.id);
 
 			switch(attribute.type)
 			{
 				case "url":
-					if (noteAttributes[attributeName] == null)
+					if (currentValue == null)
 						break;
 
 					var a = document.createElement("a");
-					a.href = noteAttributes[attributeName];
+					a.href = currentValue;
 					a.className += " link-image";
 					a.style.margin = "auto";
 					a.target = "_blank";
-					td.appendChild(a);
+					cell.appendChild(a);
 					break;
 					
 				case "save time":
 				case "update time":
-					if (noteAttributes[attributeName] == null)
+					if (currentValue == null)
 						break;
 					
-					var time = new Date(noteAttributes[attributeName]);
+					var time = new Date(currentValue);
 					var format = attribute.dateFormat;
 					var convertedTime = moment(time).format(format);
-					td.innerHTML = convertedTime;
+					cell.innerHTML = convertedTime;
 					break;
 
 				case "checkbox":
@@ -139,8 +131,8 @@ function createNotesTableBody(table, attributes, notes)
 					{
 						var checkbox = document.createElement("input");
 						checkbox.type = "checkbox";
-						if (noteAttributes[attributeName] != null)
-							checkbox.checked = isTrue(noteAttributes[attributeName]);
+						if (currentValue != null)
+							checkbox.checked = isTrue(currentValue);
 						checkbox.setAttribute(PREVIOUS_VALUE, checkbox.checked);
 						
 						checkbox.onchange = function()
@@ -149,28 +141,14 @@ function createNotesTableBody(table, attributes, notes)
 							objectToSave[this.parentNode.getAttribute(ATTRIBUTE_NAME)] = this.checked;
 
 							updateNote(objectToSave, this.parentNode.getAttribute(CONTENT_ID))
-							.then(response => {
-								if (response.status != 200)
-								{
-									this.value = this.getAttribute(PREVIOUS_VALUE);
-
-									if (response.status == 500)
-										response.text().then(error => { showError(error.message); });
-									else
-										response.text().then(error => { showError(error); });
-								}
-								else
-								{
-									response.text().then(text => { this.setAttribute(PREVIOUS_VALUE, this.value); })
-								}
-							});
+							.then(response => handleUpdateNoteResponse(response));
 						}
 
-						td.appendChild(checkbox);
+						cell.appendChild(checkbox);
 					}
 					else
 					{
-						td.innerText = valueOrEmptyString(noteAttributes[attributeName]);
+						cell.innerText = valueOrEmptyString(currentValue);
 					}
 					break;
 					
@@ -190,56 +168,38 @@ function createNotesTableBody(table, attributes, notes)
 							objectToSave[this.parentNode.getAttribute(ATTRIBUTE_NAME)] = this.value;
 
 							updateNote(objectToSave, this.parentNode.getAttribute(CONTENT_ID))
-							.then(response => {
-								if (response.status != 200)
-								{
-									this.value = this.getAttribute(PREVIOUS_VALUE);
-
-									if (response.status == 500)
-										response.text().then(error => { showError(error.message); });
-									else
-										response.text().then(error => { showError(error); });
-								}
-								else
-								{
-									response.text().then(text => { this.setAttribute(PREVIOUS_VALUE, this.value); })
-								}
-							});
+							.then(response => handleUpdateNoteResponse(response));
 						}
-						td.appendChild(select);
+						cell.appendChild(select);
 					}
 					else
 					{
-						td.innerHTML = noteAttributes[attributeName] != null ? noteAttributes[attributeName] : "";
+						cell.innerHTML = currentValue != null ? currentValue : "";
 					}
 					break;
 
 				case "multiselect":
-					if (noteAttributes[attributeName] == null)
+					if (currentValue == null)
 						break;
 					
-					for (var k = 0; k < noteAttributes[attributeName].length; k++)
+					for (var k = 0; k < currentValue.length; k++)
 					{
-						var text = noteAttributes[attributeName][k];
+						var text = currentValue[k];
 						var elem = document.createElement("span");
 						elem.className += " colored-select";
 						elem.innerText = text;
+						elem.style.borderColor = randomColor(text);
 
-						if (COLORS[text] == null)
-							COLORS[text] = randomHsl();
-						
-						elem.style.borderColor = COLORS[text];
-
-						td.style.display = "flex";
-						td.style.flexWrap = "wrap";
-						td.appendChild(elem);
+						cell.style.display = "flex";
+						cell.style.flexWrap = "wrap";
+						cell.appendChild(elem);
 					}
 					break;
 
 				case "inc":
 					var numberTd = document.createElement("td");
 					numberTd.setAttribute(ATTRIBUTE_NAME, attributeName);
-					numberTd.innerHTML = noteAttributes[attributeName] != null ? noteAttributes[attributeName] : attribute.defaultValue;
+					numberTd.innerHTML = currentValue != null ? currentValue : attribute.defaultValue;
 					numberTd.style.textAlign = attribute.alignment;
 					numberTd.style.alignSelf = "center";
 					table.appendChild(numberTd);
@@ -248,121 +208,84 @@ function createNotesTableBody(table, attributes, notes)
 					incButton.setAttribute(ATTRIBUTE_NAME, attributeName);
 					incButton.className += " plus-image";
 					incButton.style.justifySelf = "start";
-					//incButton.style.alignSelf = "center";
 					incButton.onclick = function()
 					{
 						var id = this.parentNode.getAttribute(CONTENT_ID);
-						var contentType = getContentType();
-
-						fetch(SERVER_ADDRESS + '/rest/notes/' + contentType + "/" + id + "/inc/" + this.getAttribute(ATTRIBUTE_NAME), {
+						fetch(SERVER_ADDRESS + '/rest/notes/' + getContentType() + "/" + id + "/inc/" + this.getAttribute(ATTRIBUTE_NAME), {
 							method: "PUT",
-							headers:
-							{
-								"Accept": "text/plain;charset=UTF-8",
-								"Content-Type": "application/json;charset=UTF-8"
-							}
+							headers: { "Accept": "text/plain;charset=UTF-8", "Content-Type": "application/json;charset=UTF-8" }
 						})
 						.then(response => {
 							if (response.status != 200)
-							{
-								if (response.status == 500)
-									response.text().then(error => { showError(error.message); });
-								else
-									response.text().then(error => { showError(error); });
-							}
+								response.text().then(error => (response.status == 500) ? showError(error.message) : showError(error));
 							else
-							{
 								response.text().then(text => { this.parentNode.previousSibling.innerText = parseFloat(text); })
-							}
 						});
 					}
-					td.appendChild(incButton);
+					cell.appendChild(incButton);
 					break;
 
 				case "file":
 				case "image":
-					if (noteAttributes[attributeName] == null)
+					if (currentValue == null)
 						break;
 
 					var download = document.createElement("a");
 					download.href = "#";
 					download.id = note.id + "-" + attribute.id + "-label";
 					download.className += " download-image";
-					download.setAttribute(FILE_ID, noteAttributes[attributeName]);
+					download.setAttribute(FILE_ID, currentValue);
 					download.style.margin = "auto";
 					download.onclick = function()
 					{
 						var fileId = this.getAttribute(FILE_ID);
 						if (fileId)
 						{
-							fetch(SERVER_ADDRESS + "/rest/file/" + fileId + "/content")
-							.then(response => {
-								if (response.status === 200)
-								{
-									return response.blob();
-								}
-							})
+							downloadFile(fileId)
 							.then(data => {
 								if (data)
-								{
-									var a = document.createElement("a");
-									var file = window.URL.createObjectURL(data);
-									a.setAttribute("href", file);
-									a.setAttribute("download", this.getAttribute("title"));
-									a.style.display = "none";
-									document.body.appendChild(a);
-									a.click();
-									setTimeout(() => document.body.removeChild(a), 0);
-								}
+									openDownloadPrompt(data, this.getAttribute("title"));
+								else
+									showError("Cannot download file");
 							});
 						}
 					};
 
-					asyncSetTitleFromMetadata(noteAttributes[attributeName], download.id);
-					td.appendChild(download);
+					asyncSetTitleFromMetadata(currentValue, download.id);
+					cell.appendChild(download);
 					break;
 
 				default:
-					td.innerHTML = noteAttributes[attributeName] != null ? noteAttributes[attributeName] : "";
+					cell.innerHTML = currentValue != null ? currentValue : "";
 					break;
 			}
-			table.appendChild(td);
+			table.appendChild(cell);
 		}
 
-		table.appendChild(createButtonToShowNoteEditForm(NOTE, note.id));
-		table.appendChild(createButtonToDeleteNote(NOTE, note.id));
+		table.appendChild(createButtonToShowNoteEditForm(note.id));
+		table.appendChild(createButtonToDeleteNote(note.id));
 	}
 }
 
 
-function createButtonToShowNoteEditForm(itemType, id)
+function createButtonToShowNoteEditForm(id)
 {
 	var editButton = document.createElement("td");
 	editButton.className += " " + EDIT_BUTTON;
-	editButton.setAttribute(ITEM_TYPE, itemType);
 	editButton.setAttribute(CONTENT_ID, id);
-	editButton.onclick = function() 
-	{		
-		showNoteForm(id); 
-	};
-
+	editButton.onclick = function() { showNoteForm(id); };
 	return editButton;
 }
 
-function createButtonToDeleteNote(itemType, id)
+function createButtonToDeleteNote(id)
 {
 	var deleteButton = document.createElement("td");
 	deleteButton.className += " " + DELETE_BUTTON;
-	deleteButton.setAttribute(ITEM_TYPE, itemType);
 	deleteButton.setAttribute(CONTENT_ID, id);
 	deleteButton.onclick = function() 
 	{
-		switch (this.getAttribute(ITEM_TYPE))
-		{
-			case FOLDER: deleteFolder(id); break;
-			case NOTE: deleteNote(id); break;
-		}
-		updateContentTableVisibility();
+		deleteNote(id)
+		.then(updateContentTableVisibility());
 	};
 
 	return deleteButton;
@@ -371,7 +294,7 @@ function createButtonToDeleteNote(itemType, id)
 
 function deleteNote(id)
 {
-	fetch(SERVER_ADDRESS + '/rest/notes/' + getContentType() + '/' + id, { method: "DELETE" })
+	return fetch(SERVER_ADDRESS + '/rest/notes/' + getContentType() + '/' + id, { method: "DELETE" })
 	.then(response => {
 		if (response.status === 200)
 			showCurrentContent();
@@ -383,7 +306,6 @@ function showNoteForm(id)
 {
 	switchToAddEditForm();
 
-	var u = SERVER_ADDRESS + '/rest/attributes/search?entityId=' + getContentId();
 	fetch(SERVER_ADDRESS + '/rest/attributes/search?entityId=' + getContentId())
 	.then(response => response.json())
 	.then(attributes => {
@@ -394,7 +316,6 @@ function showNoteForm(id)
 
 		if (id)
 		{
-			var url = SERVER_ADDRESS + "/rest/notes/" + getContentType() + "/" + id;
 			fetch(SERVER_ADDRESS + "/rest/notes/" + getContentType() + "/" + id)
 			.then(response => response.json())
 			.then(note => {
@@ -419,6 +340,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 	for (var i = 0; i < attributes.length; i++)
 	{
 		var attribute = attributes[i];
+
 		var label = document.createElement("label");
 		label.innerText = attribute[TITLE];
 		dataElement.appendChild(label);
@@ -495,18 +417,17 @@ function prepareNoteAttributes(dataElement, note, attributes)
 			case "update time":
 				var input = createFormInput("span", attribute);
 				
-				// New note
+				// For new note we have no values
 				if (note == null)
 				{
 					label.style.display = "none";
 					input.style.display = "none";
 				}
-				// Old note but no value
+				// Old note but no value (e.g. new attribute is added to old entity)
 				else if (note.attributes[attribute.name] == null)
 				{
 					input.innerText = "Required data isn't found";
 				}
-				// Old note and we have time value
 				else
 				{
 					var time = new Date(note.attributes[attribute.name]);
@@ -521,13 +442,8 @@ function prepareNoteAttributes(dataElement, note, attributes)
 				break;
 				
 			case "user date":
-				var input = createFormInput("input", attribute, "date");
-				input.value = getStringValueOrDefault(note, attribute);
-				dataElement.appendChild(input);
-				break;
-
 			case "user time":
-				var input = createFormInput("input", attribute, "time");
+				var input = createFormInput("input", attribute, (attribute.type == "user date") ? "date" : "time");
 				input.value = getStringValueOrDefault(note, attribute);
 				dataElement.appendChild(input);
 				break;
@@ -554,25 +470,12 @@ function prepareNoteAttributes(dataElement, note, attributes)
 					var fileId = this.getAttribute(FILE_ID);
 					if (fileId)
 					{
-						fetch(SERVER_ADDRESS + "/rest/file/" + fileId + "/content")
-						.then(response => {
-							if (response.status === 200)
-							{
-								return response.blob();
-							}
-						})
+						downloadFile(fileId)
 						.then(data => {
 							if (data)
-							{
-								var a = document.createElement("a");
-								var file = window.URL.createObjectURL(data);
-								a.setAttribute("href", file);
-								a.setAttribute("download", this.innerText);
-								a.style.display = "none";
-								document.body.appendChild(a);
-								a.click();
-								setTimeout(() => document.body.removeChild(a), 0);
-							}
+								openDownloadPrompt(data, this.innerText);
+							else
+								showError("Cannot download file");
 						});
 					}
 				};
@@ -646,11 +549,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 							document.getElementById(this.id + "-delete").style.display = "inline-grid";
 							if (this.getAttribute(ATTRIBUTE_TYPE) == "image")
 							{
-								fetch(SERVER_ADDRESS + "/rest/file/" + newFileId + "/content")
-								.then(response => {
-									if (response.status === 200)
-										return response.blob();
-								})
+								downloadFile(newFileId)
 								.then(data => {
 									if (data)
 									{
@@ -789,37 +688,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 					};
 
 					Promise.all([...event.target.files].map(promise))
-					.then(identifiers => {
-						var a = 0;
-
-						/*
-							var collection = document.getElementById(this.id + "-files");
-							var buttons = collection.getElementsByClassName(DELETE_BUTTON);
-							if ([...buttons].every(x => x.getAttribute(CONTENT_ID) != response))
-								identifiers.push(response);
-*/
-						asyncDownloadFiles(identifiers, document.getElementById(this.id + "-files"));
-						
-						
-					})
-
-					/*
-					var identifiers = [];
-					for (const file of event.target.files)
-					{
-						saveFile(file)
-						.then(response => {
-							if (!response.message)
-							{
-								var collection = document.getElementById(this.id + "-files");
-								var buttons = collection.getElementsByClassName(DELETE_BUTTON);
-								if ([...buttons].every(x => x.getAttribute(CONTENT_ID) != response))
-									identifiers.push(response);
-							}
-						});
-					}*/
-
-					//asyncDownloadFiles(identifiers, document.getElementById(this.id + "-files"));
+					.then(identifiers => { asyncDownloadFiles(identifiers, document.getElementById(this.id + "-files")); })
 				};
 
 				dataElement.appendChild(input);
@@ -870,12 +739,7 @@ function saveFile(file)
 		body: formData,
 		headers: { "Accept": "application/json;charset=UTF-8" }
 	})
-	.then(response => {
-		if (response.status === 200)
-			return response.text()
-		if (response === 500)
-			return response.json();
-	})
+	.then(response => { return (response.status === 200) ? response.text() : response.json(); });
 }
 
 
@@ -891,17 +755,8 @@ function downloadMetadata(fileId)
 
 function asyncSetTitleFromMetadata(fileId, elementId)
 {
-	return downloadMetadata(fileId)
+	downloadMetadata(fileId)
 	.then(metadata => { document.getElementById(elementId).setAttribute("title", metadata.title); })
-}
-
-
-function asyncSetDownloadFromMetadata(fileId, elementId)
-{
-	return downloadMetadata(fileId)
-	.then(metadata => { 
-		document.getElementById(elementId).setAttribute("title", metadata.title);
-	})
 }
 
 
@@ -916,13 +771,7 @@ function asyncDownloadCurrentFileInfo(fileId, inputId, attributeType)
 
 		if (attributeType == "image")
 		{
-			fetch(SERVER_ADDRESS + "/rest/file/" + fileId + "/content")
-			.then(response => {
-				if (response.status === 200)
-				{
-					return response.blob();
-				}
-			})
+			downloadFile(fileId)
 			.then(data => {
 				if (data)
 				{
@@ -952,7 +801,6 @@ function asyncDownloadImage(fileId, inputId, size)
 		if (downloadedImage)
 		{
 			var imageDiv = document.createElement("div");
-			//imageDiv.id = inputId + "-" + fileId; // duplicate id
 
 			var file = window.URL.createObjectURL(downloadedImage);
 			var img = document.createElement("img");
@@ -969,13 +817,7 @@ function asyncDownloadImage(fileId, inputId, size)
 				popupImage.onclick = function() { setTimeout(() => this.parentNode.parentNode.removeChild(this.parentNode), 0); }
 				popup.appendChild(popupImage);
 
-				fetch(SERVER_ADDRESS + "/rest/file/" + fileId + "/content")
-				.then(response => {
-					if (response.status === 200)
-					{
-						return response.blob();
-					}
-				})
+				downloadFile(fileId)
 				.then(originalImage => {
 					if (originalImage)
 					{
@@ -999,25 +841,12 @@ function asyncDownloadImage(fileId, inputId, size)
 			download.setAttribute(CONTENT_ID, fileId);
 			download.onclick = function() 
 			{
-				fetch(SERVER_ADDRESS + "/rest/file/" + this.getAttribute(CONTENT_ID) + "/content")
-				.then(response => {
-					if (response.status === 200)
-					{
-						return response.blob();
-					}
-				})
+				downloadFile(this.getAttribute(CONTENT_ID))
 				.then(data => {
 					if (data)
-					{
-						var a = document.createElement("a");
-						var file = window.URL.createObjectURL(data);
-						a.setAttribute("href", file);
-						a.setAttribute("download", this.getAttribute("title"));
-						a.style.display = "none";
-						document.body.appendChild(a);
-						a.click();
-						setTimeout(() => document.body.removeChild(a), 0);
-					}
+						openDownloadPrompt(data, this.getAttribute("title"));
+					else
+						showError("Cannot download file");
 				});
 			}
 
@@ -1039,7 +868,7 @@ function asyncDownloadImage(fileId, inputId, size)
 			imageDiv.appendChild(buttons);
 			document.getElementById(inputId + "-gallery").appendChild(imageDiv);
 			
-			asyncSetDownloadFromMetadata(fileId, download.id);
+			asyncSetTitleFromMetadata(fileId, download.id);
 		}
 	});
 }
@@ -1055,12 +884,12 @@ function asyncDownloadFiles(identifiers, filesCollection)
 	.then(response => response.json())
 	.then(metadata => {
 		for (var i = 0; i < metadata.length; i++)
-			addFileRow(metadata[i], filesCollection);
+			addFileCollectionRow(metadata[i], filesCollection);
 	});
 }
 
 
-function addFileRow(metadata, filesCollection)
+function addFileCollectionRow(metadata, filesCollection)
 {
 	var number = parseInt(filesCollection.getAttribute(FILES_COUNT)) + 1;
 	appendNewSpanAligning(filesCollection, number, "right");
@@ -1076,25 +905,12 @@ function addFileRow(metadata, filesCollection)
 	downloadButton.setAttribute("title", metadata.title);
 	downloadButton.onclick = function() 
 	{
-		fetch(SERVER_ADDRESS + "/rest/file/" + this.getAttribute(CONTENT_ID) + "/content")
-		.then(response => {
-			if (response.status === 200)
-			{
-				return response.blob();
-			}
-		})
+		downloadFile(this.getAttribute(CONTENT_ID))
 		.then(data => {
 			if (data)
-			{
-				var a = document.createElement("a");
-				var file = window.URL.createObjectURL(data);
-				a.setAttribute("href", file);
-				a.setAttribute("download", this.getAttribute("title"));
-				a.style.display = "none";
-				document.body.appendChild(a);
-				a.click();
-				setTimeout(() => document.body.removeChild(a), 0);
-			}
+				openDownloadPrompt(data, this.getAttribute("title"));
+			else
+				showError("Cannot download file");
 		});
 	}
 	filesCollection.appendChild(downloadButton);
@@ -1188,6 +1004,31 @@ function needToSkipAttributeInTable(attribute)
 }
 
 
+function downloadFile(fileId)
+{
+	return fetch(SERVER_ADDRESS + "/rest/file/" + fileId + "/content")
+	.then(response => {
+		if (response.status === 200)
+		{
+			return response.blob();
+		}
+	})
+}
+
+
+function openDownloadPrompt(fileData, title)
+{
+	var a = document.createElement("a");
+	var file = window.URL.createObjectURL(fileData);
+	a.setAttribute("href", file);
+	a.setAttribute("download", title);
+	a.style.display = "none";
+	document.body.appendChild(a);
+	a.click();
+	setTimeout(() => document.body.removeChild(a), 0);
+}
+
+
 function updateNote(objectToSave, id)
 {
 	return fetch(SERVER_ADDRESS + '/rest/notes/' + getContentType() + "/" + id, {
@@ -1200,3 +1041,18 @@ function updateNote(objectToSave, id)
 		}
 	})
 }
+
+
+function handleUpdateNoteResponse(response)
+{
+	if (response.status != 200)
+	{
+		this.value = this.getAttribute(PREVIOUS_VALUE);
+		response.text().then(error => (response.status == 500) ? showError(error.message) : showError(error));
+	}
+	else
+	{
+		response.text().then(text => { this.setAttribute(PREVIOUS_VALUE, this.value); })
+	}
+}
+

@@ -12,6 +12,7 @@
 		<script type="text/javascript" src="attributes.js"></script>
 		<script type="text/javascript" src="entities.js"></script>
 		<script type="text/javascript" src="moment.js"></script>
+		<script type="text/javascript" src="colors.js"></script>
 	</head>
 	<body onload="loadMenu(); showLog(); switchToMainPage();">
 		<div id="main">

@@ -38,7 +38,7 @@ function showEntitiesMenu()
 
 function createEntitiesTableHead(table)
 {
-    document.documentElement.style.setProperty("--tableColumnsCount", 4);   // 4 - without buttons
+    setContentColumnsCount(4);          // 4 - without buttons
 
 	appendNewSpan(table, "№");
     appendNewSpan(table, "Title");

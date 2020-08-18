@@ -16,18 +16,17 @@ function loadMenu()
 			var title = entities[i].title;
 			var collection = entities[i].collection;
 			var li = document.createElement("li");
+			li.setAttribute(CONTENT, collection);
+			li.setAttribute(CONTENT_ID, entities[i].id);
 			li.onclick = function() { showContentTableWithNotes(this.getAttribute(CONTENT), this.getAttribute(CONTENT_ID)); };
 			li.id = collection + "-button";
 			li.innerText = title;
-			li.setAttribute(CONTENT, collection);
-			li.setAttribute(CONTENT_ID, entities[i].id);
 			menuList.appendChild(li);
 		}
 	
 		if (entities.length > 0)
 		{
-			var emptyLi = document.createElement("li");
-			menuList.appendChild(emptyLi);
+			menuList.appendChild(document.createElement("br"));
 		}
 	
 		var attributesLi = document.createElement("li");
@@ -95,8 +94,7 @@ function showLog()
 
 function showCurrentContent()
 {
-	var content = document.getElementById(CONTENT);
-	showContentTableWithNotes(content.getAttribute(CONTENT_TYPE), content.getAttribute(CONTENT_ID));
+	showContentTableWithNotes(getContentType(), getContentId());
 	switchToContent();
 }
 
@@ -140,24 +138,12 @@ function updateContentTableVisibility()
 }
 
 
-/**
- * Create the element with specified name, set inner text, and append element to the parent node
- * @param {String} elementName 
- * @param {Object} parentNode 
- * @param {String} innerText 
- */
-function appendNewElement(elementName, parentNode, innerText)
-{
-	var element = document.createElement(elementName);
-	element.innerText = innerText;
-	parentNode.appendChild(element);
-	return element;
-}
-
-
 function appendNewSpan(parent, innerText)
 {
-	return appendNewElement("span", parent, innerText);
+	var element = document.createElement("span");
+	element.innerText = innerText;
+	parent.appendChild(element);
+	return element;
 }
 
 
@@ -169,19 +155,7 @@ function appendNewSpanAligning(parent, innerText, alignment)
 
 
 /**
- * Create new <td>, set inner text, and append element to the parent <tr>
- * @param {*} tr - HTML element <tr>
- * @param {*} innerText - inner text of element
- */
-function appendNewTd(tr, innerText)
-{
-	appendNewElement("td", tr, innerText);
-}
-
-
-/**
  * Gets the element from the document by id and clear it's content.
- * @param {String} id - id of HTML element 
  */
 function getEmptyElement(id)
 {
@@ -194,7 +168,6 @@ function getEmptyElement(id)
 
 /**
  * Get meta object from the add/edit form
- * @param {Object} form - html element, that contains requested data
  */
 function getMetaObjectFromForm(parent)
 {
@@ -275,7 +248,6 @@ function getMetaObjectFromForm(parent)
 
 /**
  * Show HTML element by setting it's display property to "block"
- * @param {String} id - id of HTML element 
  */
 function showHtmlElementById(id)
 {
@@ -291,31 +263,10 @@ function showHtmlGridElementById(id)
 
 /**
  * Hide HTML element by setting it's display property to "none"
- * @param {String} id - id of HTML element
  */
 function hideHtmlElementById(id)
 {
 	document.getElementById(id).style.display = "none";
-}
-
-
-function getSvgWithText(innerText, height, width)
-{
-	var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-	svg.setAttribute("width", width);
-	svg.setAttribute("height", height);
-
-	var text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-	text.setAttribute("fill", "black");
-	text.setAttribute("text-anchor", "middle");
-	text.setAttribute("dominant-baseline", "middle");
-	text.textContent = innerText;
-	text.setAttribute("x", "50%");
-	text.setAttribute("y", "50%");
-
-	svg.appendChild(text);
-
-	return svg;
 }
 
 
@@ -400,7 +351,6 @@ function showCheckboxes(selectBox)
 }
 
 
-
 function saveMetaObjectInfo(parentId, restUrl, afterSaveHandler)
 {
     var parent = document.getElementById(parentId);
@@ -412,11 +362,7 @@ function saveMetaObjectInfo(parentId, restUrl, afterSaveHandler)
     fetch(SERVER_ADDRESS + restUrl, {
         method: id ? "PUT" : "POST",
         body: JSON.stringify(objectToSave),
-        headers:
-        {
-            "Accept": "application/json;charset=UTF-8",
-            "Content-Type": "application/json;charset=UTF-8"
-        }
+        headers: { "Accept": "application/json;charset=UTF-8", "Content-Type": "application/json;charset=UTF-8" }
     })
     .then(response => {
 		
@@ -428,7 +374,6 @@ function saveMetaObjectInfo(parentId, restUrl, afterSaveHandler)
 		else if (response.status == 500)
 		{
 			return response.json();
-
 		}
 	})
 	.then(error => {
@@ -488,34 +433,6 @@ function addButton(parent, buttonId, buttonValue, onclick)
     return input;
 }
 
-
-function createTdWithIcon(iconClassName)
-{
-	var icon = document.createElement("td");
-	icon.className += " " + iconClassName;
-	return icon;
-}
-
-function drawHeader(name)
-{
-	var header = document.getElementById("header");
-	header.innerHTML = "";
-
-	var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-	svg.setAttribute("width", header.clientWidth);
-	svg.setAttribute("height", header.clientHeight);
-
-	var text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-	text.setAttribute("fill", "red");
-	text.setAttribute("text-anchor", "middle");
-	text.setAttribute("dominant-baseline", "middle");
-	text.textContent = name;
-	text.setAttribute("x", "50%");
-	text.setAttribute("y", "50%");
-
-	svg.appendChild(text);	
-	header.appendChild(svg);
-}
 
 function showInputAndLabelIf(inputId, needToShow)
 {
@@ -637,7 +554,6 @@ function addFormButtons(parent, isNewObject, saveHandler, cancelHandler)
 	return buttons;
 }
 
-
 function createInputButton(id)
 {
 	var button = document.createElement("input");
@@ -647,12 +563,7 @@ function createInputButton(id)
 	return button;
 }
 
-
-// https://stackoverflow.com/questions/1484506/random-color-generator
-// https://css-tricks.com/snippets/javascript/random-hex-color/
-function randomHsl() 
+function setContentColumnsCount(count)
 {
-	return '#' + Math.floor(Math.random()*16777215).toString(16);
-	//return '#'+(0x1000000+(Math.random())*0xffffff).toString(16).substr(1,6);
-    //return 'hsla(' + (Math.random() * 360) + ', 100%, 50%, 1)';
+	document.documentElement.style.setProperty("--tableColumnsCount", count);
 }

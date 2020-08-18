@@ -22,7 +22,7 @@ function showAttributesMenu()
 {
 	var dataMenu = getEmptyElement(DATA_MENU);
 
-	var addAttributeButton = createInputButton("add-attribute-button");
+	var addAttributeButton = createInputButton();
 	addAttributeButton.value = "New attribute";
     addAttributeButton.onclick = function() 
     { 
@@ -36,7 +36,7 @@ function showAttributesMenu()
 
 function createAttributesTableHead(table)
 {
-    document.documentElement.style.setProperty("--tableColumnsCount", 4);   // 4 - without buttons
+    setContentColumnsCount(4);      // 4 - without buttons
 
 	appendNewSpan(table, "№");
     appendNewSpan(table, "Name");
@@ -140,8 +140,10 @@ function createAttributeForm(attributeId)
     var saveHandler = function() { saveMetaObjectInfo(DATA_ELEMENT, "/rest/attributes", showAttributes) };
     var cancelHandler = function() { showAttributes() };
     addFormButtons(dataElement, attributeId != null, saveHandler, cancelHandler);
+    
+    document.getElementById("attribute-date-format").placeholder = "https://momentjs.com/";
 
-    // When changing the type other fields may become excess
+    // Changing the type of attribute, other fields may become excess
     document.getElementById("attribute-type").onchange = function() 
     {
         var type = document.getElementById("attribute-type").value;
@@ -184,14 +186,6 @@ function createAttributeForm(attributeId)
         }
     }
     document.getElementById("attribute-type").onchange();
-    /*
-    var dateFormat = document.getElementById("attribute-date-format").parentNode;
-    var formatHref = document.createElement("a");
-    formatHref.href = "https://momentjs.com/";
-    formatHref.text = " examples ";
-    formatHref.target = "_blank";
-    dateFormat.insertBefore(formatHref, dateFormat.firstChild.nextSibling);
-    */
 }
 
 

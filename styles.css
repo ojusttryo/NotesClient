@@ -1,6 +1,8 @@
 :root
 {
 	--fontSize: 12px;
+	--menuFontSize: 14px;
+	--buttonSize: 14px;
 	--selectSize: 10px;
 	--tableColumnsCount: 1;
 	--padding: 10px;
@@ -41,18 +43,25 @@ body
 
 #menu
 {
-	width: 10vw;
+	font-size: var(--menuFontSize);
 	max-width: 15%;
 	order: 1;
 	background-color: green;
-	padding-right: 2vw;
+	padding: var(--padding);
 }
 
 #menu ul li
 {
+	padding: 2px;
 	list-style: none;
 }
 
+#menu ul li:hover
+{
+	cursor: pointer;
+	border-radius: 2px;
+	box-shadow: 0 0 5px 1px red, 0 0 5px 1px blue;
+}
 
 #history
 {
@@ -108,7 +117,7 @@ input[type=checkbox]
 	width: 100%;
 	box-sizing: border-box;
 	padding: var(--padding);;
-	align-items: center;
+	align-items: top;
 	overflow-y: scroll;
 	overflow-x: visible;
 }
@@ -192,8 +201,8 @@ input[type=checkbox]
 .remove-image
 {
 	display: block;
-	width: 1.5vw;
-	height: 1.5vw;
+	width: var(--buttonSize);
+	height: var(--buttonSize);
 	text-decoration: none;
 	background-image: url("img/quit.svg");
 	background-size: contain;
@@ -204,8 +213,8 @@ input[type=checkbox]
 .download-image
 {
 	display: block;
-	width: 1.5vw;
-	height: 1.5vw;
+	width: var(--buttonSize);
+	height: var(--buttonSize);
 	text-decoration: none;
 	background-image: url("img/download.svg");
 	background-size: contain;
@@ -216,8 +225,8 @@ input[type=checkbox]
 .link-image
 {
 	display: block;
-	width: 1.5vw;
-	height: 1.5vw;
+	width: var(--buttonSize);
+	height: var(--buttonSize);
 	text-decoration: none;
 	background-image: url("img/link.svg");
 	background-size: contain;
@@ -228,10 +237,22 @@ input[type=checkbox]
 .plus-image
 {
 	display: block;
-	width: 1.5vw;
-	height: 1.5vw;
+	width: var(--buttonSize);
+	height: var(--buttonSize);
 	text-decoration: none;
 	background-image: url("img/more.svg");
+	background-size: contain;
+	z-index: 100;
+}
+
+
+.new-note-image
+{
+	display: inline-block;
+	width: var(--buttonSize);
+	height: var(--buttonSize);
+	text-decoration: none;
+	background-image: url("img/newNote.svg");
 	background-size: contain;
 	z-index: 100;
 }
@@ -279,8 +300,8 @@ input[type=checkbox]
 	background-image: url("img/editIcon.svg");
 	max-width: 100%;
 	max-height: 100%;
-	width: 1.5vw;
-	height: 1.5vw;
+	width: var(--buttonSize);
+	height: var(--buttonSize);
 	clear: both;
 	background-size: contain;
 	background-position: left center;
@@ -292,8 +313,8 @@ input[type=checkbox]
 	background-image: url("img/deleteIcon.svg");
 	max-width: 100%;
 	max-height: 100%;
-	width: 1.5vw;
-	height: 1.5vw;
+	width: var(--buttonSize);
+	height: var(--buttonSize);
 	clear: both;
 	background-size: contain;
 	background-position: left center;
