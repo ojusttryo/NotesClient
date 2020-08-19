@@ -360,6 +360,13 @@ input[type=checkbox]
 	vertical-align: top;
 }
 
+.limitedInputWidth
+{
+	justify-self: left;
+	min-width: 5vw;
+	overflow: visible;
+}
+
 .file
 {
 	cursor:pointer;
@@ -387,7 +394,6 @@ input[type=checkbox]
 .selectBox select 
 {
 	width: 100%;
-	font-weight: bold;
 }
 
 .overSelect 

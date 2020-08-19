@@ -350,7 +350,8 @@ function prepareNoteAttributes(dataElement, note, attributes)
 			case "select":
 				var input = createFormInput("select", attribute);
 				addOptions(input, attribute.selectOptions);
-				input.value = getStringValueOrDefault(note, attribute);				
+				input.value = getStringValueOrDefault(note, attribute);
+				input.className += " limitedInputWidth";	
 				dataElement.appendChild(input);
 				break;
 
@@ -395,6 +396,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 			case "inc":
 				var input = createFormInput("input", attribute, "number");
 				input.value = getStringValueOrDefault(note, attribute);
+				input.className += " limitedInputWidth";
 				if (attribute.min != null)
 					input.min = attribute.min;
 				if (attribute.max != null)
@@ -445,6 +447,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 			case "user time":
 				var input = createFormInput("input", attribute, (attribute.type == "user date") ? "date" : "time");
 				input.value = getStringValueOrDefault(note, attribute);
+				input.className += " limitedInputWidth";
 				dataElement.appendChild(input);
 				break;
 
