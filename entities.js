@@ -74,11 +74,15 @@ function createEntitiesTableBody(table, entities)
         deleteButton.setAttribute(CONTENT_ID, entities[i].id);
         deleteButton.onclick = function() 
         {
-            fetch(SERVER_ADDRESS + '/rest/entities/' + this.getAttribute(CONTENT_ID), { method: "DELETE" })
-            .then(response => {
-                if (response.status === 200)
-                    showEntities();
-            })
+            var result = confirm("Delete entity?");
+            if (result)
+            {
+                fetch(SERVER_ADDRESS + '/rest/entities/' + this.getAttribute(CONTENT_ID), { method: "DELETE" })
+                .then(response => {
+                    if (response.status === 200)
+                        showEntities();
+                })
+            }
         };
 		table.appendChild(deleteButton);
 	}

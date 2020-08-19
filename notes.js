@@ -284,8 +284,12 @@ function createButtonToDeleteNote(id)
 	deleteButton.setAttribute(CONTENT_ID, id);
 	deleteButton.onclick = function() 
 	{
-		deleteNote(id)
-		.then(updateContentTableVisibility());
+		var result = confirm("Delete note?");
+		if (result)
+		{
+			deleteNote(id)
+			.then(updateContentTableVisibility());
+		}
 	};
 
 	return deleteButton;

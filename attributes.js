@@ -69,8 +69,10 @@ function createAttributesTableBody(table, attributes)
         deleteButton.className += " " + DELETE_BUTTON;
         deleteButton.setAttribute(CONTENT_ID, attributes[i].id);
         deleteButton.onclick = function() 
-        { 
-            deleteAttribute(this.getAttribute(CONTENT_ID), showAttributes);
+        {
+            var result = confirm("Delete attribute?");
+            if (result)
+                deleteAttribute(this.getAttribute(CONTENT_ID), showAttributes);
         };
 		table.appendChild(deleteButton);
 	}
