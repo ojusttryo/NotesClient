@@ -1,11 +1,88 @@
 
 
+
+
+
+
+function handleRequest()
+{
+	var pathname = window.location.pathname.startsWith('/') ? window.location.pathname.substring(1) : window.location.pathname;
+	if (pathname == "")
+	{
+		loadMenu();
+		showLog();
+		switchToMainPage();
+	}
+	else
+	{
+		var path = pathname.split('/');
+		switch (path[0])
+		{
+			case "entities":
+				loadMenu();
+				if (path[1] == null)
+					showEntities();
+				else
+					createEntityForm(path[1]);
+				break;
+
+			case "attributes":
+				loadMenu();
+				if (path[1] == null)
+					showAttributes();
+				else
+					createEditAttributeForm(path[1]);
+				break;
+				
+			default:
+				loadMenu()
+				.then(() => {
+					var entities = document.getElementById(MENU_LIST).getElementsByTagName("li");
+					// All notes
+					if (path[1] == null)
+					{
+						for (var e = 0; e < entities.length; e++)
+						{
+							if (entities[e].getAttribute(CONTENT_TYPE) == path[0])
+							{
+								entities[e].onclick();
+								return;
+							}
+						}
+	
+						createErrorLabel(document.getElementById(CONTENT));
+						showError("No such entity");
+					}
+					// Specific note
+					else
+					{
+						for (var e = 0; e < entities.length; e++)
+						{
+							if (entities[e].getAttribute(CONTENT_TYPE) == path[0])
+							{
+								setContentId(entities[e].getAttribute(CONTENT_ID));
+								setContentType(entities[e].getAttribute(CONTENT_TYPE));
+								showNoteForm(path[1]);
+								return;
+							}
+						}
+	
+						createErrorLabel(document.getElementById(CONTENT));
+						showError("No such entity or note");
+					}
+				});
+				break;
+		}
+	}
+}
+
+
 /**
  * Load the left side menu of entities on onload event action.
  */
 function loadMenu()
 {
-	fetch(SERVER_ADDRESS + '/rest/entities')
+	return fetch(SERVER_ADDRESS + '/rest/entities')
 	.then(response => response.json())
 	.then(entities => {
 		var menuList = getEmptyElement(MENU_LIST);
@@ -16,9 +93,9 @@ function loadMenu()
 			var title = entities[i].title;
 			var collection = entities[i].collection;
 			var li = document.createElement("li");
-			li.setAttribute(CONTENT, collection);
+			li.setAttribute(CONTENT_TYPE, collection);
 			li.setAttribute(CONTENT_ID, entities[i].id);
-			li.onclick = function() { showContentTableWithNotes(this.getAttribute(CONTENT), this.getAttribute(CONTENT_ID)); };
+			li.onclick = function() { showContentTableWithNotes(this.getAttribute(CONTENT_TYPE), this.getAttribute(CONTENT_ID)); };
 			li.id = collection + "-button";
 			li.innerText = title;
 			menuList.appendChild(li);
@@ -43,6 +120,7 @@ function loadMenu()
 		logLi.innerText = "Log";
 		logLi.onclick = function() 
 		{
+			window.history.pushState("", "Log", "/log");
 			showLog();
 			switchToMainPage();
 		};
@@ -105,7 +183,7 @@ function switchToContent()
 	hideHtmlElementById(DATA_ELEMENT);
 	hideHtmlElementById(HISTORY);
 	showHtmlGridElementById(DATA_TABLE);
-	showHtmlElementById(DATA_MENU);
+	showHtmlElement(DATA_MENU, "flex");
 }
 
 
@@ -140,7 +218,19 @@ function updateContentTableVisibility()
 
 function appendNewSpan(parent, innerText)
 {
-	var element = document.createElement("span");
+	return appendNewElement("span", parent, innerText);
+}
+
+
+function appendNewTd(parent, innerText)
+{
+	return appendNewElement("td", parent, innerText);
+}
+
+
+function appendNewElement(type, parent, innerText)
+{
+	var element = document.createElement(type);
 	element.innerText = innerText;
 	parent.appendChild(element);
 	return element;
@@ -160,9 +250,15 @@ function appendNewSpanAligning(parent, innerText, alignment)
 function getEmptyElement(id)
 {
 	var element = document.getElementById(id);
+	clean(element);
+	return element;
+}
+
+
+function clean(element)
+{
 	while (element.lastChild)
 		element.removeChild(element.lastChild);
-	return element;
 }
 
 
@@ -185,7 +281,16 @@ function getMetaObjectFromForm(parent)
 		var attributeValue = currentNode.getAttribute(ATTRIBUTE_VALUE);
 		if (attributeName != null)
 		{
-			if (currentNode.type == 'checkbox')
+			if (currentNode.tagName.toLowerCase() == 'table' && attributeName == "attributes")
+			{
+				result[attributeName] = [...currentNode.getElementsByTagName("tr")]
+					.filter(x => x.style.display != "none")
+					.map(x => x.getAttribute(CONTENT_ID))
+					.filter(x => x != null);
+			}
+			else if (currentNode.tagName.toLowerCase() == 'tr' && attributeName == "keyAttribute")
+				result[attributeName] = currentNode.getAttribute(CONTENT_ID);
+			else if (currentNode.type == 'checkbox')
 				result[attributeName] = currentNode.checked;
 			else if (currentNode.type == 'select')
 			{
@@ -234,6 +339,12 @@ function getMetaObjectFromForm(parent)
 				var identifiers = [...buttons].map(x => x.getAttribute(CONTENT_ID));
 				result[attributeName] = identifiers;
 			}
+			else if (attributeType && (attributeType == "inc" || attributeType == "number"))
+			{
+				var value = currentNode.value.trim();
+				var number = value.length > 0 ? parseFloat(value) : null;
+				result[attributeName] = number;
+			}
 			else if (currentNode.value != null && currentNode.value.length > 0)
 				result[attributeName] = currentNode.value;
 			else if (currentNode.required)
@@ -252,6 +363,11 @@ function getMetaObjectFromForm(parent)
 function showHtmlElementById(id)
 {
 	document.getElementById(id).style.display = "block";
+}
+
+function showHtmlElement(id, displayType)
+{
+	document.getElementById(id).style.display = displayType;
 }
 
 

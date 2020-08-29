@@ -4,23 +4,37 @@
 /**
  * Shows all notes like 'Movies' or 'Games'
  */
-async function showContentTableWithNotes(contentType, contentId)
+async function showContentTableWithNotes(contentType, entityId, attributeName, searchRequest)
 {
-	setContentType(contentType);
-	setContentId(contentId);
-	switchToContent();
-	createUpperMenuForContent();
+	var isSearch = (attributeName != null && searchRequest != null);
+	// We are still at the same page. No reason to recreate this.
+	if (!isSearch)
+	{
+		setContentType(contentType);
+		setContentId(entityId);
 
-	fetch(SERVER_ADDRESS + '/rest/attributes/search?entityId=' + contentId)
+		window.history.pushState("", "Notes", "/" + contentType);
+
+		switchToContent();
+		createUpperMenuForContent();
+	}
+
+	fetch(SERVER_ADDRESS + '/rest/attributes/search?entityId=' + entityId)
 	.then(response => response.json())
 	.then(attributes => {
-		fetch(SERVER_ADDRESS + '/rest/notes/' + contentType)
+		
+		var address = isSearch ? `${SERVER_ADDRESS}/rest/notes/${contentType}/${attributeName}/search` : SERVER_ADDRESS + '/rest/notes/' + contentType;
+		fetch(address, {
+			method: isSearch ? "POST" : "GET",
+			body: JSON.stringify(searchRequest),
+			headers: { "Accept": "application/json;charset=UTF-8", "Content-Type": "application/json;charset=UTF-8" }
+		})
 		.then(response => response.json())
 		.then(notes => {
 			getEmptyElement(DATA_ELEMENT);
 			var table = getEmptyElement(DATA_TABLE);
 			createNotesTableHead(table, attributes);
-			createNotesTableBody(table, attributes, notes);		
+			createNotesTableBody(table, attributes, notes);
 		});
 	});
 }
@@ -30,11 +44,112 @@ function createUpperMenuForContent()
 {
 	var dataMenu = getEmptyElement(DATA_MENU);
 
+	var searchAttributes = document.createElement("select");
+	searchAttributes.id = "search-attributes";
+	dataMenu.appendChild(searchAttributes);
+
+	var searchInputWrapper = document.createElement("div");
+	searchInputWrapper.id = "search-input-wrapper";
+	dataMenu.appendChild(searchInputWrapper);
+
+	fetch(SERVER_ADDRESS + '/rest/attributes/search?entityId=' + getContentId())
+	.then(response => response.json())
+	.then(attributes => {
+		var select = document.getElementById("search-attributes");
+		select.style.overflow = "visible";
+		//select.style.minWidth = "100%";
+		for (var i = 0; i < attributes.length; i++)
+		{
+			var type = attributes[i].type;
+			if (hasDateFormat(type) || isFile(type) || isMultifile(type))
+				continue;
+
+			var option = document.createElement("option");
+			option.innerText = attributes[i].title;
+			option.value = attributes[i].name;
+			option.setAttribute(ATTRIBUTE_NAME, attributes[i].name);
+			option.setAttribute(ATTRIBUTE_TYPE, attributes[i].type);
+			option.setAttribute(ATTRIBUTE_ID, attributes[i].id);
+			select.appendChild(option);
+		}
+		select.onchange = function() 
+		{
+			var currentOption = this.children.item(this.selectedIndex);
+			var inputWrapper = document.getElementById("search-input-wrapper");
+			clean(inputWrapper);
+			switch (currentOption.getAttribute(ATTRIBUTE_TYPE))
+			{
+				case "text":
+				case "textarea":
+				case "url":
+				case "number":
+				case "inc":
+					var searchInput = document.createElement("input");
+					searchInput.className += " search-input-text";
+					searchInput.id = "search-input";
+					searchInput.addEventListener("keyup", event => {
+						if (event.key !== "Enter")
+							return;
+						document.getElementById("search-button").click();
+						event.preventDefault();
+					})
+					inputWrapper.appendChild(searchInput);
+					break;
+				case "select":
+				case "multiselect":
+					fetch(SERVER_ADDRESS + '/rest/attributes/search?id=' + currentOption.getAttribute(ATTRIBUTE_ID))
+					.then(response => response.json())
+					.then(attribute => {
+						var select = document.createElement("select");
+						select.id = "search-input";
+						addOptions(select, attribute.selectOptions);
+						select.selectedIndex = 0;
+						inputWrapper.appendChild(select);
+					});
+					break;
+				case "checkbox":
+					var checkbox = document.createElement("input");
+					checkbox.type = "checkbox";
+					checkbox.id = "search-input";
+					inputWrapper.appendChild(checkbox);
+					break;
+				default:
+					break;
+			}
+		}
+		select.selectedIndex = 0;
+		select.onchange();
+	});
+
+	var searchButton = document.createElement("a");
+	searchButton.id = "search-button";
+	searchButton.className += " search-image";
+	searchButton.href = "#";
+	searchButton.onclick = function() 
+	{
+		var searchAttributes = document.getElementById("search-attributes");
+		var currentOption = searchAttributes.children.item(searchAttributes.selectedIndex);
+		var attributeName = currentOption.getAttribute(ATTRIBUTE_NAME);
+		var attributeType = currentOption.getAttribute(ATTRIBUTE_TYPE);
+		var searchInput = document.getElementById("search-input");
+		var searchRequest = null;
+
+		switch (attributeType)
+		{
+			case "checkbox": searchRequest = searchInput.checked; break;
+			default: searchRequest = searchInput.value; break;
+		}
+
+		showContentTableWithNotes(getContentType(), getContentId(), attributeName, searchRequest);
+	};
+	searchButton.style.marginLeft = "0.1em";
+	searchButton.style.marginRight = "1em";
+	dataMenu.appendChild(searchButton);
+
 	var addNoteButton = document.createElement("a");
 	addNoteButton.className += " new-note-image";
 	addNoteButton.href = "#";
 	addNoteButton.onclick = function() { showNoteForm(null) };
-
 	dataMenu.appendChild(addNoteButton);
 }
 
@@ -133,6 +248,8 @@ function createNotesTableBody(table, attributes, notes)
 						checkbox.type = "checkbox";
 						if (currentValue != null)
 							checkbox.checked = isTrue(currentValue);
+						else
+							checkbox.checked = isTrue(attribute.defaultValue);
 						checkbox.setAttribute(PREVIOUS_VALUE, checkbox.checked);
 						
 						checkbox.onchange = function()
@@ -273,7 +390,11 @@ function createButtonToShowNoteEditForm(id)
 	var editButton = document.createElement("td");
 	editButton.className += " " + EDIT_BUTTON;
 	editButton.setAttribute(CONTENT_ID, id);
-	editButton.onclick = function() { showNoteForm(id); };
+	editButton.onclick = function() 
+	{
+		window.history.pushState("", "Note", `/${getContentType()}/${id}`);
+		showNoteForm(id);
+	};
 	return editButton;
 }
 
@@ -412,9 +533,9 @@ function prepareNoteAttributes(dataElement, note, attributes)
 
 			case "checkbox":
 				var input = createFormInput("input", attribute, attribute.type);
-				if (note != null)
+				if (note != null && note.attributes[attribute.name] != null)
 					input.checked = isTrue(note.attributes[attribute.name]);
-				else if (attribute.defaultValue != null)
+				else
 					input.checked = isTrue(attribute.defaultValue);
 				dataElement.appendChild(input);
 				break;
@@ -811,6 +932,7 @@ function asyncDownloadImage(fileId, inputId, size)
 
 			var file = window.URL.createObjectURL(downloadedImage);
 			var img = document.createElement("img");
+			img.id = inputId + "-" + fileId + "-img";
 			img.setAttribute(CONTENT_ID, fileId);
 			img.setAttribute("src", file);
 			img.style.display = "inline-flex";
@@ -820,6 +942,7 @@ function asyncDownloadImage(fileId, inputId, size)
 				popup.className += " popup";
 				popup.onclick = function() { setTimeout(() => this.parentNode.removeChild(this), 0); }
 				var popupImage = document.createElement("img");
+				popupImage.setAttribute("related-img-id", img.id);
 				popupImage.className += "poput-image";
 				popupImage.onclick = function() { setTimeout(() => this.parentNode.parentNode.removeChild(this.parentNode), 0); }
 				popup.appendChild(popupImage);
@@ -831,6 +954,18 @@ function asyncDownloadImage(fileId, inputId, size)
 						var file = window.URL.createObjectURL(originalImage);
 						popupImage.setAttribute("src", file);
 						popupImage.style.display = "flex";
+						popupImage.onclick = function()
+						{
+							var relatedImgId = this.getAttribute("related-img-id");
+							var relatedImg = document.getElementById(relatedImgId);
+							var imgDiv = relatedImg.parentNode;
+							var nextImgDiv = imgDiv.nextSibling;
+							if (nextImgDiv)
+							{
+								var nextImg = nextImgDiv.getElementsByTagName("img")[0];
+								nextImg.onclick();
+							}
+						}
 						popup.style.display = "flex";
 
 						document.body.appendChild(popup);

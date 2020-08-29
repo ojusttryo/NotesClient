@@ -12,6 +12,8 @@ function showAttributes()
         if (!attributes)
 		    return;
 
+        window.history.pushState("", "Attributes", "/attributes");
+
         var table = getEmptyElement(DATA_TABLE);
         createAttributesTableHead(table);
         createAttributesTableBody(table, attributes);
@@ -94,7 +96,7 @@ function createEditAttributeForm(id)
     fetch(SERVER_ADDRESS + '/rest/attributes/search?id=' + id)
     .then(response => response.json())
     .then(attribute => {
-        createAttributeForm(id, attribute);
+        createAttributeForm(id);
         fillAttributeValuesOnForm(attribute);
     });
 }
@@ -107,9 +109,15 @@ function createAttributeForm(attributeId)
     createErrorLabel(dataElement);
 
     if (attributeId)
+    {
         setContentId(attributeId);
+        window.history.pushState("", "Attribute", "/attributes/" + attributeId);
+    }
     else
+    {
+        window.history.pushState("", "Attribute", "/attribute");
         clearContentId();
+    }
 
     var alignments = [ "left", "right", "center" ];
     var types = [ "text", "textarea", "number", "select", "multiselect", "checkbox", "inc", "url", "save time", "update time", "user date", "user time", "file", "image",

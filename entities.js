@@ -9,7 +9,9 @@ function showEntities()
     .then(response => response.json())
     .then(entities => {
         if (!entities)
-		    return;
+            return;
+            
+        window.history.pushState("", "Entities", "/entities");
 
         var table = getEmptyElement(DATA_TABLE);
         createEntitiesTableHead(table, entities);
@@ -96,9 +98,15 @@ function createEntityForm(entityId)
     createErrorLabel(dataElement);
 
     if (entityId)
+    {
         setContentId(entityId);
+        window.history.pushState("", "Entity", "/entities/" + entityId);
+    }
     else
+    {
         clearContentId();
+        window.history.pushState("", "Entity", "/entity");
+    }
 
     addInputWithLabel("text",     true,  dataElement, "title",      "Title",               "entity-title");
     addInputWithLabel("text",     true,  dataElement, "collection", "Collection (unique)", "entity-collection");
@@ -112,12 +120,23 @@ function createEntityForm(entityId)
     label.innerText = "Attributes";
     label.id = "attributes-label";
     dataElement.insertBefore(label, buttons);
+    
+    var empty = document.createElement("div");
+    dataElement.insertBefore(empty, buttons);
 
     fetch(SERVER_ADDRESS + "/rest/attributes")
 	.then(response => response.json())
 	.then(attributes => {
-        var multiselect = createMultiselectWithCheckboxes("attributes", attributes);
-        dataElement.insertBefore(multiselect, buttons);
+
+        var attributesSelect = document.createElement("div");
+        attributesSelect.className += " twoCols";
+        attributesSelect.id = ATTRIBUTES_SELECT;
+
+        var leftTable = createAttributesTable(attributes, "left");
+        var rightTable = createAttributesTable(attributes, "right");
+        attributesSelect.appendChild(leftTable);
+        attributesSelect.appendChild(rightTable);
+        dataElement.insertBefore(attributesSelect, buttons);
 
         if (!entityId)
             return;
@@ -128,19 +147,108 @@ function createEntityForm(entityId)
             document.getElementById("entity-title").value = entity["title"];
             document.getElementById("entity-collection").value = entity["collection"];
             document.getElementById("entity-visible").checked = entity["visible"];
-            var checkboxes = multiselect.getElementsByTagName("input");
+
+            var keyAttr = document.getElementById(entity.keyAttribute + "-right");
+            keyAttr.setAttribute(ATTRIBUTE_NAME, "keyAttribute");
+            keyAttr.classList.add("key-attribute");
+
+            for (var i = entity.attributes.length - 1; i >= 0; i--)
+            {
+                var row = document.getElementById(entity.attributes[i] + "-right");
+                var body = row.parentNode;
+                body.removeChild(row);
+                body.prepend(row);
+            }
+
             for (var i = 0; i < entity.attributes.length; i++)
             {
-                var attribute = entity.attributes[i];
-                for (var j = 0; j < checkboxes.length; j++)
-                {
-                    if (checkboxes[j].getAttribute("attribute-id") == attribute)
-                    {
-                        checkboxes[j].checked = true;
-                        break;
-                    }
-                }
+                document.getElementById(entity.attributes[i] + "-left-button").click();
             }
         });
     });
+}
+
+
+let shadow;
+
+function createAttributesTable(attributes, side)
+{
+    var table = document.createElement("table");
+    table.className += " attributes-select-table";
+    if (side == "right")
+        table.setAttribute(ATTRIBUTE_NAME, "attributes");
+
+    var thead = document.createElement("thead");
+    var theadRow = document.createElement("tr");
+    appendNewElement("th", theadRow, "Name");
+    appendNewElement("th", theadRow, "Title");
+    appendNewElement("th", theadRow, "");          // sign
+    thead.appendChild(theadRow);
+    table.appendChild(thead);
+
+    var tbody = document.createElement("tbody");    
+    var signClass = (side == "left") ? "plus-image" : "minus-image";
+
+    for (var i = 0; i < attributes.length; i++)
+    {
+        var attribute = attributes[i];
+        var tr = document.createElement("tr");
+        tr.id = attribute.id + "-" + side;
+        tr.setAttribute("related-row", (attribute.id + ((side == "left") ? "-right" : "-left")));
+        tr.setAttribute(CONTENT_ID, attribute.id);
+        tr.style.display = (side == "left") ? "table-row" : "none";
+        tr.setAttribute("draggable", "true");
+        // From https://codepen.io/nabildroid/pen/ZPwYvp
+        tr.ondragstart = function (event)
+        {
+            shadow = event.target;
+        }
+        tr.ondragover = function (e)
+        {
+            var children = Array.from(e.target.parentNode.parentNode.children);
+            if (children.indexOf(e.target.parentNode) > children.indexOf(shadow))
+                e.target.parentNode.after(shadow);
+            else 
+                e.target.parentNode.before(shadow);
+        }
+        if (side == "right")
+        {
+            tr.ondblclick = function()
+            {
+                var rows = this.parentNode.getElementsByTagName("tr");
+                for (var r = 0; r < rows.length; r++)
+                {
+                    rows[r].removeAttribute(ATTRIBUTE_NAME);
+                    rows[r].classList.remove("key-attribute");
+                }
+
+                this.setAttribute(ATTRIBUTE_NAME, "keyAttribute");
+                this.classList.add("key-attribute");
+            }
+        }
+
+        var name = appendNewTd(tr, attribute.name);
+        name.style.cursor = "pointer";
+        var title = appendNewTd(tr, attribute.title);
+        title.style.cursor = "pointer";
+        
+        var signTd = document.createElement("td");
+        var sign = document.createElement("a");
+        sign.className += " " + signClass;
+        sign.id = attribute.id + "-" + side + "-button";
+        sign.onclick = function() 
+        {
+            var thisRow = this.parentNode.parentNode;
+            var relatedRow = document.getElementById(thisRow.getAttribute("related-row"));
+            relatedRow.style.display = "table-row";
+            thisRow.style.display = "none";
+        }
+        signTd.appendChild(sign);
+        tr.appendChild(signTd);
+
+        tbody.appendChild(tr);
+    }
+    table.appendChild(tbody);
+
+    return table;
 }

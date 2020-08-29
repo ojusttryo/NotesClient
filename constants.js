@@ -33,6 +33,8 @@ const MAX_SIZE = "maxSize";
 const MIN_SIZE = "minSize";
 const FILE_ID = "file-id";
 const FILES_COUNT = "files-count";
+const ATTRIBUTES_SELECT = "attributes-select";
+const ATTRIBUTES_SELECT_TABLE = "attributes-select-table";
 
 const NAME = "name";
 const TITLE = "title";
