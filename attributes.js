@@ -41,8 +41,8 @@ function createAttributesTableHead(table)
     setContentColumnsCount(4);      // 4 - without buttons
 
 	appendNewSpan(table, "№");
-    appendNewSpan(table, "Name");
     appendNewSpan(table, "Title");
+    appendNewSpan(table, "Name");
     appendNewSpan(table, "Type");
 	appendNewSpan(table, "");		// Edit
 	appendNewSpan(table, "");		// Remove
@@ -53,8 +53,8 @@ function createAttributesTableBody(table, attributes)
 	for (var i = 0; i < attributes.length; i++)
 	{
         appendNewSpan(table, (i + 1).toString());
-        appendNewSpan(table, attributes[i].name);
         appendNewSpan(table, attributes[i].title);
+        appendNewSpan(table, attributes[i].name);
         appendNewSpan(table, attributes[i].type);
 
 		var editButton = document.createElement("td");
@@ -120,8 +120,8 @@ function createAttributeForm(attributeId)
     }
 
     var alignments = [ "left", "right", "center" ];
-    var types = [ "text", "textarea", "number", "select", "multiselect", "checkbox", "inc", "url", "save time", "update time", "user date", "user time", "file", "image",
-        "files", "gallery"];
+    var types = [ "text", "textarea", "delimited text", "number", "select", "multiselect", "checkbox", "inc", "url", 
+        "save time", "update time", "user date", "user time", "file", "image", "files", "gallery"];
     var methods = [ "none", "folder name", "avg", "count" ];
     var imageSizes = [ "50x50", "100x100", "200x200" ];
 
@@ -146,6 +146,7 @@ function createAttributeForm(attributeId)
     addInputWithLabel("text",     true,  dataElement, "defaultValue",    "Default value",               "attribute-default");
     addInputWithLabel("number",   false, dataElement, "step",            "Step",                        "attribute-step");
     addInputWithLabel("text",     true,  dataElement, "regex",           "Regular expression to check", "attribute-regex");
+    addInputWithLabel("text",     false, dataElement, "delimiter",       "Delimiter",                   "attribute-delimiter");
 
     var saveHandler = function() { saveMetaObjectInfo(DATA_ELEMENT, "/rest/attributes", showAttributes) };
     var cancelHandler = function() { showAttributes() };
@@ -162,18 +163,19 @@ function createAttributeForm(attributeId)
         showInputAndLabelIf("attribute-images-size", type == "gallery");
         showInputAndLabelIf("attribute-max-width", type != "file");
         showInputAndLabelIf("attribute-min-width", type != "file");
-        showInputAndLabelIf("attribute-max-height", isSizableOnForm);
-        showInputAndLabelIf("attribute-min-height", isSizableOnForm);
+        showInputAndLabelIf("attribute-max-height", isSizableOnForm());
+        showInputAndLabelIf("attribute-min-height", isSizableOnForm());
         showInputAndLabelIf("attribute-max", isTextual(type) || isNumeric(type) || isFile(type) || isMultifile(type));
         showInputAndLabelIf("attribute-min", isTextual(type) || isNumeric(type) || isFile(type) || isMultifile(type));
         showInputAndLabelIf("attribute-step", isNumeric(type));
-        showInputAndLabelIf("attribute-regex", isTextual(type));
+        showInputAndLabelIf("attribute-regex", type == "text" || type == "textarea");
         showInputAndLabelIf("attribute-editable-in-table", (type == "select" || type == "inc" || type == "checkbox"));
         showInputAndLabelIf("attribute-date-format", hasDateFormat(type));
         showInputAndLabelIf("attribute-default", (isTextual(type) || isNumeric(type) || hasOptions(type) || type == "checkbox" || type == "url"));
         showInputAndLabelIf("attribute-required", !(hasDateFormat(type) || type == "multiselect" || type == "checkbox" || isMultifile(type)));
         showInputAndLabelIf("attribute-visible", !isSkippableAttributeInNotesTable(type));
         showInputAndLabelIf("attribute-method",  !isSkippableAttributeInNotesTable(type));
+        showInputAndLabelIf("attribute-delimiter", type == "delimited text");
 
         document.getElementById("attribute-max-width-label").innerText = isSizableOnForm(type) ? "Max width at page" : "Max width in table";
         document.getElementById("attribute-min-width-label").innerText = isSizableOnForm(type) ? "Min width at page" : "Min width in table";
@@ -223,6 +225,7 @@ function fillAttributeValuesOnForm(attribute)
     document.getElementById("attribute-step").value = attribute["step"];
     document.getElementById("attribute-regex").value = attribute["regex"];
     document.getElementById("attribute-lines-count").value = attribute["linesCount"];
+    document.getElementById("attribute-delimiter").value = attribute["delimiter"];
 
     document.getElementById("attribute-type").onchange();
 }
@@ -230,7 +233,7 @@ function fillAttributeValuesOnForm(attribute)
 
 function isSkippableAttributeInNotesTable(type)
 {
-    return (type == "textarea" || isMultifile(type));
+    return (isMultifile(type));
 }
 
 function isSizableOnForm(type)
@@ -250,7 +253,7 @@ function hasOptions(type)
 
 function isTextual(type)
 {
-    return (type == "text" || type == "textarea");
+    return (type == "text" || type == "textarea" || type == "delimited text");
 }
 
 function isNumeric(type)
@@ -268,6 +271,11 @@ function isMultifile(type)
     return (type == "files" || type == "gallery");
 }
 
+function isUserDateOrTime(type)
+{
+    return (type == "user date" || type == "user time");
+}
+
 function getImagesSize(size)
 {
     switch (size)
@@ -277,4 +285,16 @@ function getImagesSize(size)
         case 200: return "200x200";
         default: return "50x50";
     }
+}
+
+
+function couldBeKeyAttribute(type)
+{
+    return (isTextual(type) || isNumeric(type) || hasOptions(type) || type == "checkbox" || type == "url" || isUserDateOrTime(type) || isFile(type)); 
+}
+
+
+function couldBeSortAttribute(type)
+{
+    return (isTextual(type) || isNumeric(type) || type == "checkbox" || type == "select" || isUserDateOrTime(type));
 }

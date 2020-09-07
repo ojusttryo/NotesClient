@@ -108,7 +108,7 @@ input[type=checkbox]
 	width: 100%;
 	box-sizing: border-box;
 	padding: var(--padding);;
-	align-items: center;
+	align-items: start;
 }
 
 
@@ -153,13 +153,6 @@ input[type=checkbox]
 	align-items: start;
 }
 
-.key-attribute
-{
-	box-sizing: border-box;
-	border-radius: 10px;
-	border: 2px solid orangered;
-}
-
 
 .attributes-select-table
 {
@@ -173,8 +166,7 @@ input[type=checkbox]
 .attributes-select-table tr, .attributes-select-table th
 {
 	text-align: left;
-	text-indent: 5px;
-	vertical-align: center;
+	vertical-align: middle;
 }
 
 .twoCols
@@ -238,6 +230,7 @@ input[type=checkbox]
 	opacity: 1;
 }
 
+
 .remove-image
 {
 	display: block;
@@ -286,7 +279,18 @@ input[type=checkbox]
 	background-image: url("img/more.svg");
 	background-size: contain;
 	background-repeat: no-repeat;
+	align-self: center;
+	margin-left: 5px;
+	margin-right: 5px;
 	z-index: 100;
+}
+
+
+.plus-image-table
+{
+	justify-self: end;
+	margin-right: 0;
+	margin-left: 5px;
 }
 
 
@@ -299,6 +303,8 @@ input[type=checkbox]
 	background-image: url("img/minus.svg");
 	background-size: contain;
 	background-repeat: no-repeat;
+	margin-left: 5px;
+	margin-right: 5px;
 	z-index: 100;
 }
 
@@ -324,6 +330,38 @@ input[type=checkbox]
 	background-image: url("img/search.svg");
 	background-size: contain;
 	background-repeat: no-repeat;
+	margin-left: 5px;
+	margin-right: 5px;
+	z-index: 100;
+}
+
+
+.hidden-image
+{
+	display: inline-block;
+	width: var(--buttonSize);
+	height: var(--buttonSize);
+	text-decoration: none;
+	background-image: url("img/hidden.svg");
+	background-size: contain;
+	background-repeat: no-repeat;
+	margin-left: 5px;
+	margin-right: 5px;
+	z-index: 100;
+}
+
+
+.visible-image
+{
+	display: inline-block;
+	width: var(--buttonSize);
+	height: var(--buttonSize);
+	text-decoration: none;
+	background-image: url("img/visible.svg");
+	background-size: contain;
+	background-repeat: no-repeat;
+	margin-left: 5px;
+	margin-right: 5px;
 	z-index: 100;
 }
 
@@ -341,6 +379,114 @@ input[type=checkbox]
 }
 
 
+.copy-note-image
+{
+	display: inline-block;
+	width: var(--buttonSize);
+	height: var(--buttonSize);
+	text-decoration: none;
+	background-image: url("img/copy.svg");
+	background-size: contain;
+	background-repeat: no-repeat;
+	margin-left: 5px;
+	margin-right: 5px;
+	z-index: 100;
+}
+
+
+.delete-note-image
+{
+	display: inline-block;
+	width: var(--buttonSize);
+	height: var(--buttonSize);
+	text-decoration: none;
+	background-image: url("img/trash.svg");
+	background-size: contain;
+	background-repeat: no-repeat;
+	margin-left: 5px;
+	margin-right: 5px;
+	z-index: 100;
+}
+
+
+.key-attribute-image
+{
+	display: inline-block;
+	width: var(--buttonSize);
+	height: var(--buttonSize);
+	text-decoration: none;
+	background-image: url("img/key.svg");
+	background-size: contain;
+	background-repeat: no-repeat;
+	margin-left: 5px;
+	margin-right: 5px;
+	z-index: 100;
+}
+
+
+.selected-key-attribute-image
+{
+	display: inline-block;
+	width: var(--buttonSize);
+	height: var(--buttonSize);
+	text-decoration: none;
+	background-image: url("img/keySelected.svg");
+	background-size: contain;
+	background-repeat: no-repeat;
+	margin-left: 5px;
+	margin-right: 5px;
+	z-index: 100;
+}
+
+
+.sort-attribute-image
+{
+	display: inline-block;
+	width: var(--buttonSize);
+	height: var(--buttonSize);
+	text-decoration: none;
+	background-image: url("img/sort.svg");
+	background-size: contain;
+	background-repeat: no-repeat;
+	margin-left: 5px;
+	margin-right: 5px;
+	align-self: center;
+	z-index: 100;
+}
+
+
+.asc-sort-attribute-image
+{
+	display: inline-block;
+	width: var(--buttonSize);
+	height: var(--buttonSize);
+	text-decoration: none;
+	background-image: url("img/sortAsc.svg");
+	background-size: contain;
+	background-repeat: no-repeat;
+	margin-left: 5px;
+	margin-right: 5px;
+	align-self: center;
+	z-index: 100;
+}
+
+
+.desc-sort-attribute-image
+{
+	display: inline-block;
+	width: var(--buttonSize);
+	height: var(--buttonSize);
+	text-decoration: none;
+	background-image: url("img/sortDesc.svg");
+	background-size: contain;
+	background-repeat: no-repeat;
+	margin-left: 5px;
+	margin-right: 5px;
+	align-self: center;
+	z-index: 100;
+}
+
+
 .objectButtons
 {
 	display: grid;
@@ -354,13 +500,14 @@ input[type=checkbox]
 .colored-select
 {
 	font-size: var(--selectSize);
-	border-width: 2px;
+	border-width: 1px;
 	border-style: solid;
 	display: inline-block;
 	margin-right: 0.2em;
 	margin-bottom: 0.1em;
 	margin-top: 0.1em;
-	padding: 2px;
+	padding-right: 2px;
+	padding-left: 2px;
 }
 
 .doNotStretch

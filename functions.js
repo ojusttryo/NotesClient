@@ -91,12 +91,12 @@ function loadMenu()
 		for (var i = 0; i < entities.length; i++)
 		{
 			var title = entities[i].title;
-			var collection = entities[i].collection;
+			var name = entities[i].name;
 			var li = document.createElement("li");
-			li.setAttribute(CONTENT_TYPE, collection);
+			li.setAttribute(CONTENT_TYPE, name);
 			li.setAttribute(CONTENT_ID, entities[i].id);
 			li.onclick = function() { showContentTableWithNotes(this.getAttribute(CONTENT_TYPE), this.getAttribute(CONTENT_ID)); };
-			li.id = collection + "-button";
+			li.id = name + "-button";
 			li.innerText = title;
 			menuList.appendChild(li);
 		}
@@ -180,6 +180,7 @@ function showCurrentContent()
 /** Switch view to content (menu buttons and data table), hiding the add/edit form */
 function switchToContent()
 {
+	hideError();
 	hideHtmlElementById(DATA_ELEMENT);
 	hideHtmlElementById(HISTORY);
 	showHtmlGridElementById(DATA_TABLE);
@@ -190,6 +191,7 @@ function switchToContent()
 /** Switch view to add/edit form, hiding menu buttons and data table */
 function switchToAddEditForm()
 {
+	hideError();
 	hideHtmlElementById(DATA_TABLE);
 	hideHtmlElementById(DATA_MENU);
 	hideHtmlElementById(HISTORY);
@@ -199,9 +201,10 @@ function switchToAddEditForm()
 
 function switchToMainPage()
 {
+	hideError();
 	hideHtmlElementById(DATA_ELEMENT);
 	showHtmlGridElementById(HISTORY);
-	showHtmlGridElementById(DATA_TABLE);
+	hideHtmlElementById(DATA_TABLE);
 	hideHtmlElementById(DATA_MENU);
 }
 
@@ -241,6 +244,7 @@ function appendNewSpanAligning(parent, innerText, alignment)
 {
 	var element = appendNewSpan(parent, innerText);
 	element.style.justifySelf = alignment;
+	return element;
 }
 
 
@@ -269,6 +273,56 @@ function getMetaObjectFromForm(parent)
 {
 	var result = new Object();
 
+	var keyAttribute = document.getElementsByClassName("selected-key-attribute-image");
+	if (keyAttribute != null && keyAttribute.length > 0)
+		result["keyAttribute"] = keyAttribute[0].parentNode.parentNode.getAttribute(CONTENT_ID);
+	
+	var sortAttribute = document.querySelectorAll(".asc-sort-attribute-image,.desc-sort-attribute-image");
+	if (sortAttribute != null && sortAttribute.length > 0)
+	{
+		result["sortAttribute"] = sortAttribute[0].parentNode.parentNode.getAttribute(CONTENT_ID);
+		result["sortDirection"] = (sortAttribute[0].classList.contains("asc-sort-attribute-image")) ? "ascending" : "descending";
+	}
+
+	var allNodes = parent.getElementsByTagName('*');
+	for (var i = 0; i < allNodes.length; i++)
+	{
+		var currentNode = allNodes[i];
+		if (currentNode.parentNode.style.display == "none")
+			continue;
+
+		var attributeName = currentNode.getAttribute(ATTRIBUTE_NAME);
+		if (attributeName != null)
+		{
+			if (currentNode.tagName.toLowerCase() == 'table' && attributeName == "attributes")
+			{
+				result[attributeName] = [...currentNode.getElementsByTagName("tr")]
+					.filter(x => x.style.display != "none")
+					.map(x => x.getAttribute(CONTENT_ID))
+					.filter(x => x != null);
+			}
+			else if (currentNode.type == 'checkbox')
+				result[attributeName] = currentNode.checked;
+			else if (currentNode.id == "attribute-select-options")
+				result[attributeName] = currentNode.value.split(";");
+			else if (currentNode.id == "attribute-images-size")
+				result[attributeName] = currentNode.value.substr(0, currentNode.value.indexOf("x"));
+			else if (currentNode.value != null && currentNode.value.length > 0)
+				result[attributeName] = currentNode.value;
+			else if (currentNode.required)
+				showError("Required value is not set (" + attributeName + ")");
+		}
+	}
+
+	return result;
+}
+
+
+
+function getNoteFromForm(parent)
+{
+	var result = new Object();
+
 	var allNodes = parent.getElementsByTagName('*');
 	for (var i = 0; i < allNodes.length; i++)
 	{
@@ -281,31 +335,8 @@ function getMetaObjectFromForm(parent)
 		var attributeValue = currentNode.getAttribute(ATTRIBUTE_VALUE);
 		if (attributeName != null)
 		{
-			if (currentNode.tagName.toLowerCase() == 'table' && attributeName == "attributes")
-			{
-				result[attributeName] = [...currentNode.getElementsByTagName("tr")]
-					.filter(x => x.style.display != "none")
-					.map(x => x.getAttribute(CONTENT_ID))
-					.filter(x => x != null);
-			}
-			else if (currentNode.tagName.toLowerCase() == 'tr' && attributeName == "keyAttribute")
-				result[attributeName] = currentNode.getAttribute(CONTENT_ID);
-			else if (currentNode.type == 'checkbox')
+			if (currentNode.type == 'checkbox')
 				result[attributeName] = currentNode.checked;
-			else if (currentNode.type == 'select')
-			{
-				var array = [];
-				var length = currentNode.options.length;
-				for (var j = 0; j < length; j++)
-				{
-					var option = currentNode.options[j];
-					if (currentNode.options[j].selected === true)
-						array.push(option.id);
-				}
-				if (array.length == 0 && currentNode.required)
-					showError("Required value is not set (" + attributeName + ")");
-				result[attributeName] = array;
-			}
 			else if (currentNode.id != null && currentNode.id.toString().startsWith("checkboxes-"))
 			{
 				var checkboxes = currentNode.getElementsByTagName("input");
@@ -318,12 +349,6 @@ function getMetaObjectFromForm(parent)
 						result[attributeName].push(checkboxes[j].getAttribute("title"));
 				}
 			}
-			else if (currentNode.id == "attribute-select-options")
-				result[attributeName] = currentNode.value.split(";");
-			else if (currentNode.id == "attribute-images-size")
-				result[attributeName] = currentNode.value.substr(0, currentNode.value.indexOf("x"));
-			else if (attributeType && attributeType == "save time" || attributeType == "update time")
-				result[attributeName] = attributeValue ? parseInt(attributeValue) : Date.now();
 			else if (attributeType && isFile(attributeType) && attributeValue && attributeValue.length > 0)
 				result[attributeName] = attributeValue;
 			else if (attributeType && attributeType == "gallery")
@@ -646,7 +671,9 @@ function showError(message)
 
 function hideError()
 {
-	document.getElementById("error-label").style.display = "none";
+	var errorLabel = document.getElementById("error-label");
+	if (errorLabel)
+		errorLabel.style.display = "none";
 }
 
 function createErrorLabel(dataElement)
@@ -658,12 +685,14 @@ function createErrorLabel(dataElement)
     dataElement.appendChild(errorLabel);
 }
 
-function addFormButtons(parent, isNewObject, saveHandler, cancelHandler)
+function addFormButtons(parent, isNewObject, saveHandler, cancelHandler, id)
 {
 	var buttons = document.createElement("div");
     buttons.className += " objectButtons";
     buttons.className += " twoCols";
-    addButton(buttons, "save-button", isNewObject ? "Edit" : "Save", saveHandler);
+	var saveButton = addButton(buttons, "save-button", isNewObject ? "Edit" : "Save", saveHandler);
+	if (id)
+		saveButton.setAttribute(CONTENT_ID, id);
     addButton(buttons, "cancel-button", "Cancel", cancelHandler);
 	parent.appendChild(buttons);
 	
@@ -682,4 +711,16 @@ function createInputButton(id)
 function setContentColumnsCount(count)
 {
 	document.documentElement.style.setProperty("--tableColumnsCount", count);
+}
+
+
+function changeClassName(element, from, to)
+{
+	if (element.classList.contains(from))
+	{
+		element.classList.remove(from);
+
+		if (!element.classList.contains(to))
+			element.className += " " + to;
+	}
 }

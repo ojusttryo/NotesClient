@@ -44,7 +44,7 @@ function createEntitiesTableHead(table)
 
 	appendNewSpan(table, "№");
     appendNewSpan(table, "Title");
-    appendNewSpan(table, "Collection");
+    appendNewSpan(table, "Name");
     appendNewSpan(table, "Visible");
 	appendNewSpan(table, "");		     // Edit
 	appendNewSpan(table, "");		     // Remove
@@ -58,7 +58,7 @@ function createEntitiesTableBody(table, entities)
 	{
         appendNewSpan(table, (i + 1).toString());
         appendNewSpan(table, entities[i].title);
-        appendNewSpan(table, entities[i].collection);
+        appendNewSpan(table, entities[i].name);
         appendNewSpan(table, entities[i].visible);
 
 		var editButton = document.createElement("td");
@@ -108,9 +108,9 @@ function createEntityForm(entityId)
         window.history.pushState("", "Entity", "/entity");
     }
 
-    addInputWithLabel("text",     true,  dataElement, "title",      "Title",               "entity-title");
-    addInputWithLabel("text",     true,  dataElement, "collection", "Collection (unique)", "entity-collection");
-    addInputWithLabel("checkbox", false, dataElement, "visible",    "Visible",             "entity-visible");
+    addInputWithLabel("text",     true,  dataElement, "title",   "Title",         "entity-title");
+    addInputWithLabel("text",     true,  dataElement, "name",    "Name (unique)", "entity-name");
+    addInputWithLabel("checkbox", false, dataElement, "visible", "Visible",       "entity-visible");
 
     var saveHandler = function() { saveMetaObjectInfo(DATA_ELEMENT, "/rest/entities", showEntities) };
     var cancelHandler = function() { showEntities() };
@@ -145,12 +145,8 @@ function createEntityForm(entityId)
         .then(response => response.json())
         .then(entity => {
             document.getElementById("entity-title").value = entity["title"];
-            document.getElementById("entity-collection").value = entity["collection"];
+            document.getElementById("entity-name").value = entity["name"];
             document.getElementById("entity-visible").checked = entity["visible"];
-
-            var keyAttr = document.getElementById(entity.keyAttribute + "-right");
-            keyAttr.setAttribute(ATTRIBUTE_NAME, "keyAttribute");
-            keyAttr.classList.add("key-attribute");
 
             for (var i = entity.attributes.length - 1; i >= 0; i--)
             {
@@ -164,6 +160,12 @@ function createEntityForm(entityId)
             {
                 document.getElementById(entity.attributes[i] + "-left-button").click();
             }
+
+            var keyAttr = document.getElementById(entity.keyAttribute + "-key-button");
+            changeClassName(keyAttr, "key-attribute-image", "selected-key-attribute-image");
+
+            var sortAttr = document.getElementById(entity.sortAttribute + "-sort-button");
+            changeClassName(sortAttr, "sort-attribute-image", (entity.sortDirection == "ascending") ? "asc-sort-attribute-image" : "desc-sort-attribute-image");
         });
     });
 }
@@ -178,11 +180,19 @@ function createAttributesTable(attributes, side)
     if (side == "right")
         table.setAttribute(ATTRIBUTE_NAME, "attributes");
 
+    if (side == "left")
+        table.style.marginRight = "10px";
+
     var thead = document.createElement("thead");
     var theadRow = document.createElement("tr");
     appendNewElement("th", theadRow, "Name");
     appendNewElement("th", theadRow, "Title");
-    appendNewElement("th", theadRow, "");          // sign
+    appendNewElement("th", theadRow, "");              // sign
+    if (side == "right")
+    {
+        appendNewElement("th", theadRow, "");          // key attribute button
+        appendNewElement("th", theadRow, "");          // Order attribute button
+    }
     thead.appendChild(theadRow);
     table.appendChild(thead);
 
@@ -233,6 +243,7 @@ function createAttributesTable(attributes, side)
         title.style.cursor = "pointer";
         
         var signTd = document.createElement("td");
+        signTd.style.width = "0";
         var sign = document.createElement("a");
         sign.className += " " + signClass;
         sign.id = attribute.id + "-" + side + "-button";
@@ -242,9 +253,93 @@ function createAttributesTable(attributes, side)
             var relatedRow = document.getElementById(thisRow.getAttribute("related-row"));
             relatedRow.style.display = "table-row";
             thisRow.style.display = "none";
+
+            var key = document.getElementsByClassName("selected-key-attribute-image");
+            if (key != null && key.length > 0 && key[0].offsetParent === null)
+                changeClassName(key[0], "selected-key-attribute-image", "key-attribute-image");
+            
+            var sort = document.getElementsByClassName("asc-sort-attribute-image");
+            if (sort != null && sort.length > 0 && sort[0].offsetParent === null)
+                changeClassName(sort[0], "asc-sort-attribute-image", "sort-attribute-image");
+
+            var reverse = document.getElementsByClassName("desc-sort-attribute-image");
+            if (reverse != null && reverse.length > 0 && reverse[0].offsetParent === null)
+                changeClassName(reverse[0], "desc-sort-attribute-image", "sort-attribute-image");
         }
         signTd.appendChild(sign);
         tr.appendChild(signTd);
+
+        if (side == "right")
+        {
+            if (attribute.required && couldBeKeyAttribute(attribute.type))
+            {
+                var keyAttributeTd = document.createElement("td");
+                keyAttributeTd.style.textAlign = "center";
+                keyAttributeTd.style.width = "0";
+                var keyAttribute = document.createElement("a");
+                keyAttribute.className += " key-attribute-image";
+                keyAttribute.id = attribute.id + "-key-button";
+                keyAttribute.onclick = function() 
+                {
+                    var currentClass = this.classList.contains("selected-key-attribute-image") ? "selected-key-attribute-image" : "key-attribute-image";
+
+                    var allKeys = document.getElementsByClassName("selected-key-attribute-image");
+                    for (var k = 0; k < allKeys.length; k++)
+                        changeClassName(allKeys[k], "selected-key-attribute-image", "key-attribute-image");
+                    
+                    this.classList.remove(currentClass);
+                    this.className += (currentClass == "selected-key-attribute-image") ? " key-attribute-image" : " selected-key-attribute-image";
+                }
+                keyAttributeTd.appendChild(keyAttribute);
+                tr.appendChild(keyAttributeTd);
+            }
+            else
+            {
+                tr.appendChild(document.createElement("td"));
+            }
+
+            if (attribute.required && couldBeSortAttribute(attribute.type))
+            {
+                var sortAttributeTd = document.createElement("td");
+                sortAttributeTd.style.textAlign = "center";
+                sortAttributeTd.style.width = "0";
+                var sortAttribute = document.createElement("a");
+                sortAttribute.className += " sort-attribute-image";
+                sortAttribute.id = attribute.id + "-sort-button";
+                sortAttribute.onclick = function() 
+                {
+                    var currentClass;
+                    if (this.classList.contains("asc-sort-attribute-image"))
+                        currentClass = "asc-sort-attribute-image";
+                    else if (this.classList.contains("desc-sort-attribute-image"))
+                        currentClass = "desc-sort-attribute-image";
+                    else
+                        currentClass = "sort-attribute-image";
+
+                    var allKeys = document.querySelectorAll(".asc-sort-attribute-image,.desc-sort-attribute-image");
+                    for (var k = 0; k < allKeys.length; k++)
+                    {
+                        changeClassName(allKeys[k], "asc-sort-attribute-image", "sort-attribute-image");
+                        changeClassName(allKeys[k], "desc-sort-attribute-image", "sort-attribute-image");
+                    }
+
+                    this.classList.remove(currentClass);
+                    
+                    if (currentClass == "asc-sort-attribute-image")
+                        this.className += " desc-sort-attribute-image";
+                    else if (currentClass == "sort-attribute-image")
+                        this.className += " asc-sort-attribute-image";
+                    else
+                        this.className += " sort-attribute-image";
+                }
+                sortAttributeTd.appendChild(sortAttribute);
+                tr.appendChild(sortAttributeTd);
+            }
+            else
+            {
+                tr.appendChild(document.createElement("td"));
+            }
+        }
 
         tbody.appendChild(tr);
     }

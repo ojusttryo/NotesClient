@@ -40,6 +40,57 @@ async function showContentTableWithNotes(contentType, entityId, attributeName, s
 }
 
 
+async function showSearchResult(attributeName, searchRequest)
+{
+	var contentType = getContentType();
+	var entityId = getContentId();
+
+	fetch(SERVER_ADDRESS + '/rest/attributes/search?entityId=' + entityId)
+	.then(response => response.json())
+	.then(attributes => {
+		
+		var address = `${SERVER_ADDRESS}/rest/notes/${contentType}/${attributeName}/search`;
+		fetch(address, {
+			method: "POST",
+			body: JSON.stringify(searchRequest),
+			headers: { "Accept": "application/json;charset=UTF-8", "Content-Type": "application/json;charset=UTF-8" }
+		})
+		.then(response => response.json())
+		.then(notes => {
+			getEmptyElement(DATA_ELEMENT);
+			var table = getEmptyElement(DATA_TABLE);
+			createNotesTableHead(table, attributes);
+			createNotesTableBody(table, attributes, notes);
+		});
+	});
+}
+
+
+async function showSearchResultForHidden(hidden)
+{
+	var contentType = getContentType();
+	var entityId = getContentId();
+
+	fetch(SERVER_ADDRESS + '/rest/attributes/search?entityId=' + entityId)
+	.then(response => response.json())
+	.then(attributes => {
+		var subrequest = hidden ? "hidden" : "visible";
+		var address = `${SERVER_ADDRESS}/rest/notes/${contentType}/${subrequest}`;
+		fetch(address, {
+			method: "GET",
+			headers: { "Accept": "application/json;charset=UTF-8", "Content-Type": "application/json;charset=UTF-8" }
+		})
+		.then(response => response.json())
+		.then(notes => {
+			getEmptyElement(DATA_ELEMENT);
+			var table = getEmptyElement(DATA_TABLE);
+			createNotesTableHead(table, attributes);
+			createNotesTableBody(table, attributes, notes);
+		});
+	});
+}
+
+
 function createUpperMenuForContent()
 {
 	var dataMenu = getEmptyElement(DATA_MENU);
@@ -81,6 +132,7 @@ function createUpperMenuForContent()
 			{
 				case "text":
 				case "textarea":
+				case "delimited text":
 				case "url":
 				case "number":
 				case "inc":
@@ -140,11 +192,29 @@ function createUpperMenuForContent()
 			default: searchRequest = searchInput.value; break;
 		}
 
-		showContentTableWithNotes(getContentType(), getContentId(), attributeName, searchRequest);
+		showSearchResult(attributeName, searchRequest);
 	};
-	searchButton.style.marginLeft = "0.1em";
-	searchButton.style.marginRight = "1em";
 	dataMenu.appendChild(searchButton);
+
+	var hiddenNotesButton = document.createElement("a");
+	hiddenNotesButton.className += " hidden-image";
+	hiddenNotesButton.href = "#";
+	hiddenNotesButton.onclick = function() 
+	{
+		if (this.classList.contains("hidden-image"))
+		{
+			this.classList.remove("hidden-image");
+			this.className += " visible-image";
+			showSearchResultForHidden(true);
+		}
+		else
+		{
+			this.classList.remove("visible-image");
+			this.className += " hidden-image";
+			showSearchResultForHidden(false);
+		}
+	}
+	dataMenu.appendChild(hiddenNotesButton);
 
 	var addNoteButton = document.createElement("a");
 	addNoteButton.className += " new-note-image";
@@ -165,11 +235,27 @@ function createNotesTableHead(table, attributes)
 		if (needToSkipAttributeInTable(attributes[i]))
 			continue;
 
-		appendNewSpanAligning(table, attributes[i]["title"], "center");
+		var wrapper = document.createElement("div");
+
+		var span = appendNewSpanAligning(wrapper, attributes[i]["title"], "center");
+		setWidthRangeInTable(wrapper, attributes[i]);
+		table.appendChild(wrapper);
 
 		// Plus or minus sign for inc
 		if (attributes[i].type == "inc" && attributes[i].editableInTable)
-			appendNewSpan(table, "");
+		{
+			wrapper.style.verticalAlign = "top";
+			wrapper.style.display = "grid";
+			wrapper.style.gridTemplateColumns = "auto min-content";
+
+			// for alignment only
+			var incButton = document.createElement("td");
+			incButton.className += " plus-image";
+			incButton.style.justifySelf = "end";
+			incButton.style.marginRight = "0px";
+			incButton.style.visibility = "hidden";
+			wrapper.appendChild(incButton);
+		}
 	}
 
 	// Edit and Delete buttons
@@ -184,11 +270,7 @@ function countColumnsWithoutButtons(attributes)
 	for (var i = 0; i < attributes.length; i++)
 	{
 		if (!needToSkipAttributeInTable(attributes[i]))
-		{
 			count++;
-			if (attributes[i].type == "inc" && attributes[i].editableInTable)
-				count++;
-		}
 	}
 	return count;
 }
@@ -215,12 +297,16 @@ function createNotesTableBody(table, attributes, notes)
 			cell.style.textAlign = attribute.alignment;
 			cell.setAttribute(ATTRIBUTE_NAME, attributeName);
 			cell.setAttribute(CONTENT_ID, note.id);
+			setWidthRangeInTable(cell, attribute);
 
 			switch(attribute.type)
 			{
 				case "url":
 					if (currentValue == null)
+					{
+						table.appendChild(cell);
 						break;
+					}
 
 					var a = document.createElement("a");
 					a.href = currentValue;
@@ -228,17 +314,22 @@ function createNotesTableBody(table, attributes, notes)
 					a.style.margin = "auto";
 					a.target = "_blank";
 					cell.appendChild(a);
+					table.appendChild(cell);
 					break;
 					
 				case "save time":
 				case "update time":
 					if (currentValue == null)
+					{
+						table.appendChild(cell);
 						break;
+					}
 					
 					var time = new Date(currentValue);
 					var format = attribute.dateFormat;
 					var convertedTime = moment(time).format(format);
 					cell.innerHTML = convertedTime;
+					table.appendChild(cell);
 					break;
 
 				case "checkbox":
@@ -267,6 +358,7 @@ function createNotesTableBody(table, attributes, notes)
 					{
 						cell.innerText = valueOrEmptyString(currentValue);
 					}
+					table.appendChild(cell);
 					break;
 					
 				case "select":
@@ -293,38 +385,51 @@ function createNotesTableBody(table, attributes, notes)
 					{
 						cell.innerHTML = currentValue != null ? currentValue : "";
 					}
+					table.appendChild(cell);
 					break;
 
 				case "multiselect":
+				case "delimited text":
 					if (currentValue == null)
-						break;
-					
-					for (var k = 0; k < currentValue.length; k++)
 					{
-						var text = currentValue[k];
+						table.appendChild(cell);
+						break;
+					}
+					
+					var values = (attribute.type == "delimited text") ? currentValue.split(attribute.delimiter).map(function (x) { return x.trim() }) : currentValue;
+					for (var k = 0; k < values.length; k++)
+					{
+						var text = values[k];
 						var elem = document.createElement("span");
 						elem.className += " colored-select";
 						elem.innerText = text;
-						elem.style.borderColor = randomColor(text);
+						if (attribute.type == "multiselect")
+							elem.style.borderColor = randomColor(text);
 
 						cell.style.display = "flex";
 						cell.style.flexWrap = "wrap";
 						cell.appendChild(elem);
 					}
+					table.appendChild(cell);
 					break;
 
 				case "inc":
+					
+					cell.style.display = "grid";
+					cell.style.gridTemplateColumns = "auto min-content";
+					
 					var numberTd = document.createElement("td");
 					numberTd.setAttribute(ATTRIBUTE_NAME, attributeName);
 					numberTd.innerHTML = currentValue != null ? currentValue : attribute.defaultValue;
 					numberTd.style.textAlign = attribute.alignment;
-					numberTd.style.alignSelf = "center";
-					table.appendChild(numberTd);
+					numberTd.style.alignSelf = "left";
+					numberTd.style.minWidth = "0px";
+					numberTd.style.verticalAlign = "top";
+					cell.appendChild(numberTd);
 
-					var incButton = document.createElement("a");
+					var incButton = document.createElement("td");
 					incButton.setAttribute(ATTRIBUTE_NAME, attributeName);
-					incButton.className += " plus-image";
-					incButton.style.justifySelf = "start";
+					incButton.className += " plus-image plus-image-table";
 					incButton.onclick = function()
 					{
 						var id = this.parentNode.getAttribute(CONTENT_ID);
@@ -336,16 +441,20 @@ function createNotesTableBody(table, attributes, notes)
 							if (response.status != 200)
 								response.text().then(error => (response.status == 500) ? showError(error.message) : showError(error));
 							else
-								response.text().then(text => { this.parentNode.previousSibling.innerText = parseFloat(text); })
+								response.text().then(text => { this.previousSibling.innerText = parseFloat(text); })
 						});
 					}
 					cell.appendChild(incButton);
+					table.appendChild(cell);
 					break;
 
 				case "file":
 				case "image":
 					if (currentValue == null)
+					{
+						table.appendChild(cell);
 						break;
+					}
 
 					var download = document.createElement("a");
 					download.href = "#";
@@ -370,13 +479,36 @@ function createNotesTableBody(table, attributes, notes)
 
 					asyncSetTitleFromMetadata(currentValue, download.id);
 					cell.appendChild(download);
+					table.appendChild(cell);
+					break;
+
+				case "textarea":
+					if (currentValue != null)
+					{
+						var wrapper = document.createElement("div");
+						wrapper.style.display = "inline-block";
+						wrapper.style.maxWidth = "100%";
+						var strings = currentValue.split('\n');
+						for (var s = 0; s < strings.length; s++)
+						{
+							wrapper.appendChild(document.createTextNode(strings[s]));
+							wrapper.appendChild(document.createElement("br"));
+						}
+
+						cell.appendChild(wrapper);
+					}
+
+					cell.style.maxWidth = "100%";
+					table.appendChild(cell);
+
 					break;
 
 				default:
 					cell.innerHTML = currentValue != null ? currentValue : "";
+					cell.style.maxWidth = "100%";
+					table.appendChild(cell);
 					break;
 			}
-			table.appendChild(cell);
 		}
 
 		table.appendChild(createButtonToShowNoteEditForm(note.id));
@@ -437,6 +569,75 @@ function showNoteForm(id)
 		getEmptyElement(DATA_TABLE);
 		var dataElement = getEmptyElement(DATA_ELEMENT);
 
+		dataElement.appendChild(document.createElement("div"));
+		
+		var menu = document.createElement("div");
+		menu.style.justifySelf = "right";
+		var deleteNoteButton = document.createElement("a");
+		deleteNoteButton.href = "#";
+		deleteNoteButton.className += " delete-note-image";
+		deleteNoteButton.setAttribute(CONTENT_ID, id);
+		deleteNoteButton.onclick = function() 
+		{
+			var result = confirm("Delete note?");
+			if (result)
+			{
+				deleteNote(this.getAttribute(CONTENT_ID))
+				.then(switchToContent());
+			}
+		}
+		menu.appendChild(deleteNoteButton);
+		var hideNoteButton = document.createElement("a");
+		hideNoteButton.id = "hide-note-button";
+		hideNoteButton.className += " hidden-image";
+		hideNoteButton.href = "#";
+		hideNoteButton.setAttribute(CONTENT_ID, id);
+		hideNoteButton.onclick = function() 
+		{
+			if (this.classList.contains("hidden-image"))
+			{
+				fetch(SERVER_ADDRESS + "/rest/notes/" + getContentType() + "/" + this.getAttribute(CONTENT_ID) + "/hide", {
+					method: "PUT",
+					headers: { "Accept": "text/plain;charset=UTF-8", "Content-Type": "application/json;charset=UTF-8" }
+				})
+				.then(response => {
+					if (response.status == 200)
+					{
+						this.classList.remove("hidden-image");
+						this.className += " visible-image";
+					}
+				});
+			}
+			else
+			{
+				fetch(SERVER_ADDRESS + "/rest/notes/" + getContentType() + "/" + id + "/reveal", {
+					method: "PUT",
+					headers: { "Accept": "text/plain;charset=UTF-8", "Content-Type": "application/json;charset=UTF-8" }
+				})
+				.then(response => {
+					if (response.status == 200)
+					{
+						this.classList.remove("visible-image");
+						this.className += " hidden-image";
+					}
+				});
+			}
+		}
+		menu.appendChild(hideNoteButton);
+
+		var cloneButton = document.createElement("a");
+		cloneButton.href = "#";
+		cloneButton.className += " copy-note-image";
+		cloneButton.onclick = function() 
+		{
+			var saveButton = document.getElementById("save-button");
+			saveButton.removeAttribute(CONTENT_ID);
+			saveButton.value = "Save";
+		}
+		menu.appendChild(cloneButton);
+
+		dataElement.appendChild(menu);
+
 		createErrorLabel(dataElement);
 
 		if (id)
@@ -444,6 +645,12 @@ function showNoteForm(id)
 			fetch(SERVER_ADDRESS + "/rest/notes/" + getContentType() + "/" + id)
 			.then(response => response.json())
 			.then(note => {
+				if (note.hidden)
+				{
+					var hideButton = document.getElementById("hide-note-button");
+					hideButton.classList.remove("hidden-image");
+					hideButton.className += " visible-image";
+				}
 				prepareNoteAttributes(dataElement, note, attributes);
 				createNoteActionButtons(dataElement, id);
 			})
@@ -701,6 +908,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 				input.type = "file";
 				input.multiple = true;
 				setFileSizeAttributes(input, attribute);
+				input.setAttribute("image-size", attribute.imagesSize);
 				input.id = attribute.id;
 				input.style.display = "none";
 				input.setAttribute("accept", "image/*");
@@ -748,7 +956,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 										showError("Image is already exists");
 								}
 	
-								asyncDownloadImage(response, this.id, attribute.imagesSize)
+								asyncDownloadImage(response, this.id, parseInt(this.getAttribute("image-size")))
 							}
 						});
 					}
@@ -995,14 +1203,12 @@ function asyncDownloadImage(fileId, inputId, size)
 			var remove = document.createElement("a");
 			remove.className += " remove-image";
 			remove.href = "#";
-			remove.setAttribute("related-input-id", inputId + "-" + fileId);
+			remove.setAttribute("related-input-id", img.id);
 			remove.onclick = function() 
 			{ 
-				setTimeout(() => {
-					var toRemove = document.getElementById(this.getAttribute("related-input-id"));	
-					toRemove.parentNode.removeChild(toRemove);
-				}, 0
-			)}
+				var toRemove = this.parentNode.parentNode;	
+				setTimeout(() => { toRemove.parentNode.removeChild(toRemove); }, 0 )
+			}
 
 			buttons.appendChild(download);
 			buttons.appendChild(remove);
@@ -1118,8 +1324,9 @@ function createNoteActionButtons(dataElement, id)
 	var saveHandler = function() 
 	{
 		var objectToSave = new Object();
-		objectToSave.id = id;
-		objectToSave.attributes = getMetaObjectFromForm(dataElement);
+		if (this.getAttribute(CONTENT_ID) != null)
+			objectToSave.id = this.getAttribute(CONTENT_ID);
+		objectToSave.attributes = getNoteFromForm(dataElement);
 
 		fetch(SERVER_ADDRESS + '/rest/notes/' + getContentType(), {
 			method: objectToSave.id == null ? "POST" : "PUT",
@@ -1136,7 +1343,7 @@ function createNoteActionButtons(dataElement, id)
 		});
 	};
 
-	addFormButtons(dataElement, id != null, saveHandler, editHandler);
+	addFormButtons(dataElement, id != null, saveHandler, editHandler, id);
 }
 
 
@@ -1198,3 +1405,11 @@ function handleUpdateNoteResponse(response)
 	}
 }
 
+
+function setWidthRangeInTable(element, attribute)
+{
+	if (attribute.maxWidth != null)
+		element.style.maxWidth = attribute.maxWidth;
+	if (attribute.minWidth != null)
+		element.style.minWidth = attribute.minWidth;
+}
