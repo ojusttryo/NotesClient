@@ -62,7 +62,7 @@ function createEntitiesTableBody(table, entities)
         appendNewSpan(table, entities[i].visible);
 
 		var editButton = document.createElement("td");
-        editButton.className += " " + EDIT_BUTTON;
+        editButton.classList.add(EDIT_BUTTON);
         editButton.setAttribute(CONTENT_ID, entities[i].id);
         editButton.onclick = function() 
         {
@@ -72,7 +72,7 @@ function createEntitiesTableBody(table, entities)
 		table.appendChild(editButton);		
 
 		var deleteButton = document.createElement("td");
-        deleteButton.className += " " + DELETE_BUTTON;
+        deleteButton.classList.add(DELETE_BUTTON);
         deleteButton.setAttribute(CONTENT_ID, entities[i].id);
         deleteButton.onclick = function() 
         {
@@ -129,7 +129,7 @@ function createEntityForm(entityId)
 	.then(attributes => {
 
         var attributesSelect = document.createElement("div");
-        attributesSelect.className += " twoCols";
+        attributesSelect.classList.add(TWO_COLS);
         attributesSelect.id = ATTRIBUTES_SELECT;
 
         var leftTable = createAttributesTable(attributes, "left");
@@ -162,10 +162,16 @@ function createEntityForm(entityId)
             }
 
             var keyAttr = document.getElementById(entity.keyAttribute + "-key-button");
-            changeClassName(keyAttr, "key-attribute-image", "selected-key-attribute-image");
+            changeClassName(keyAttr, KEY_ATTRIBUTE_IMAGE, SELECTED_KEY_ATTRIBUTE_IMAGE);
 
             var sortAttr = document.getElementById(entity.sortAttribute + "-sort-button");
-            changeClassName(sortAttr, "sort-attribute-image", (entity.sortDirection == "ascending") ? "asc-sort-attribute-image" : "desc-sort-attribute-image");
+            changeClassName(sortAttr, SORT_ATTRIBUTE_IMAGE, (entity.sortDirection == "ascending") ? ASC_SORT_ATTRIBUTE_IMAGE : DESC_SORT_ATTRIBUTE_IMAGE);
+
+            for (var i = 0; i < entity.comparedAttributes.length; i++)
+            {
+                var comparedAttr = document.getElementById(entity.comparedAttributes[i] + "-compared-button");
+                changeClassName(comparedAttr, COMPARED_ATTRIBUTE_IMAGE, SELECTED_COMPARED_ATTRIBUTE_IMAGE);
+            }
         });
     });
 }
@@ -176,7 +182,7 @@ let shadow;
 function createAttributesTable(attributes, side)
 {
     var table = document.createElement("table");
-    table.className += " attributes-select-table";
+    table.classList.add(ATTRIBUTES_SELECT_TABLE);
     if (side == "right")
         table.setAttribute(ATTRIBUTE_NAME, "attributes");
 
@@ -192,6 +198,7 @@ function createAttributesTable(attributes, side)
     {
         appendNewElement("th", theadRow, "");          // key attribute button
         appendNewElement("th", theadRow, "");          // Order attribute button
+        appendNewElement("th", theadRow, "");          // Compare attribute button
     }
     thead.appendChild(theadRow);
     table.appendChild(thead);
@@ -245,7 +252,7 @@ function createAttributesTable(attributes, side)
         var signTd = document.createElement("td");
         signTd.style.width = "0";
         var sign = document.createElement("a");
-        sign.className += " " + signClass;
+        sign.classList.add(signClass);
         sign.id = attribute.id + "-" + side + "-button";
         sign.onclick = function() 
         {
@@ -254,17 +261,9 @@ function createAttributesTable(attributes, side)
             relatedRow.style.display = "table-row";
             thisRow.style.display = "none";
 
-            var key = document.getElementsByClassName("selected-key-attribute-image");
-            if (key != null && key.length > 0 && key[0].offsetParent === null)
-                changeClassName(key[0], "selected-key-attribute-image", "key-attribute-image");
-            
-            var sort = document.getElementsByClassName("asc-sort-attribute-image");
-            if (sort != null && sort.length > 0 && sort[0].offsetParent === null)
-                changeClassName(sort[0], "asc-sort-attribute-image", "sort-attribute-image");
-
-            var reverse = document.getElementsByClassName("desc-sort-attribute-image");
-            if (reverse != null && reverse.length > 0 && reverse[0].offsetParent === null)
-                changeClassName(reverse[0], "desc-sort-attribute-image", "sort-attribute-image");
+            changeClassForHiddenElements(SELECTED_KEY_ATTRIBUTE_IMAGE, KEY_ATTRIBUTE_IMAGE);
+            changeClassForHiddenElements(ASC_SORT_ATTRIBUTE_IMAGE, SORT_ATTRIBUTE_IMAGE);
+            changeClassForHiddenElements(DESC_SORT_ATTRIBUTE_IMAGE, SORT_ATTRIBUTE_IMAGE);
         }
         signTd.appendChild(sign);
         tr.appendChild(signTd);
@@ -277,18 +276,15 @@ function createAttributesTable(attributes, side)
                 keyAttributeTd.style.textAlign = "center";
                 keyAttributeTd.style.width = "0";
                 var keyAttribute = document.createElement("a");
-                keyAttribute.className += " key-attribute-image";
+                keyAttribute.classList.add(KEY_ATTRIBUTE_IMAGE);
                 keyAttribute.id = attribute.id + "-key-button";
                 keyAttribute.onclick = function() 
                 {
-                    var currentClass = this.classList.contains("selected-key-attribute-image") ? "selected-key-attribute-image" : "key-attribute-image";
-
-                    var allKeys = document.getElementsByClassName("selected-key-attribute-image");
+                    var allKeys = document.getElementsByClassName(SELECTED_KEY_ATTRIBUTE_IMAGE);
                     for (var k = 0; k < allKeys.length; k++)
-                        changeClassName(allKeys[k], "selected-key-attribute-image", "key-attribute-image");
+                        changeClassName(allKeys[k], SELECTED_KEY_ATTRIBUTE_IMAGE, KEY_ATTRIBUTE_IMAGE);
                     
-                    this.classList.remove(currentClass);
-                    this.className += (currentClass == "selected-key-attribute-image") ? " key-attribute-image" : " selected-key-attribute-image";
+                    changeClassToOpposite(this, KEY_ATTRIBUTE_IMAGE, SELECTED_KEY_ATTRIBUTE_IMAGE);
                 }
                 keyAttributeTd.appendChild(keyAttribute);
                 tr.appendChild(keyAttributeTd);
@@ -304,36 +300,53 @@ function createAttributesTable(attributes, side)
                 sortAttributeTd.style.textAlign = "center";
                 sortAttributeTd.style.width = "0";
                 var sortAttribute = document.createElement("a");
-                sortAttribute.className += " sort-attribute-image";
+                sortAttribute.classList.add(SORT_ATTRIBUTE_IMAGE);
                 sortAttribute.id = attribute.id + "-sort-button";
                 sortAttribute.onclick = function() 
                 {
                     var currentClass;
-                    if (this.classList.contains("asc-sort-attribute-image"))
-                        currentClass = "asc-sort-attribute-image";
-                    else if (this.classList.contains("desc-sort-attribute-image"))
-                        currentClass = "desc-sort-attribute-image";
+                    if (this.classList.contains(ASC_SORT_ATTRIBUTE_IMAGE))
+                        currentClass = ASC_SORT_ATTRIBUTE_IMAGE;
+                    else if (this.classList.contains(DESC_SORT_ATTRIBUTE_IMAGE))
+                        currentClass = DESC_SORT_ATTRIBUTE_IMAGE;
                     else
-                        currentClass = "sort-attribute-image";
+                        currentClass = SORT_ATTRIBUTE_IMAGE;
 
                     var allKeys = document.querySelectorAll(".asc-sort-attribute-image,.desc-sort-attribute-image");
                     for (var k = 0; k < allKeys.length; k++)
                     {
-                        changeClassName(allKeys[k], "asc-sort-attribute-image", "sort-attribute-image");
-                        changeClassName(allKeys[k], "desc-sort-attribute-image", "sort-attribute-image");
+                        changeClassName(allKeys[k], ASC_SORT_ATTRIBUTE_IMAGE, SORT_ATTRIBUTE_IMAGE);
+                        changeClassName(allKeys[k], DESC_SORT_ATTRIBUTE_IMAGE, SORT_ATTRIBUTE_IMAGE);
                     }
 
                     this.classList.remove(currentClass);
                     
-                    if (currentClass == "asc-sort-attribute-image")
-                        this.className += " desc-sort-attribute-image";
-                    else if (currentClass == "sort-attribute-image")
-                        this.className += " asc-sort-attribute-image";
+                    if (currentClass == ASC_SORT_ATTRIBUTE_IMAGE)
+                        this.classList.add(DESC_SORT_ATTRIBUTE_IMAGE);
+                    else if (currentClass == SORT_ATTRIBUTE_IMAGE)
+                        this.classList.add(ASC_SORT_ATTRIBUTE_IMAGE);
                     else
-                        this.className += " sort-attribute-image";
+                        this.classList.add(SORT_ATTRIBUTE_IMAGE);
                 }
                 sortAttributeTd.appendChild(sortAttribute);
                 tr.appendChild(sortAttributeTd);
+            }
+            else
+            {
+                tr.appendChild(document.createElement("td"));
+            }
+
+            if (attribute.required && couldBeKeyAttribute(attribute.type))
+            {
+                var comparedAttrId = document.createElement("td");
+                comparedAttrId.style.textAlign = "center";
+                comparedAttrId.style.width = "0";
+                var comparedAttr = document.createElement("a");
+                comparedAttr.classList.add(COMPARED_ATTRIBUTE_IMAGE);
+                comparedAttr.id = attribute.id + "-compared-button";
+                comparedAttr.onclick = function() { changeClassToOpposite(this, SELECTED_COMPARED_ATTRIBUTE_IMAGE, COMPARED_ATTRIBUTE_IMAGE); }
+                comparedAttrId.appendChild(comparedAttr);
+                tr.appendChild(comparedAttrId);
             }
             else
             {

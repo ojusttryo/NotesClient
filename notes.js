@@ -4,30 +4,24 @@
 /**
  * Shows all notes like 'Movies' or 'Games'
  */
-async function showContentTableWithNotes(contentType, entityId, attributeName, searchRequest)
+async function showContentTableWithNotes(contentType, entityId)
 {
-	var isSearch = (attributeName != null && searchRequest != null);
-	// We are still at the same page. No reason to recreate this.
-	if (!isSearch)
-	{
-		setContentType(contentType);
-		setContentId(entityId);
+	setContentType(contentType);
+	setContentId(entityId);
 
-		window.history.pushState("", "Notes", "/" + contentType);
+	window.history.pushState("", "Notes", "/" + contentType);
 
-		switchToContent();
-		createUpperMenuForContent();
-	}
+	switchToContent();
+	createUpperMenuForContent();
 
 	fetch(SERVER_ADDRESS + '/rest/attributes/search?entityId=' + entityId)
 	.then(response => response.json())
 	.then(attributes => {
 		
-		var address = isSearch ? `${SERVER_ADDRESS}/rest/notes/${contentType}/${attributeName}/search` : SERVER_ADDRESS + '/rest/notes/' + contentType;
+		var address = SERVER_ADDRESS + '/rest/notes/' + contentType;
 		fetch(address, {
-			method: isSearch ? "POST" : "GET",
-			body: JSON.stringify(searchRequest),
-			headers: { "Accept": "application/json;charset=UTF-8", "Content-Type": "application/json;charset=UTF-8" }
+			method: "GET",
+			headers: { "Accept": APPLICATION_JSON, "Content-Type": APPLICATION_JSON }
 		})
 		.then(response => response.json())
 		.then(notes => {
@@ -53,7 +47,30 @@ async function showSearchResult(attributeName, searchRequest)
 		fetch(address, {
 			method: "POST",
 			body: JSON.stringify(searchRequest),
-			headers: { "Accept": "application/json;charset=UTF-8", "Content-Type": "application/json;charset=UTF-8" }
+			headers: { "Accept": APPLICATION_JSON, "Content-Type": APPLICATION_JSON }
+		})
+		.then(response => response.json())
+		.then(notes => {
+			getEmptyElement(DATA_ELEMENT);
+			var table = getEmptyElement(DATA_TABLE);
+			createNotesTableHead(table, attributes);
+			createNotesTableBody(table, attributes, notes);
+		});
+	});
+}
+
+
+async function showNestedNotes(contentType)
+{
+	var entityId = getContentId();
+
+	fetch(SERVER_ADDRESS + '/rest/attributes/search?entityId=' + entityId)
+	.then(response => response.json())
+	.then(attributes => {
+		
+		fetch(`${SERVER_ADDRESS}/rest/notes/${contentType}/search`, {
+			method: "POST",
+			headers: { "Accept": APPLICATION_JSON, "Content-Type": APPLICATION_JSON }
 		})
 		.then(response => response.json())
 		.then(notes => {
@@ -78,7 +95,7 @@ async function showSearchResultForHidden(hidden)
 		var address = `${SERVER_ADDRESS}/rest/notes/${contentType}/${subrequest}`;
 		fetch(address, {
 			method: "GET",
-			headers: { "Accept": "application/json;charset=UTF-8", "Content-Type": "application/json;charset=UTF-8" }
+			headers: { "Accept": APPLICATION_JSON, "Content-Type": APPLICATION_JSON }
 		})
 		.then(response => response.json())
 		.then(notes => {
@@ -301,6 +318,17 @@ function createNotesTableBody(table, attributes, notes)
 
 			switch(attribute.type)
 			{
+				case "row number":
+					var rowNumber = document.createElement("td");
+					rowNumber.setAttribute(ATTRIBUTE_NAME, attributeName);
+					rowNumber.innerText = (i + 1).toString();
+					rowNumber.style.textAlign = attribute.alignment;
+					rowNumber.style.alignSelf = "left";
+					rowNumber.style.minWidth = "0px";
+					rowNumber.style.verticalAlign = "top";
+					cell.appendChild(rowNumber);
+					table.appendChild(cell);
+					break;
 				case "url":
 					if (currentValue == null)
 					{
@@ -435,7 +463,7 @@ function createNotesTableBody(table, attributes, notes)
 						var id = this.parentNode.getAttribute(CONTENT_ID);
 						fetch(SERVER_ADDRESS + '/rest/notes/' + getContentType() + "/" + id + "/inc/" + this.getAttribute(ATTRIBUTE_NAME), {
 							method: "PUT",
-							headers: { "Accept": "text/plain;charset=UTF-8", "Content-Type": "application/json;charset=UTF-8" }
+							headers: { "Accept": TEXT_PLAIN, "Content-Type": APPLICATION_JSON }
 						})
 						.then(response => {
 							if (response.status != 200)
@@ -598,7 +626,7 @@ function showNoteForm(id)
 			{
 				fetch(SERVER_ADDRESS + "/rest/notes/" + getContentType() + "/" + this.getAttribute(CONTENT_ID) + "/hide", {
 					method: "PUT",
-					headers: { "Accept": "text/plain;charset=UTF-8", "Content-Type": "application/json;charset=UTF-8" }
+					headers: { "Accept": TEXT_PLAIN, "Content-Type": APPLICATION_JSON }
 				})
 				.then(response => {
 					if (response.status == 200)
@@ -612,7 +640,7 @@ function showNoteForm(id)
 			{
 				fetch(SERVER_ADDRESS + "/rest/notes/" + getContentType() + "/" + id + "/reveal", {
 					method: "PUT",
-					headers: { "Accept": "text/plain;charset=UTF-8", "Content-Type": "application/json;charset=UTF-8" }
+					headers: { "Accept": TEXT_PLAIN, "Content-Type": APPLICATION_JSON }
 				})
 				.then(response => {
 					if (response.status == 200)
@@ -672,6 +700,8 @@ function prepareNoteAttributes(dataElement, note, attributes)
 	for (var i = 0; i < attributes.length; i++)
 	{
 		var attribute = attributes[i];
+		if (attribute.type == "row number")
+			continue;
 
 		var label = document.createElement("label");
 		label.innerText = attribute[TITLE];
@@ -1073,7 +1103,7 @@ function saveFile(file)
 	return fetch(SERVER_ADDRESS + '/rest/file', {
 		method: "POST",
 		body: formData,
-		headers: { "Accept": "application/json;charset=UTF-8" }
+		headers: { "Accept": APPLICATION_JSON }
 	})
 	.then(response => { return (response.status === 200) ? response.text() : response.json(); });
 }
@@ -1083,7 +1113,7 @@ function downloadMetadata(fileId)
 {
 	return fetch(SERVER_ADDRESS + "/rest/file/metadata/" + fileId, {
 		method: "GET",
-		headers: { "Accept": "application/json;charset=UTF-8", "Content-Type": "application/json;charset=UTF-8" }
+		headers: { "Accept": APPLICATION_JSON, "Content-Type": APPLICATION_JSON }
 	})
 	.then(response => response.json());
 }
@@ -1127,7 +1157,7 @@ function asyncDownloadImage(fileId, inputId, size)
 {
 	fetch(SERVER_ADDRESS + "/rest/file/image/" + fileId + "/" + size, {
 		method: "POST",
-		headers: { "Accept": "multipart/form-data", "Content-Type": "application/json;charset=UTF-8" }
+		headers: { "Accept": MULTIPART_FORM_DATA, "Content-Type": APPLICATION_JSON }
 	})
 	.then(getImagesResponse => {
 		if (getImagesResponse.status === 200)
@@ -1227,7 +1257,7 @@ function asyncDownloadFiles(identifiers, filesCollection)
 	fetch(SERVER_ADDRESS + "/rest/file/metadata", {
 		method: "POST",
 		body: JSON.stringify(identifiers),
-		headers: { "Accept": "application/json;charset=UTF-8", "Content-Type": "application/json;charset=UTF-8" }
+		headers: { "Accept": APPLICATION_JSON, "Content-Type": APPLICATION_JSON }
 	})
 	.then(response => response.json())
 	.then(metadata => {
@@ -1331,11 +1361,7 @@ function createNoteActionButtons(dataElement, id)
 		fetch(SERVER_ADDRESS + '/rest/notes/' + getContentType(), {
 			method: objectToSave.id == null ? "POST" : "PUT",
 			body: JSON.stringify(objectToSave),
-			headers:
-			{
-				"Accept": "text/plain;charset=UTF-8",
-				"Content-Type": "application/json;charset=UTF-8"
-			}
+			headers: { "Accept": TEXT_PLAIN, "Content-Type": APPLICATION_JSON }
 		})
 		.then(response => {
 			if (response.status === 200)
@@ -1383,11 +1409,7 @@ function updateNote(objectToSave, id)
 	return fetch(SERVER_ADDRESS + '/rest/notes/' + getContentType() + "/" + id, {
 		method: "PUT",
 		body: JSON.stringify(objectToSave),
-		headers:
-		{
-			"Accept": "text/plain;charset=UTF-8",
-			"Content-Type": "application/json;charset=UTF-8"
-		}
+		headers: { "Accept": TEXT_PLAIN, "Content-Type": APPLICATION_JSON }
 	})
 }
 

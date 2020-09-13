@@ -273,15 +273,23 @@ function getMetaObjectFromForm(parent)
 {
 	var result = new Object();
 
-	var keyAttribute = document.getElementsByClassName("selected-key-attribute-image");
+	var keyAttribute = document.getElementsByClassName(SELECTED_KEY_ATTRIBUTE_IMAGE);
 	if (keyAttribute != null && keyAttribute.length > 0)
 		result["keyAttribute"] = keyAttribute[0].parentNode.parentNode.getAttribute(CONTENT_ID);
 	
-	var sortAttribute = document.querySelectorAll(".asc-sort-attribute-image,.desc-sort-attribute-image");
+	var sortAttribute = document.querySelectorAll(`.${ASC_SORT_ATTRIBUTE_IMAGE},.${DESC_SORT_ATTRIBUTE_IMAGE}`);
 	if (sortAttribute != null && sortAttribute.length > 0)
 	{
 		result["sortAttribute"] = sortAttribute[0].parentNode.parentNode.getAttribute(CONTENT_ID);
-		result["sortDirection"] = (sortAttribute[0].classList.contains("asc-sort-attribute-image")) ? "ascending" : "descending";
+		result["sortDirection"] = (sortAttribute[0].classList.contains(ASC_SORT_ATTRIBUTE_IMAGE)) ? "ascending" : "descending";
+	}
+
+	var comparedAttributes = document.getElementsByClassName("selected-compared-attribute-image");
+	if (comparedAttributes != null && comparedAttributes.length > 0)
+	{
+		result["comparedAttributes"] = [];
+		for (var i = 0; i < comparedAttributes.length; i++)
+			result["comparedAttributes"].push(comparedAttributes[i].parentNode.parentNode.getAttribute(CONTENT_ID))
 	}
 
 	var allNodes = parent.getElementsByTagName('*');
@@ -503,7 +511,7 @@ function saveMetaObjectInfo(parentId, restUrl, afterSaveHandler)
     fetch(SERVER_ADDRESS + restUrl, {
         method: id ? "PUT" : "POST",
         body: JSON.stringify(objectToSave),
-        headers: { "Accept": "application/json;charset=UTF-8", "Content-Type": "application/json;charset=UTF-8" }
+        headers: { "Accept": APPLICATION_JSON, "Content-Type": APPLICATION_JSON }
     })
     .then(response => {
 		
@@ -722,5 +730,30 @@ function changeClassName(element, from, to)
 
 		if (!element.classList.contains(to))
 			element.className += " " + to;
+	}
+}
+
+
+function changeClassToOpposite(element, class1, class2)
+{
+	if (!element.classList.contains(class1) && !element.classList.contains(class2))
+		return;
+
+	var currentClass = element.classList.contains(class1) ? class1 : class2;
+	this.classList.remove(currentClass);
+	this.classList.add(currentClass == class1 ? class2 : class1);
+}
+
+
+function changeClassForHiddenElements(from, to)
+{
+	var elements = document.getElementsByClassName(from);
+	if (elements != null)
+	{
+		for (var i = 0; i < elements.length; i++)
+		{
+			if (elements[i].offsetParent === null)
+				changeClassName(elements[i], from, to);
+		}
 	}
 }

@@ -35,6 +35,14 @@ const FILE_ID = "file-id";
 const FILES_COUNT = "files-count";
 const ATTRIBUTES_SELECT = "attributes-select";
 const ATTRIBUTES_SELECT_TABLE = "attributes-select-table";
+const COMPARED_ATTRIBUTE_IMAGE = "compared-attribute-image";
+const SELECTED_COMPARED_ATTRIBUTE_IMAGE = "selected-compared-attribute-image";
+const SORT_ATTRIBUTE_IMAGE = "sort-attribute-image";
+const ASC_SORT_ATTRIBUTE_IMAGE = "asc-sort-attribute-image";
+const DESC_SORT_ATTRIBUTE_IMAGE = "desc-sort-attribute-image";
+const KEY_ATTRIBUTE_IMAGE = "key-attribute-image";
+const SELECTED_KEY_ATTRIBUTE_IMAGE = "selected-key-attribute-image";
+const TWO_COLS = "twoCols";
 
 const NAME = "name";
 const TITLE = "title";
@@ -69,3 +77,9 @@ const NOTES = "Notes";
 const FOLDERS = "Folders";
 
 const ATTRIBUTES = "attributes";
+
+const APPLICATION_JSON = "application/json;charset=UTF-8";
+const TEXT_PLAIN = "text/plain;charset=UTF-8";
+const MULTIPART_FORM_DATA = "multipart/form-data";
+
+

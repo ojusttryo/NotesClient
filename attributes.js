@@ -120,17 +120,18 @@ function createAttributeForm(attributeId)
     }
 
     var alignments = [ "left", "right", "center" ];
-    var types = [ "text", "textarea", "delimited text", "number", "select", "multiselect", "checkbox", "inc", "url", 
-        "save time", "update time", "user date", "user time", "file", "image", "files", "gallery"];
+    var types = [ "row number", "text", "textarea", "delimited text", "number", "select", "multiselect", "checkbox", "inc", "url", 
+        "save time", "update time", "user date", "user time", "file", "image", "files", "gallery", "related notes", "nested notes", "compared notes"];
     var methods = [ "none", "folder name", "avg", "count" ];
     var imageSizes = [ "50x50", "100x100", "200x200" ];
 
     addInputWithLabel("text",     true,  dataElement, "title",           "Title",                       "attribute-title");
     addInputWithLabel("text",     true,  dataElement, "name",            "Name (unique)",               "attribute-name");    
-    addSelectWithLabel(dataElement, "alignment", "Alignment", "attribute-alignment", alignments);
     addSelectWithLabel(dataElement, "type", "Type", "attribute-type", types);   
     addInputWithLabel("text",     true,  dataElement, "selectOptions",   "Select options",              "attribute-select-options");
     addInputWithLabel("text",     false, dataElement, "dateFormat",      "Date format",                 "attribute-date-format");
+    addSelectWithLabel(dataElement, "entity", "Entity", "attribute-entity", []);
+    addSelectWithLabel(dataElement, "alignment", "Alignment", "attribute-alignment", alignments);
     addInputWithLabel("checkbox", false, dataElement, "visible",         "Visible in table",            "attribute-visible");
     addInputWithLabel("checkbox", false, dataElement, "required",        "Required",                    "attribute-required");
     addInputWithLabel("checkbox", false, dataElement, "editableInTable", "Editable in table",           "attribute-editable-in-table");
@@ -161,8 +162,8 @@ function createAttributeForm(attributeId)
         showInputAndLabelIf("attribute-select-options", hasOptions(type));
         showInputAndLabelIf("attribute-lines-count", type == "textarea");
         showInputAndLabelIf("attribute-images-size", type == "gallery");
-        showInputAndLabelIf("attribute-max-width", type != "file");
-        showInputAndLabelIf("attribute-min-width", type != "file");
+        showInputAndLabelIf("attribute-max-width", type != "file" && !isMultifile(type) && isNotesList(type));
+        showInputAndLabelIf("attribute-min-width", type != "file" && !isMultifile(type) && isNotesList(type));
         showInputAndLabelIf("attribute-max-height", isSizableOnForm());
         showInputAndLabelIf("attribute-min-height", isSizableOnForm());
         showInputAndLabelIf("attribute-max", isTextual(type) || isNumeric(type) || isFile(type) || isMultifile(type));
@@ -172,10 +173,12 @@ function createAttributeForm(attributeId)
         showInputAndLabelIf("attribute-editable-in-table", (type == "select" || type == "inc" || type == "checkbox"));
         showInputAndLabelIf("attribute-date-format", hasDateFormat(type));
         showInputAndLabelIf("attribute-default", (isTextual(type) || isNumeric(type) || hasOptions(type) || type == "checkbox" || type == "url"));
-        showInputAndLabelIf("attribute-required", !(hasDateFormat(type) || type == "multiselect" || type == "checkbox" || isMultifile(type)));
+        showInputAndLabelIf("attribute-required", isTextual(type) || isNumeric(type) || type == "select" || isFile(type) || type == "url" || isUserDateOrTime(type));
         showInputAndLabelIf("attribute-visible", !isSkippableAttributeInNotesTable(type));
         showInputAndLabelIf("attribute-method",  !isSkippableAttributeInNotesTable(type));
         showInputAndLabelIf("attribute-delimiter", type == "delimited text");
+        showInputAndLabelIf("attribute-entity", type == "nested notes");
+        showInputAndLabelIf("attribute-alignment", !isNotesList(type));
 
         document.getElementById("attribute-max-width-label").innerText = isSizableOnForm(type) ? "Max width at page" : "Max width in table";
         document.getElementById("attribute-min-width-label").innerText = isSizableOnForm(type) ? "Min width at page" : "Min width in table";
@@ -195,6 +198,30 @@ function createAttributeForm(attributeId)
         {
             max.innerText = "Max value";
             min.innerText = "Min value";
+        }
+        else if (isNotesList(type))
+        {
+            max.innerText = "Max count";
+            min.innerText = "Min count";
+        }
+
+        if (type == "nested notes" || type == "compared notes")
+        {
+            fetch(SERVER_ADDRESS + '/rest/entities')
+            .then(response => response.json())
+            .then(entities => {
+                var select = getEmptyElement("attribute-entity");
+                
+                entities = entities.filter(entity => entity.visible);
+
+                for (var i = 0; i < entities.length; i++)
+                {
+                    var option = document.createElement("option");
+                    option.innerText = entities[i].name;
+                    option.value = entities[i].name;
+                    select.appendChild(option);
+                }
+            });
         }
     }
     document.getElementById("attribute-type").onchange();
@@ -233,7 +260,7 @@ function fillAttributeValuesOnForm(attribute)
 
 function isSkippableAttributeInNotesTable(type)
 {
-    return (isMultifile(type));
+    return (isMultifile(type) || isNotesList(type));
 }
 
 function isSizableOnForm(type)
@@ -274,6 +301,11 @@ function isMultifile(type)
 function isUserDateOrTime(type)
 {
     return (type == "user date" || type == "user time");
+}
+
+function isNotesList(type)
+{
+    return (type == "nested notes" || type == "related notes" || type == "compared notes");
 }
 
 function getImagesSize(size)
