@@ -18,20 +18,52 @@ function handleRequest()
 		var path = pathname.split('/');
 		switch (path[0])
 		{
+			case "log":
+				loadMenu();
+				showLog();
+				switchToMainPage();
+				break;
+
+			case "entity":
+				loadMenu();
+				createEntityForm(null);
+				switchToAddEditForm();
+				break;
+
 			case "entities":
 				loadMenu();
 				if (path[1] == null)
+				{
+					switchToContent();
 					showEntities();
+				}
 				else
+				{
+					switchToAddEditForm();
+					setContentName(path[1]);
 					createEntityForm(path[1]);
+				}
+				break;
+
+			case "attribute":
+				loadMenu();
+				createAttributeForm(null);
+				switchToAddEditForm();
 				break;
 
 			case "attributes":
 				loadMenu();
 				if (path[1] == null)
+				{
+					switchToContent();
 					showAttributes();
+				}
 				else
+				{
+					switchToAddEditForm();
+					setContentName(path[1]);
 					createEditAttributeForm(path[1]);
+				}
 				break;
 				
 			default:
@@ -60,7 +92,6 @@ function handleRequest()
 						{
 							if (entities[e].getAttribute(CONTENT_TYPE) == path[0])
 							{
-								setContentId(entities[e].getAttribute(CONTENT_ID));
 								setContentType(entities[e].getAttribute(CONTENT_TYPE));
 								showNoteForm(path[1]);
 								return;
@@ -94,8 +125,7 @@ function loadMenu()
 			var name = entities[i].name;
 			var li = document.createElement("li");
 			li.setAttribute(CONTENT_TYPE, name);
-			li.setAttribute(CONTENT_ID, entities[i].id);
-			li.onclick = function() { showContentTableWithNotes(this.getAttribute(CONTENT_TYPE), this.getAttribute(CONTENT_ID)); };
+			li.onclick = function() { showContentTableWithNotes(this.getAttribute(CONTENT_TYPE)); };
 			li.id = name + "-button";
 			li.innerText = title;
 			menuList.appendChild(li);
@@ -172,7 +202,7 @@ function showLog()
 
 function showCurrentContent()
 {
-	showContentTableWithNotes(getContentType(), getContentId());
+	showContentTableWithNotes(getContentType());
 	switchToContent();
 }
 
@@ -275,12 +305,12 @@ function getMetaObjectFromForm(parent)
 
 	var keyAttribute = document.getElementsByClassName(SELECTED_KEY_ATTRIBUTE_IMAGE);
 	if (keyAttribute != null && keyAttribute.length > 0)
-		result["keyAttribute"] = keyAttribute[0].parentNode.parentNode.getAttribute(CONTENT_ID);
+		result["keyAttribute"] = getAttrNameForButtonInAttrList(keyAttribute[0]);
 	
 	var sortAttribute = document.querySelectorAll(`.${ASC_SORT_ATTRIBUTE_IMAGE},.${DESC_SORT_ATTRIBUTE_IMAGE}`);
 	if (sortAttribute != null && sortAttribute.length > 0)
 	{
-		result["sortAttribute"] = sortAttribute[0].parentNode.parentNode.getAttribute(CONTENT_ID);
+		result["sortAttribute"] = getAttrNameForButtonInAttrList(sortAttribute[0]);
 		result["sortDirection"] = (sortAttribute[0].classList.contains(ASC_SORT_ATTRIBUTE_IMAGE)) ? "ascending" : "descending";
 	}
 
@@ -289,7 +319,7 @@ function getMetaObjectFromForm(parent)
 	{
 		result["comparedAttributes"] = [];
 		for (var i = 0; i < comparedAttributes.length; i++)
-			result["comparedAttributes"].push(comparedAttributes[i].parentNode.parentNode.getAttribute(CONTENT_ID))
+			result["comparedAttributes"].push(getAttrNameForButtonInAttrList(comparedAttributes[i]));
 	}
 
 	var allNodes = parent.getElementsByTagName('*');
@@ -306,7 +336,7 @@ function getMetaObjectFromForm(parent)
 			{
 				result[attributeName] = [...currentNode.getElementsByTagName("tr")]
 					.filter(x => x.style.display != "none")
-					.map(x => x.getAttribute(CONTENT_ID))
+					.map(x => x.getAttribute(ATTRIBUTE_NAME))
 					.filter(x => x != null);
 			}
 			else if (currentNode.type == 'checkbox')
@@ -351,8 +381,8 @@ function getNoteFromForm(parent)
 				result[attributeName] = new Array();
 				for (var j = 0; j < checkboxes.length; j++)
 				{
-					if (checkboxes[j].getAttribute("attribute-id") != null && checkboxes[j].checked == true)
-						result[attributeName].push(checkboxes[j].getAttribute("attribute-id"));
+					if (checkboxes[j].getAttribute(ATTRIBUTE_NAME) != null && checkboxes[j].checked == true)
+						result[attributeName].push(checkboxes[j].getAttribute(ATTRIBUTE_NAME));
 					else if (checkboxes[j].getAttribute("title") != null && checkboxes[j].checked == true)
 						result[attributeName].push(checkboxes[j].getAttribute("title"));
 				}
@@ -364,12 +394,12 @@ function getNoteFromForm(parent)
 				var images = currentNode.getElementsByTagName("img");
 				result[attributeName] = new Array();
 				for (var j = 0; j < images.length; j++)
-					result[attributeName].push(images[j].getAttribute(CONTENT_ID));
+					result[attributeName].push(images[j].getAttribute(FILE_ID));
 			}
 			else if (attributeType && attributeType == "files")
 			{
 				var buttons = currentNode.getElementsByClassName(DELETE_BUTTON);
-				var identifiers = [...buttons].map(x => x.getAttribute(CONTENT_ID));
+				var identifiers = [...buttons].map(x => x.getAttribute(FILE_ID));
 				result[attributeName] = identifiers;
 			}
 			else if (attributeType && (attributeType == "inc" || attributeType == "number"))
@@ -464,7 +494,7 @@ function createMultiselectWithCheckboxes(attrName, options)
 
 	for (var i = 0; i < options.length; i++)
 	{
-		var optionId = attrName + i.toString()
+		var optionId = attrName + i.toString();
 		
 		var label = document.createElement("label");
 		label.setAttribute("for", optionId);
@@ -477,7 +507,7 @@ function createMultiselectWithCheckboxes(attrName, options)
 		input.setAttribute("title", text);
 		input.id = optionId;
 		if (options[i].id != null)
-			input.setAttribute("attribute-id", options[i].id);
+			input.setAttribute(ATTRIBUTE_NAME, options[i].name);
 		
 		label.appendChild(input);
 		label.appendChild(textNode);
@@ -503,13 +533,13 @@ function showCheckboxes(selectBox)
 function saveMetaObjectInfo(parentId, restUrl, afterSaveHandler)
 {
     var parent = document.getElementById(parentId);
-    var objectToSave = getMetaObjectFromForm(parent);
-    var id = getContentId();
-    if (id)
-        objectToSave.id = id;
+	var objectToSave = getMetaObjectFromForm(parent);
+	var name = getContentId();
+    if (name)
+        objectToSave.name = name;
 
     fetch(SERVER_ADDRESS + restUrl, {
-        method: id ? "PUT" : "POST",
+        method: name ? "PUT" : "POST",
         body: JSON.stringify(objectToSave),
         headers: { "Accept": APPLICATION_JSON, "Content-Type": APPLICATION_JSON }
     })
@@ -631,21 +661,6 @@ function convertObjectToArray(attributes)
 }
 
 
-function getContentId()
-{
-	return document.getElementById(CONTENT).getAttribute(CONTENT_ID);
-}
-
-function setContentId(id)
-{
-	document.getElementById(CONTENT).setAttribute(CONTENT_ID, id);
-}
-
-function clearContentId()
-{
-	document.getElementById(CONTENT).removeAttribute(CONTENT_ID);
-}
-
 function getContentType()
 {
 	return document.getElementById(CONTENT).getAttribute(CONTENT_TYPE);
@@ -655,6 +670,42 @@ function setContentType(contentType)
 {
 	document.getElementById(CONTENT).setAttribute(CONTENT_TYPE, contentType);
 }
+
+function clearContentType()
+{
+	document.getElementById(CONTENT).removeAttribute(CONTENT_TYPE);
+}
+
+function setContentName(contentName)
+{
+	document.getElementById(CONTENT).setAttribute(CONTENT_NAME, contentName);
+}
+
+function getContentName()
+{
+	return document.getElementById(CONTENT).getAttribute(CONTENT_NAME);
+}
+
+function clearContentName()
+{
+	document.getElementById(CONTENT).removeAttribute(CONTENT_NAME);
+}
+
+function setContentId(contentId)
+{
+	document.getElementById(CONTENT).setAttribute(CONTENT_ID, contentId);
+}
+
+function getContentId()
+{
+	return document.getElementById(CONTENT).getAttribute(CONTENT_ID);
+}
+
+function clearContentId()
+{
+	document.getElementById(CONTENT).removeAttribute(CONTENT_ID);
+}
+
 
 function addOptions(select, options)
 {
@@ -693,14 +744,12 @@ function createErrorLabel(dataElement)
     dataElement.appendChild(errorLabel);
 }
 
-function addFormButtons(parent, isNewObject, saveHandler, cancelHandler, id)
+function addFormButtons(parent, isNewObject, saveHandler, cancelHandler)
 {
 	var buttons = document.createElement("div");
     buttons.className += " objectButtons";
     buttons.className += " twoCols";
 	var saveButton = addButton(buttons, "save-button", isNewObject ? "Edit" : "Save", saveHandler);
-	if (id)
-		saveButton.setAttribute(CONTENT_ID, id);
     addButton(buttons, "cancel-button", "Cancel", cancelHandler);
 	parent.appendChild(buttons);
 	
@@ -740,8 +789,8 @@ function changeClassToOpposite(element, class1, class2)
 		return;
 
 	var currentClass = element.classList.contains(class1) ? class1 : class2;
-	this.classList.remove(currentClass);
-	this.classList.add(currentClass == class1 ? class2 : class1);
+	element.classList.remove(currentClass);
+	element.classList.add(currentClass == class1 ? class2 : class1);
 }
 
 
@@ -756,4 +805,10 @@ function changeClassForHiddenElements(from, to)
 				changeClassName(elements[i], from, to);
 		}
 	}
+}
+
+
+function getAttrNameForButtonInAttrList(button)
+{
+	return button.parentNode.parentNode.getAttribute(ATTRIBUTE_NAME);
 }

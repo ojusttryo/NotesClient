@@ -59,31 +59,31 @@ function createAttributesTableBody(table, attributes)
 
 		var editButton = document.createElement("td");
         editButton.className += " " + EDIT_BUTTON;
-        editButton.setAttribute(CONTENT_ID, attributes[i].id);
+        editButton.setAttribute(ATTRIBUTE_NAME, attributes[i].name);
         editButton.onclick = function() 
         {
-            createEditAttributeForm(this.getAttribute(CONTENT_ID));
+            createEditAttributeForm(this.getAttribute(ATTRIBUTE_NAME));
             switchToAddEditForm();
         };
 		table.appendChild(editButton);		
 
 		var deleteButton = document.createElement("td");
         deleteButton.className += " " + DELETE_BUTTON;
-        deleteButton.setAttribute(CONTENT_ID, attributes[i].id);
+        deleteButton.setAttribute(ATTRIBUTE_NAME, attributes[i].name);
         deleteButton.onclick = function() 
         {
             var result = confirm("Delete attribute?");
             if (result)
-                deleteAttribute(this.getAttribute(CONTENT_ID), showAttributes);
+                deleteAttribute(this.getAttribute(ATTRIBUTE_NAME));
         };
 		table.appendChild(deleteButton);
 	}
 }
 
 
-function deleteAttribute(id, deleteHandler)
+function deleteAttribute(name)
 {
-    fetch(SERVER_ADDRESS + '/rest/attributes/' + id, { method: "DELETE" })
+    fetch(SERVER_ADDRESS + '/rest/attributes/' + name, { method: "DELETE" })
     .then(response => {
         if (response.status === 200)
             showAttributes();
@@ -91,27 +91,27 @@ function deleteAttribute(id, deleteHandler)
 }
 
 
-function createEditAttributeForm(id)
+function createEditAttributeForm(name)
 {
-    fetch(SERVER_ADDRESS + '/rest/attributes/search?id=' + id)
+    fetch(SERVER_ADDRESS + '/rest/attributes/search?name=' + name)
     .then(response => response.json())
     .then(attribute => {
-        createAttributeForm(id);
+        createAttributeForm(name);
         fillAttributeValuesOnForm(attribute);
     });
 }
 
 
-function createAttributeForm(attributeId)
+function createAttributeForm(attributeName)
 {
     var dataElement = getEmptyElement(DATA_ELEMENT);
 
     createErrorLabel(dataElement);
 
-    if (attributeId)
+    if (attributeName)
     {
-        setContentId(attributeId);
-        window.history.pushState("", "Attribute", "/attributes/" + attributeId);
+        setContentId(attributeName);
+        window.history.pushState("", "Attribute", "/attributes/" + attributeName);
     }
     else
     {
@@ -151,7 +151,7 @@ function createAttributeForm(attributeId)
 
     var saveHandler = function() { saveMetaObjectInfo(DATA_ELEMENT, "/rest/attributes", showAttributes) };
     var cancelHandler = function() { showAttributes() };
-    addFormButtons(dataElement, attributeId != null, saveHandler, cancelHandler);
+    addFormButtons(dataElement, attributeName != null, saveHandler, cancelHandler, attributeName);
     
     document.getElementById("attribute-date-format").placeholder = "https://momentjs.com/";
 
@@ -164,8 +164,8 @@ function createAttributeForm(attributeId)
         showInputAndLabelIf("attribute-images-size", type == "gallery");
         showInputAndLabelIf("attribute-max-width", type != "file" && !isMultifile(type) && isNotesList(type));
         showInputAndLabelIf("attribute-min-width", type != "file" && !isMultifile(type) && isNotesList(type));
-        showInputAndLabelIf("attribute-max-height", isSizableOnForm());
-        showInputAndLabelIf("attribute-min-height", isSizableOnForm());
+        showInputAndLabelIf("attribute-max-height", isSizableOnForm(type));
+        showInputAndLabelIf("attribute-min-height", isSizableOnForm(type));
         showInputAndLabelIf("attribute-max", isTextual(type) || isNumeric(type) || isFile(type) || isMultifile(type));
         showInputAndLabelIf("attribute-min", isTextual(type) || isNumeric(type) || isFile(type) || isMultifile(type));
         showInputAndLabelIf("attribute-step", isNumeric(type));
@@ -178,7 +178,7 @@ function createAttributeForm(attributeId)
         showInputAndLabelIf("attribute-method",  !isSkippableAttributeInNotesTable(type));
         showInputAndLabelIf("attribute-delimiter", type == "delimited text");
         showInputAndLabelIf("attribute-entity", type == "nested notes");
-        showInputAndLabelIf("attribute-alignment", !isNotesList(type));
+        showInputAndLabelIf("attribute-alignment", !isNotesList(type) && !isMultifile(type));
 
         document.getElementById("attribute-max-width-label").innerText = isSizableOnForm(type) ? "Max width at page" : "Max width in table";
         document.getElementById("attribute-min-width-label").innerText = isSizableOnForm(type) ? "Min width at page" : "Min width in table";
@@ -323,6 +323,12 @@ function getImagesSize(size)
 function couldBeKeyAttribute(type)
 {
     return (isTextual(type) || isNumeric(type) || hasOptions(type) || type == "checkbox" || type == "url" || isUserDateOrTime(type) || isFile(type)); 
+}
+
+
+function couldBeCompareAttribute(type)
+{
+    return (couldBeKeyAttribute(type) || type == "row number");
 }
 
 

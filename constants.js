@@ -14,6 +14,7 @@ const DATA_TABLE = "data-table";
 const DATA_ELEMENT = "data-element";
 const HISTORY = "history";
 const CONTENT_ID = "content-id";
+const NOTE_ID = "note-id";
 const CONTENT_LEVEL = "content-level";
 const ATTRIBUTE_NAME = "attribute-name";
 const ATTRIBUTE_ID = "attribute-id";
@@ -43,6 +44,7 @@ const DESC_SORT_ATTRIBUTE_IMAGE = "desc-sort-attribute-image";
 const KEY_ATTRIBUTE_IMAGE = "key-attribute-image";
 const SELECTED_KEY_ATTRIBUTE_IMAGE = "selected-key-attribute-image";
 const TWO_COLS = "twoCols";
+const CONTENT_NAME = "content-name";
 
 const NAME = "name";
 const TITLE = "title";

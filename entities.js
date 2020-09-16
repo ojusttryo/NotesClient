@@ -63,23 +63,23 @@ function createEntitiesTableBody(table, entities)
 
 		var editButton = document.createElement("td");
         editButton.classList.add(EDIT_BUTTON);
-        editButton.setAttribute(CONTENT_ID, entities[i].id);
+        editButton.setAttribute(CONTENT_NAME, entities[i].name);
         editButton.onclick = function() 
         {
-            createEntityForm(this.getAttribute(CONTENT_ID));
+            createEntityForm(this.getAttribute(CONTENT_NAME));
             switchToAddEditForm();
         };
 		table.appendChild(editButton);		
 
 		var deleteButton = document.createElement("td");
         deleteButton.classList.add(DELETE_BUTTON);
-        deleteButton.setAttribute(CONTENT_ID, entities[i].id);
+        deleteButton.setAttribute(CONTENT_NAME, entities[i].name);
         deleteButton.onclick = function() 
         {
             var result = confirm("Delete entity?");
             if (result)
             {
-                fetch(SERVER_ADDRESS + '/rest/entities/' + this.getAttribute(CONTENT_ID), { method: "DELETE" })
+                fetch(SERVER_ADDRESS + '/rest/entities/' + this.getAttribute(CONTENT_NAME), { method: "DELETE" })
                 .then(response => {
                     if (response.status === 200)
                         showEntities();
@@ -91,16 +91,16 @@ function createEntitiesTableBody(table, entities)
 }
 
 
-function createEntityForm(entityId)
+function createEntityForm(entityName)
 {
     var dataElement = getEmptyElement(DATA_ELEMENT);
 
     createErrorLabel(dataElement);
 
-    if (entityId)
+    if (entityName)
     {
-        setContentId(entityId);
-        window.history.pushState("", "Entity", "/entities/" + entityId);
+        setContentId(entityName);
+        window.history.pushState("", "Entity", "/entities/" + entityName);
     }
     else
     {
@@ -114,7 +114,7 @@ function createEntityForm(entityId)
 
     var saveHandler = function() { saveMetaObjectInfo(DATA_ELEMENT, "/rest/entities", showEntities) };
     var cancelHandler = function() { showEntities() };
-    var buttons = addFormButtons(dataElement, entityId != null, saveHandler, cancelHandler);
+    var buttons = addFormButtons(dataElement, entityName != null, saveHandler, cancelHandler);
 
     var label = document.createElement("label");
     label.innerText = "Attributes";
@@ -138,10 +138,10 @@ function createEntityForm(entityId)
         attributesSelect.appendChild(rightTable);
         dataElement.insertBefore(attributesSelect, buttons);
 
-        if (!entityId)
+        if (!entityName)
             return;
 
-        fetch(SERVER_ADDRESS + '/rest/entities/search?id=' + entityId)
+        fetch(SERVER_ADDRESS + '/rest/entities/search?name=' + getContentId())
         .then(response => response.json())
         .then(entity => {
             document.getElementById("entity-title").value = entity["title"];
@@ -164,8 +164,11 @@ function createEntityForm(entityId)
             var keyAttr = document.getElementById(entity.keyAttribute + "-key-button");
             changeClassName(keyAttr, KEY_ATTRIBUTE_IMAGE, SELECTED_KEY_ATTRIBUTE_IMAGE);
 
-            var sortAttr = document.getElementById(entity.sortAttribute + "-sort-button");
-            changeClassName(sortAttr, SORT_ATTRIBUTE_IMAGE, (entity.sortDirection == "ascending") ? ASC_SORT_ATTRIBUTE_IMAGE : DESC_SORT_ATTRIBUTE_IMAGE);
+            if (entity.sortAttribute)
+            {
+                var sortAttr = document.getElementById(entity.sortAttribute + "-sort-button");
+                changeClassName(sortAttr, SORT_ATTRIBUTE_IMAGE, (entity.sortDirection == "ascending") ? ASC_SORT_ATTRIBUTE_IMAGE : DESC_SORT_ATTRIBUTE_IMAGE);
+            }
 
             for (var i = 0; i < entity.comparedAttributes.length; i++)
             {
@@ -210,9 +213,9 @@ function createAttributesTable(attributes, side)
     {
         var attribute = attributes[i];
         var tr = document.createElement("tr");
-        tr.id = attribute.id + "-" + side;
-        tr.setAttribute("related-row", (attribute.id + ((side == "left") ? "-right" : "-left")));
-        tr.setAttribute(CONTENT_ID, attribute.id);
+        tr.id = attribute.name + "-" + side;
+        tr.setAttribute("related-row", (attribute.name + ((side == "left") ? "-right" : "-left")));
+        tr.setAttribute(ATTRIBUTE_NAME, attribute.name);
         tr.style.display = (side == "left") ? "table-row" : "none";
         tr.setAttribute("draggable", "true");
         // From https://codepen.io/nabildroid/pen/ZPwYvp
@@ -253,7 +256,7 @@ function createAttributesTable(attributes, side)
         signTd.style.width = "0";
         var sign = document.createElement("a");
         sign.classList.add(signClass);
-        sign.id = attribute.id + "-" + side + "-button";
+        sign.id = attribute.name + "-" + side + "-button";
         sign.onclick = function() 
         {
             var thisRow = this.parentNode.parentNode;
@@ -277,7 +280,7 @@ function createAttributesTable(attributes, side)
                 keyAttributeTd.style.width = "0";
                 var keyAttribute = document.createElement("a");
                 keyAttribute.classList.add(KEY_ATTRIBUTE_IMAGE);
-                keyAttribute.id = attribute.id + "-key-button";
+                keyAttribute.id = attribute.name + "-key-button";
                 keyAttribute.onclick = function() 
                 {
                     var allKeys = document.getElementsByClassName(SELECTED_KEY_ATTRIBUTE_IMAGE);
@@ -301,7 +304,7 @@ function createAttributesTable(attributes, side)
                 sortAttributeTd.style.width = "0";
                 var sortAttribute = document.createElement("a");
                 sortAttribute.classList.add(SORT_ATTRIBUTE_IMAGE);
-                sortAttribute.id = attribute.id + "-sort-button";
+                sortAttribute.id = attribute.name + "-sort-button";
                 sortAttribute.onclick = function() 
                 {
                     var currentClass;
@@ -312,7 +315,7 @@ function createAttributesTable(attributes, side)
                     else
                         currentClass = SORT_ATTRIBUTE_IMAGE;
 
-                    var allKeys = document.querySelectorAll(".asc-sort-attribute-image,.desc-sort-attribute-image");
+                    var allKeys = document.querySelectorAll(`.${ASC_SORT_ATTRIBUTE_IMAGE},.${DESC_SORT_ATTRIBUTE_IMAGE}`);
                     for (var k = 0; k < allKeys.length; k++)
                     {
                         changeClassName(allKeys[k], ASC_SORT_ATTRIBUTE_IMAGE, SORT_ATTRIBUTE_IMAGE);
@@ -336,14 +339,14 @@ function createAttributesTable(attributes, side)
                 tr.appendChild(document.createElement("td"));
             }
 
-            if (attribute.required && couldBeKeyAttribute(attribute.type))
+            if (attribute.required && couldBeCompareAttribute(attribute.type))
             {
                 var comparedAttrId = document.createElement("td");
                 comparedAttrId.style.textAlign = "center";
                 comparedAttrId.style.width = "0";
                 var comparedAttr = document.createElement("a");
                 comparedAttr.classList.add(COMPARED_ATTRIBUTE_IMAGE);
-                comparedAttr.id = attribute.id + "-compared-button";
+                comparedAttr.id = attribute.name + "-compared-button";
                 comparedAttr.onclick = function() { changeClassToOpposite(this, SELECTED_COMPARED_ATTRIBUTE_IMAGE, COMPARED_ATTRIBUTE_IMAGE); }
                 comparedAttrId.appendChild(comparedAttr);
                 tr.appendChild(comparedAttrId);
