@@ -220,7 +220,16 @@ input[type=checkbox]
 	z-index: 999;
 }
 
-.popup img
+
+.plus-image-table
+{
+	justify-self: end;
+	margin-right: 0;
+	margin-left: 5px;
+}
+
+
+.popup-img
 {
 	display: block;
 	max-width: 80%;
@@ -231,287 +240,14 @@ input[type=checkbox]
 }
 
 
-.remove-image
-{
-	display: block;
-	width: var(--buttonSize);
-	height: var(--buttonSize);
-	text-decoration: none;
-	background-image: url("img/quit.svg");
-	background-size: contain;
-	background-repeat: no-repeat;
-	z-index: 100;
-}
-
-
-.download-image
-{
-	display: block;
-	width: var(--buttonSize);
-	height: var(--buttonSize);
-	text-decoration: none;
-	background-image: url("img/download.svg");
-	background-size: contain;
-	background-repeat: no-repeat;
-	z-index: 100;
-}
-
-
-.link-image
-{
-	display: block;
-	width: var(--buttonSize);
-	height: var(--buttonSize);
-	text-decoration: none;
-	background-image: url("img/link.svg");
-	background-size: contain;
-	background-repeat: no-repeat;
-	z-index: 100;
-}
-
-
-.plus-image
+.image-icon
 {
 	display: inline-block;
 	width: var(--buttonSize);
 	height: var(--buttonSize);
 	text-decoration: none;
-	background-image: url("img/more.svg");
 	background-size: contain;
 	background-repeat: no-repeat;
-	align-self: center;
-	margin-left: 5px;
-	margin-right: 5px;
-	z-index: 100;
-}
-
-
-.plus-image-table
-{
-	justify-self: end;
-	margin-right: 0;
-	margin-left: 5px;
-}
-
-
-.minus-image
-{
-	display: inline-block;
-	width: var(--buttonSize);
-	height: var(--buttonSize);
-	text-decoration: none;
-	background-image: url("img/minus.svg");
-	background-size: contain;
-	background-repeat: no-repeat;
-	margin-left: 5px;
-	margin-right: 5px;
-	z-index: 100;
-}
-
-.transfer-image
-{
-	display: block;
-	width: var(--buttonSize);
-	height: var(--buttonSize);
-	text-decoration: none;
-	background-image: url("img/transfer.svg");
-	background-size: contain;
-	background-repeat: no-repeat;
-	z-index: 100;
-}
-
-
-.search-image
-{
-	display: inline-block;
-	width: var(--buttonSize);
-	height: var(--buttonSize);
-	text-decoration: none;
-	background-image: url("img/search.svg");
-	background-size: contain;
-	background-repeat: no-repeat;
-	margin-left: 5px;
-	margin-right: 5px;
-	z-index: 100;
-}
-
-
-.hidden-image
-{
-	display: inline-block;
-	width: var(--buttonSize);
-	height: var(--buttonSize);
-	text-decoration: none;
-	background-image: url("img/hidden.svg");
-	background-size: contain;
-	background-repeat: no-repeat;
-	margin-left: 5px;
-	margin-right: 5px;
-	z-index: 100;
-}
-
-
-.visible-image
-{
-	display: inline-block;
-	width: var(--buttonSize);
-	height: var(--buttonSize);
-	text-decoration: none;
-	background-image: url("img/visible.svg");
-	background-size: contain;
-	background-repeat: no-repeat;
-	margin-left: 5px;
-	margin-right: 5px;
-	z-index: 100;
-}
-
-
-.new-note-image
-{
-	display: inline-block;
-	width: var(--buttonSize);
-	height: var(--buttonSize);
-	text-decoration: none;
-	background-image: url("img/newNote.svg");
-	background-size: contain;
-	background-repeat: no-repeat;
-	z-index: 100;
-}
-
-
-.copy-note-image
-{
-	display: inline-block;
-	width: var(--buttonSize);
-	height: var(--buttonSize);
-	text-decoration: none;
-	background-image: url("img/copy.svg");
-	background-size: contain;
-	background-repeat: no-repeat;
-	margin-left: 5px;
-	margin-right: 5px;
-	z-index: 100;
-}
-
-
-.delete-note-image
-{
-	display: inline-block;
-	width: var(--buttonSize);
-	height: var(--buttonSize);
-	text-decoration: none;
-	background-image: url("img/trash.svg");
-	background-size: contain;
-	background-repeat: no-repeat;
-	margin-left: 5px;
-	margin-right: 5px;
-	z-index: 100;
-}
-
-
-.key-attribute-image
-{
-	display: inline-block;
-	width: var(--buttonSize);
-	height: var(--buttonSize);
-	text-decoration: none;
-	background-image: url("img/key.svg");
-	background-size: contain;
-	background-repeat: no-repeat;
-	margin-left: 5px;
-	margin-right: 5px;
-	z-index: 100;
-}
-
-
-.selected-key-attribute-image
-{
-	display: inline-block;
-	width: var(--buttonSize);
-	height: var(--buttonSize);
-	text-decoration: none;
-	background-image: url("img/keySelected.svg");
-	background-size: contain;
-	background-repeat: no-repeat;
-	margin-left: 5px;
-	margin-right: 5px;
-	z-index: 100;
-}
-
-
-.compared-attribute-image
-{
-	display: inline-block;
-	width: var(--buttonSize);
-	height: var(--buttonSize);
-	text-decoration: none;
-	background-image: url("img/compare.svg");
-	background-size: contain;
-	background-repeat: no-repeat;
-	margin-left: 5px;
-	margin-right: 5px;
-	z-index: 100;
-}
-
-
-.selected-compared-attribute-image
-{
-	display: inline-block;
-	width: var(--buttonSize);
-	height: var(--buttonSize);
-	text-decoration: none;
-	background-image: url("img/compareSelected.svg");
-	background-size: contain;
-	background-repeat: no-repeat;
-	margin-left: 5px;
-	margin-right: 5px;
-	z-index: 100;
-}
-
-
-.sort-attribute-image
-{
-	display: inline-block;
-	width: var(--buttonSize);
-	height: var(--buttonSize);
-	text-decoration: none;
-	background-image: url("img/sort.svg");
-	background-size: contain;
-	background-repeat: no-repeat;
-	margin-left: 5px;
-	margin-right: 5px;
-	align-self: center;
-	z-index: 100;
-}
-
-
-.asc-sort-attribute-image
-{
-	display: inline-block;
-	width: var(--buttonSize);
-	height: var(--buttonSize);
-	text-decoration: none;
-	background-image: url("img/sortAsc.svg");
-	background-size: contain;
-	background-repeat: no-repeat;
-	margin-left: 5px;
-	margin-right: 5px;
-	align-self: center;
-	z-index: 100;
-}
-
-
-.desc-sort-attribute-image
-{
-	display: inline-block;
-	width: var(--buttonSize);
-	height: var(--buttonSize);
-	text-decoration: none;
-	background-image: url("img/sortDesc.svg");
-	background-size: contain;
-	background-repeat: no-repeat;
-	margin-left: 5px;
-	margin-right: 5px;
 	align-self: center;
 	z-index: 100;
 }
@@ -564,6 +300,7 @@ input[type=checkbox]
 	background-position: left center;
 	background-repeat: no-repeat;
 }
+
 
 .deleteButton
 {

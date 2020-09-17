@@ -186,7 +186,7 @@ function createUpperMenuForContent()
 
 	var searchButton = document.createElement("a");
 	searchButton.id = "search-button";
-	searchButton.className += " search-image";
+	setImageClass(searchButton, "search-image", true);
 	searchButton.href = "#";
 	searchButton.onclick = function() 
 	{
@@ -208,27 +208,25 @@ function createUpperMenuForContent()
 	dataMenu.appendChild(searchButton);
 
 	var hiddenNotesButton = document.createElement("a");
-	hiddenNotesButton.className += " hidden-image";
+	setImageClass(hiddenNotesButton, "hidden-image", true);
 	hiddenNotesButton.href = "#";
 	hiddenNotesButton.onclick = function() 
 	{
 		if (this.classList.contains("hidden-image"))
 		{
-			this.classList.remove("hidden-image");
-			this.className += " visible-image";
+			changeImageClass(this, "hidden-image", "visible-image");
 			showSearchResultForHidden(true);
 		}
 		else
 		{
-			this.classList.remove("visible-image");
-			this.className += " hidden-image";
+			changeImageClass(this, "visible-image", "hidden-image");
 			showSearchResultForHidden(false);
 		}
 	}
 	dataMenu.appendChild(hiddenNotesButton);
 
 	var addNoteButton = document.createElement("a");
-	addNoteButton.className += " new-note-image";
+	setImageClass(addNoteButton, "new-note-image");
 	addNoteButton.href = "#";
 	addNoteButton.onclick = function() { showNoteForm(null) };
 	dataMenu.appendChild(addNoteButton);
@@ -261,7 +259,7 @@ function createNotesTableHead(table, attributes)
 
 			// for alignment only
 			var incButton = document.createElement("td");
-			incButton.className += " plus-image";
+			setImageClass(incButton, "plus-image", true);
 			incButton.style.justifySelf = "end";
 			incButton.style.marginRight = "0px";
 			incButton.style.visibility = "hidden";
@@ -332,7 +330,7 @@ function createNotesTableBody(table, attributes, notes)
 
 					var a = document.createElement("a");
 					a.href = currentValue;
-					a.className += " link-image";
+					setImageClass(a, "link-image");
 					a.style.margin = "auto";
 					a.target = "_blank";
 					cell.appendChild(a);
@@ -451,7 +449,8 @@ function createNotesTableBody(table, attributes, notes)
 
 					var incButton = document.createElement("td");
 					incButton.setAttribute(ATTRIBUTE_NAME, attributeName);
-					incButton.className += " plus-image plus-image-table";
+					setImageClass(incButton, "plus-image", true);
+					incButton.classList.add("plus-image-table");
 					incButton.onclick = function()
 					{
 						var id = this.parentNode.getAttribute(NOTE_ID);
@@ -481,7 +480,7 @@ function createNotesTableBody(table, attributes, notes)
 					var download = document.createElement("a");
 					download.href = "#";
 					download.id = note.id + "-" + attribute.name + "-label";
-					download.className += " download-image";
+					setImageClass(download, "download-image");
 					download.setAttribute(FILE_ID, currentValue);
 					download.style.margin = "auto";
 					download.onclick = function()
@@ -597,7 +596,7 @@ function showNoteForm(id)
 		menu.style.justifySelf = "right";
 		var deleteNoteButton = document.createElement("a");
 		deleteNoteButton.href = "#";
-		deleteNoteButton.className += " delete-note-image";
+		setImageClass(deleteNoteButton, "delete-note-image", true);
 		deleteNoteButton.setAttribute(NOTE_ID, id);
 		deleteNoteButton.onclick = function() 
 		{
@@ -611,7 +610,7 @@ function showNoteForm(id)
 		menu.appendChild(deleteNoteButton);
 		var hideNoteButton = document.createElement("a");
 		hideNoteButton.id = "hide-note-button";
-		hideNoteButton.className += " hidden-image";
+		setImageClass(hideNoteButton, "hidden-image", true);
 		hideNoteButton.href = "#";
 		hideNoteButton.setAttribute(NOTE_ID, id);
 		hideNoteButton.onclick = function() 
@@ -625,8 +624,7 @@ function showNoteForm(id)
 				.then(response => {
 					if (response.status == 200)
 					{
-						this.classList.remove("hidden-image");
-						this.className += " visible-image";
+						changeImageClass(this, "hidden-image", "visible-image");
 					}
 				});
 			}
@@ -639,8 +637,7 @@ function showNoteForm(id)
 				.then(response => {
 					if (response.status == 200)
 					{
-						this.classList.remove("visible-image");
-						this.className += " hidden-image";
+						changeImageClass("visible-image", "hidden-image");
 					}
 				});
 			}
@@ -649,7 +646,7 @@ function showNoteForm(id)
 
 		var cloneButton = document.createElement("a");
 		cloneButton.href = "#";
-		cloneButton.className += " copy-note-image";
+		setImageClass(cloneButton, "copy-note-image", true);
 		cloneButton.onclick = function() 
 		{
 			var saveButton = document.getElementById("save-button");
@@ -670,8 +667,7 @@ function showNoteForm(id)
 				if (note.hidden)
 				{
 					var hideButton = document.getElementById("hide-note-button");
-					hideButton.classList.remove("hidden-image");
-					hideButton.className += " visible-image";
+					changeImageClass(hideButton, "hidden-image", "visible-image");
 				}
 				prepareNoteAttributes(dataElement, note, attributes);
 				createNoteActionButtons(dataElement, id);
@@ -1175,7 +1171,7 @@ function asyncDownloadImage(fileId, inputId, size)
 				popup.onclick = function() { setTimeout(() => this.parentNode.removeChild(this), 0); }
 				var popupImage = document.createElement("img");
 				popupImage.setAttribute("related-img-id", img.id);
-				popupImage.className += "poput-image";
+				popupImage.className += "popup-img";
 				popupImage.onclick = function() { setTimeout(() => this.parentNode.parentNode.removeChild(this.parentNode), 0); }
 				popup.appendChild(popupImage);
 
@@ -1210,7 +1206,7 @@ function asyncDownloadImage(fileId, inputId, size)
 
 			var download = document.createElement("a");
 			download.id = inputId + "-" + fileId;
-			download.className += " download-image ";
+			setImageClass(download, "download-image");
 			download.href = "#";
 			download.setAttribute(FILE_ID, fileId);
 			download.onclick = function() 
@@ -1225,7 +1221,7 @@ function asyncDownloadImage(fileId, inputId, size)
 			}
 
 			var remove = document.createElement("a");
-			remove.className += " remove-image";
+			setImageClass(remove, "remove-image");
 			remove.href = "#";
 			remove.setAttribute("related-input-id", img.id);
 			remove.onclick = function() 
@@ -1271,7 +1267,7 @@ function addFileCollectionRow(metadata, filesCollection)
 	appendNewSpanAligning(filesCollection, moment(metadata.uploaded).format('LLL'), "center");
 
 	var downloadButton = document.createElement("a");
-	downloadButton.className += " download-image ";
+	setImageClass(downloadButton, "download-image");
 	downloadButton.href = "#";
 	downloadButton.setAttribute(FILE_ID, metadata.id);
 	downloadButton.setAttribute("title", metadata.title);

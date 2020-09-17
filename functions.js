@@ -771,30 +771,32 @@ function setContentColumnsCount(count)
 }
 
 
-function changeClassName(element, from, to)
+function changeImageClass(element, from, to)
 {
 	if (element.classList.contains(from))
 	{
 		element.classList.remove(from);
+		element.style.backgroundImage = "";
+	}
 
-		if (!element.classList.contains(to))
-			element.className += " " + to;
+	if (!element.classList.contains(to))
+	{
+		setImageClass(element, to);
 	}
 }
 
 
-function changeClassToOpposite(element, class1, class2)
+function changeImageClassToOpposite(element, class1, class2)
 {
 	if (!element.classList.contains(class1) && !element.classList.contains(class2))
 		return;
 
 	var currentClass = element.classList.contains(class1) ? class1 : class2;
-	element.classList.remove(currentClass);
-	element.classList.add(currentClass == class1 ? class2 : class1);
+	changeImageClass(element, currentClass, (currentClass == class1) ? class2 : class1);
 }
 
 
-function changeClassForHiddenElements(from, to)
+function changeImageClassForHiddenElements(from, to)
 {
 	var elements = document.getElementsByClassName(from);
 	if (elements != null)
@@ -802,7 +804,7 @@ function changeClassForHiddenElements(from, to)
 		for (var i = 0; i < elements.length; i++)
 		{
 			if (elements[i].offsetParent === null)
-				changeClassName(elements[i], from, to);
+				changeImageClass(elements[i], from, to);
 		}
 	}
 }
@@ -811,4 +813,25 @@ function changeClassForHiddenElements(from, to)
 function getAttrNameForButtonInAttrList(button)
 {
 	return button.parentNode.parentNode.getAttribute(ATTRIBUTE_NAME);
+}
+
+
+function setImageClass(element, newClass, hasMargin)
+{
+	if (!element.classList.contains(IMAGE_ICON))
+		element.classList.add(IMAGE_ICON);
+
+	if (element.classList.contains(newClass))
+		return;	
+
+	element.classList.add(newClass);
+
+	var url = `url(img/${newClass.replace("-image", "")}.svg)`;
+	element.style.backgroundImage = url.replaceAll("-", "");
+
+	if (hasMargin)
+	{
+		element.style.marginLeft = "5px";
+		element.style.marginRight = "5px";
+	}
 }

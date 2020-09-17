@@ -162,18 +162,18 @@ function createEntityForm(entityName)
             }
 
             var keyAttr = document.getElementById(entity.keyAttribute + "-key-button");
-            changeClassName(keyAttr, KEY_ATTRIBUTE_IMAGE, SELECTED_KEY_ATTRIBUTE_IMAGE);
+            changeImageClass(keyAttr, KEY_ATTRIBUTE_IMAGE, SELECTED_KEY_ATTRIBUTE_IMAGE);
 
             if (entity.sortAttribute)
             {
                 var sortAttr = document.getElementById(entity.sortAttribute + "-sort-button");
-                changeClassName(sortAttr, SORT_ATTRIBUTE_IMAGE, (entity.sortDirection == "ascending") ? ASC_SORT_ATTRIBUTE_IMAGE : DESC_SORT_ATTRIBUTE_IMAGE);
+                changeImageClass(sortAttr, SORT_ATTRIBUTE_IMAGE, (entity.sortDirection == "ascending") ? ASC_SORT_ATTRIBUTE_IMAGE : DESC_SORT_ATTRIBUTE_IMAGE);
             }
 
             for (var i = 0; i < entity.comparedAttributes.length; i++)
             {
                 var comparedAttr = document.getElementById(entity.comparedAttributes[i] + "-compared-button");
-                changeClassName(comparedAttr, COMPARED_ATTRIBUTE_IMAGE, SELECTED_COMPARED_ATTRIBUTE_IMAGE);
+                changeImageClass(comparedAttr, COMPARED_ATTRIBUTE_IMAGE, SELECTED_COMPARED_ATTRIBUTE_IMAGE);
             }
         });
     });
@@ -255,7 +255,7 @@ function createAttributesTable(attributes, side)
         var signTd = document.createElement("td");
         signTd.style.width = "0";
         var sign = document.createElement("a");
-        sign.classList.add(signClass);
+        setImageClass(sign, signClass, true);
         sign.id = attribute.name + "-" + side + "-button";
         sign.onclick = function() 
         {
@@ -264,9 +264,9 @@ function createAttributesTable(attributes, side)
             relatedRow.style.display = "table-row";
             thisRow.style.display = "none";
 
-            changeClassForHiddenElements(SELECTED_KEY_ATTRIBUTE_IMAGE, KEY_ATTRIBUTE_IMAGE);
-            changeClassForHiddenElements(ASC_SORT_ATTRIBUTE_IMAGE, SORT_ATTRIBUTE_IMAGE);
-            changeClassForHiddenElements(DESC_SORT_ATTRIBUTE_IMAGE, SORT_ATTRIBUTE_IMAGE);
+            changeImageClassForHiddenElements(SELECTED_KEY_ATTRIBUTE_IMAGE, KEY_ATTRIBUTE_IMAGE);
+            changeImageClassForHiddenElements(ASC_SORT_ATTRIBUTE_IMAGE, SORT_ATTRIBUTE_IMAGE);
+            changeImageClassForHiddenElements(DESC_SORT_ATTRIBUTE_IMAGE, SORT_ATTRIBUTE_IMAGE);
         }
         signTd.appendChild(sign);
         tr.appendChild(signTd);
@@ -279,15 +279,15 @@ function createAttributesTable(attributes, side)
                 keyAttributeTd.style.textAlign = "center";
                 keyAttributeTd.style.width = "0";
                 var keyAttribute = document.createElement("a");
-                keyAttribute.classList.add(KEY_ATTRIBUTE_IMAGE);
+                setImageClass(keyAttribute, KEY_ATTRIBUTE_IMAGE, true);
                 keyAttribute.id = attribute.name + "-key-button";
                 keyAttribute.onclick = function() 
                 {
                     var allKeys = document.getElementsByClassName(SELECTED_KEY_ATTRIBUTE_IMAGE);
                     for (var k = 0; k < allKeys.length; k++)
-                        changeClassName(allKeys[k], SELECTED_KEY_ATTRIBUTE_IMAGE, KEY_ATTRIBUTE_IMAGE);
+                        changeImageClass(allKeys[k], SELECTED_KEY_ATTRIBUTE_IMAGE, KEY_ATTRIBUTE_IMAGE);
                     
-                    changeClassToOpposite(this, KEY_ATTRIBUTE_IMAGE, SELECTED_KEY_ATTRIBUTE_IMAGE);
+                    changeImageClassToOpposite(this, KEY_ATTRIBUTE_IMAGE, SELECTED_KEY_ATTRIBUTE_IMAGE);
                 }
                 keyAttributeTd.appendChild(keyAttribute);
                 tr.appendChild(keyAttributeTd);
@@ -303,7 +303,7 @@ function createAttributesTable(attributes, side)
                 sortAttributeTd.style.textAlign = "center";
                 sortAttributeTd.style.width = "0";
                 var sortAttribute = document.createElement("a");
-                sortAttribute.classList.add(SORT_ATTRIBUTE_IMAGE);
+                setImageClass(sortAttribute, SORT_ATTRIBUTE_IMAGE, true);
                 sortAttribute.id = attribute.name + "-sort-button";
                 sortAttribute.onclick = function() 
                 {
@@ -318,18 +318,18 @@ function createAttributesTable(attributes, side)
                     var allKeys = document.querySelectorAll(`.${ASC_SORT_ATTRIBUTE_IMAGE},.${DESC_SORT_ATTRIBUTE_IMAGE}`);
                     for (var k = 0; k < allKeys.length; k++)
                     {
-                        changeClassName(allKeys[k], ASC_SORT_ATTRIBUTE_IMAGE, SORT_ATTRIBUTE_IMAGE);
-                        changeClassName(allKeys[k], DESC_SORT_ATTRIBUTE_IMAGE, SORT_ATTRIBUTE_IMAGE);
+                        changeImageClass(allKeys[k], ASC_SORT_ATTRIBUTE_IMAGE, SORT_ATTRIBUTE_IMAGE);
+                        changeImageClass(allKeys[k], DESC_SORT_ATTRIBUTE_IMAGE, SORT_ATTRIBUTE_IMAGE);
                     }
 
                     this.classList.remove(currentClass);
                     
                     if (currentClass == ASC_SORT_ATTRIBUTE_IMAGE)
-                        this.classList.add(DESC_SORT_ATTRIBUTE_IMAGE);
+                        setImageClass(this, DESC_SORT_ATTRIBUTE_IMAGE, true);
                     else if (currentClass == SORT_ATTRIBUTE_IMAGE)
-                        this.classList.add(ASC_SORT_ATTRIBUTE_IMAGE);
+                        setImageClass(this, ASC_SORT_ATTRIBUTE_IMAGE, true);
                     else
-                        this.classList.add(SORT_ATTRIBUTE_IMAGE);
+                        setImageClass(this, SORT_ATTRIBUTE_IMAGE, true);
                 }
                 sortAttributeTd.appendChild(sortAttribute);
                 tr.appendChild(sortAttributeTd);
@@ -345,9 +345,9 @@ function createAttributesTable(attributes, side)
                 comparedAttrId.style.textAlign = "center";
                 comparedAttrId.style.width = "0";
                 var comparedAttr = document.createElement("a");
-                comparedAttr.classList.add(COMPARED_ATTRIBUTE_IMAGE);
+                setImageClass(comparedAttr, COMPARED_ATTRIBUTE_IMAGE, true);
                 comparedAttr.id = attribute.name + "-compared-button";
-                comparedAttr.onclick = function() { changeClassToOpposite(this, SELECTED_COMPARED_ATTRIBUTE_IMAGE, COMPARED_ATTRIBUTE_IMAGE); }
+                comparedAttr.onclick = function() { changeImageClassToOpposite(this, SELECTED_COMPARED_ATTRIBUTE_IMAGE, COMPARED_ATTRIBUTE_IMAGE); }
                 comparedAttrId.appendChild(comparedAttr);
                 tr.appendChild(comparedAttrId);
             }

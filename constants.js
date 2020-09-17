@@ -45,6 +45,7 @@ const KEY_ATTRIBUTE_IMAGE = "key-attribute-image";
 const SELECTED_KEY_ATTRIBUTE_IMAGE = "selected-key-attribute-image";
 const TWO_COLS = "twoCols";
 const CONTENT_NAME = "content-name";
+const IMAGE_ICON = "image-icon";
 
 const NAME = "name";
 const TITLE = "title";
