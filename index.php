@@ -18,9 +18,10 @@
 				<ul id="menu-list"></ul>
 			</div>
 			<div id="content">
+				<div id="error-label"></div>
 				<div id="history"></div>
-				<div id="data-menu"></div>
-				<div id="data-table"></div>
+				<div id="data-menu" class="data-menu"></div>
+				<div id="data-table" class="data-table has-vertical-padding"></div>
 				<div id="data-element"></div>
 			</div>
 		</div>

@@ -24,7 +24,7 @@ function showEntities()
 
 function showEntitiesMenu()
 {
-	var dataMenu = getEmptyElement(DATA_MENU);
+    var dataMenu = getEmptyElement(DATA_MENU);
 
 	var addEntityButton = createInputButton("add-entity-button");
 	addEntityButton.value = "New entity";
@@ -41,6 +41,7 @@ function showEntitiesMenu()
 function createEntitiesTableHead(table)
 {
     setContentColumnsCount(4);          // 4 - without buttons
+    document.getElementById(DATA_TABLE).style.gridTemplateColumns = "repeat(var(--tableColumnsCount), auto) min-content min-content";
 
 	appendNewSpan(table, "№");
     appendNewSpan(table, "Title");
@@ -95,7 +96,7 @@ function createEntityForm(entityName)
 {
     var dataElement = getEmptyElement(DATA_ELEMENT);
 
-    createErrorLabel(dataElement);
+    recreateErrorLabel(DATA_ELEMENT);
 
     if (entityName)
     {
@@ -231,21 +232,6 @@ function createAttributesTable(attributes, side)
             else 
                 e.target.parentNode.before(shadow);
         }
-        if (side == "right")
-        {
-            tr.ondblclick = function()
-            {
-                var rows = this.parentNode.getElementsByTagName("tr");
-                for (var r = 0; r < rows.length; r++)
-                {
-                    rows[r].removeAttribute(ATTRIBUTE_NAME);
-                    rows[r].classList.remove("key-attribute");
-                }
-
-                this.setAttribute(ATTRIBUTE_NAME, "keyAttribute");
-                this.classList.add("key-attribute");
-            }
-        }
 
         var name = appendNewTd(tr, attribute.name);
         name.style.cursor = "pointer";
@@ -339,7 +325,7 @@ function createAttributesTable(attributes, side)
                 tr.appendChild(document.createElement("td"));
             }
 
-            if (attribute.required && couldBeCompareAttribute(attribute.type))
+            if (couldBeCompareAttribute(attribute.type))
             {
                 var comparedAttrId = document.createElement("td");
                 comparedAttrId.style.textAlign = "center";

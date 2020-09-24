@@ -82,10 +82,10 @@ function handleRequest()
 							}
 						}
 	
-						createErrorLabel(document.getElementById(CONTENT));
+						recreateErrorLabel(CONTENT);
 						showError("No such entity");
 					}
-					// Specific note
+					// One note (new or already existent)
 					else
 					{
 						for (var e = 0; e < entities.length; e++)
@@ -93,12 +93,12 @@ function handleRequest()
 							if (entities[e].getAttribute(CONTENT_TYPE) == path[0])
 							{
 								setContentType(entities[e].getAttribute(CONTENT_TYPE));
-								showNoteForm(path[1]);
+								showNoteForm((path[1] == "new") ? null : path[1]);
 								return;
 							}
 						}
 	
-						createErrorLabel(document.getElementById(CONTENT));
+						recreateErrorLabel(CONTENT);
 						showError("No such entity or note");
 					}
 				});
@@ -720,12 +720,15 @@ function addOptions(select, options)
 
 function showError(message)
 {
-	var errorLabel = document.getElementById("error-label");
-	errorLabel.style.display = "inline-grid";
-	errorLabel.innerText = message;
-	errorLabel.focus();
+	if (message)
+	{
+		var errorLabel = document.getElementById("error-label");
+		errorLabel.style.display = "inline-grid";
+		errorLabel.innerText = message;
+		errorLabel.focus();
 
-	throw message;
+		throw message;
+	}
 }
 
 function hideError()
@@ -737,11 +740,25 @@ function hideError()
 
 function createErrorLabel(dataElement)
 {
+	return;
+
 	var errorLabel = document.createElement("label");
     errorLabel.id = "error-label";
     errorLabel.style.display = "none";
     errorLabel.className += " twoCols";
     dataElement.appendChild(errorLabel);
+}
+
+function recreateErrorLabel(parentId)
+{
+	return;
+
+	var errorLabel = document.getElementById("error-label");
+	if (errorLabel)
+		errorLabel.parentNode.removeChild(errorLabel);
+
+	var parent = document.getElementById(parentId);
+	createErrorLabel(parent);
 }
 
 function addFormButtons(parent, isNewObject, saveHandler, cancelHandler)

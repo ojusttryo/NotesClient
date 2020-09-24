@@ -6,6 +6,8 @@
  */
 async function showContentTableWithNotes(contentType)
 {
+	recreateErrorLabel(DATA_TABLE);
+
 	setContentType(contentType);
 
 	window.history.pushState("", "Notes", `/${contentType}`);
@@ -18,76 +20,6 @@ async function showContentTableWithNotes(contentType)
 	.then(attributes => {
 		
 		var address = SERVER_ADDRESS + '/rest/notes/' + contentType;
-		fetch(address, {
-			method: "GET",
-			headers: { "Accept": APPLICATION_JSON, "Content-Type": APPLICATION_JSON }
-		})
-		.then(response => response.json())
-		.then(notes => {
-			getEmptyElement(DATA_ELEMENT);
-			var table = getEmptyElement(DATA_TABLE);
-			createNotesTableHead(table, attributes);
-			createNotesTableBody(table, attributes, notes);
-		});
-	});
-}
-
-
-async function showSearchResult(attributeName, searchRequest)
-{
-	var contentType = getContentType();
-
-	fetch(SERVER_ADDRESS + '/rest/attributes/search?entityName=' + contentType)
-	.then(response => response.json())
-	.then(attributes => {
-		
-		var address = `${SERVER_ADDRESS}/rest/notes/${contentType}/${attributeName}/search`;
-		fetch(address, {
-			method: "POST",
-			body: JSON.stringify(searchRequest),
-			headers: { "Accept": APPLICATION_JSON, "Content-Type": APPLICATION_JSON }
-		})
-		.then(response => response.json())
-		.then(notes => {
-			getEmptyElement(DATA_ELEMENT);
-			var table = getEmptyElement(DATA_TABLE);
-			createNotesTableHead(table, attributes);
-			createNotesTableBody(table, attributes, notes);
-		});
-	});
-}
-
-
-async function showNestedNotes(contentType)
-{
-	fetch(SERVER_ADDRESS + '/rest/attributes/search?entityName=' + contentType)
-	.then(response => response.json())
-	.then(attributes => {
-		
-		fetch(`${SERVER_ADDRESS}/rest/notes/${contentType}/search`, {
-			method: "POST",
-			headers: { "Accept": APPLICATION_JSON, "Content-Type": APPLICATION_JSON }
-		})
-		.then(response => response.json())
-		.then(notes => {
-			getEmptyElement(DATA_ELEMENT);
-			var table = getEmptyElement(DATA_TABLE);
-			createNotesTableHead(table, attributes);
-			createNotesTableBody(table, attributes, notes);
-		});
-	});
-}
-
-
-async function showSearchResultForHidden(hidden)
-{
-	var contentType = getContentType();
-
-	fetch(SERVER_ADDRESS + '/rest/attributes/search?entityName=' + contentType)
-	.then(response => response.json())
-	.then(attributes => {
-		var subrequest = hidden ? "hidden" : "visible";
-		var address = `${SERVER_ADDRESS}/rest/notes/${contentType}/${subrequest}`;
 		fetch(address, {
 			method: "GET",
 			headers: { "Accept": APPLICATION_JSON, "Content-Type": APPLICATION_JSON }
@@ -226,17 +158,112 @@ function createUpperMenuForContent()
 	dataMenu.appendChild(hiddenNotesButton);
 
 	var addNoteButton = document.createElement("a");
-	setImageClass(addNoteButton, "new-note-image");
+	setImageClass(addNoteButton, NEW_NOTE_IMAGE);
 	addNoteButton.href = "#";
 	addNoteButton.onclick = function() { showNoteForm(null) };
 	dataMenu.appendChild(addNoteButton);
 }
 
 
+async function showSearchResult(attributeName, searchRequest)
+{
+	recreateErrorLabel(DATA_TABLE);
+
+	var contentType = getContentType();
+
+	window.history.pushState("", "Notes", `/${contentType}?searchAttribute=${attributeName}&searchRequest=${searchRequest}`);
+
+	fetch(SERVER_ADDRESS + '/rest/attributes/search?entityName=' + contentType)
+	.then(response => response.json())
+	.then(attributes => {
+		
+		var address = `${SERVER_ADDRESS}/rest/notes/${contentType}/${attributeName}/search`;
+		fetch(address, {
+			method: "POST",
+			body: JSON.stringify(searchRequest),
+			headers: { "Accept": APPLICATION_JSON, "Content-Type": APPLICATION_JSON }
+		})
+		.then(response => response.json())
+		.then(notes => {
+			getEmptyElement(DATA_ELEMENT);
+			var table = getEmptyElement(DATA_TABLE);
+			createNotesTableHead(table, attributes);
+			createNotesTableBody(table, attributes, notes);
+		});
+	});
+}
+
+
+async function showNestedNotes(contentType, attributeName, parentNoteId, tableId)
+{
+	fetch(SERVER_ADDRESS + '/rest/attributes/search?entityName=' + contentType)
+	.then(response => response.json())
+	.then(attributes => {
+		fetch(`${SERVER_ADDRESS}/rest/notes/nested/${contentType}/${attributeName}/${parentNoteId}`, {
+			method: "GET",
+			headers: { "Accept": APPLICATION_JSON, "Content-Type": APPLICATION_JSON }
+		})
+		.then(response => response.json())
+		.then(notes => {
+			var table = document.getElementById(tableId);
+			createNotesTableHead(table, attributes);
+			createNotesTableBody(table, attributes, notes, contentType);
+		});
+	});
+}
+
+
+async function showComparedNotes(contentType, attributeName, parentNoteId, tableId, side)
+{
+	fetch(SERVER_ADDRESS + '/rest/attributes/compared/' + contentType)
+	.then(response => response.json())
+	.then(attributes => {
+		fetch(`${SERVER_ADDRESS}/rest/notes/nested/${contentType}/${attributeName}/${parentNoteId}?side=${side}`, {
+			method: "GET",
+			headers: { "Accept": APPLICATION_JSON, "Content-Type": APPLICATION_JSON }
+		})
+		.then(response => response.json())
+		.then(notes => {
+			var table = document.getElementById(tableId);
+			createNotesTableHead(table, attributes);
+			createNotesTableBody(table, attributes, notes, contentType);
+		});
+	});
+}
+
+
+async function showSearchResultForHidden(hidden)
+{
+	recreateErrorLabel(DATA_TABLE);
+
+	var contentType = getContentType();
+
+	window.history.pushState("", "Notes", `/${contentType}?hidden=${hidden}`);
+
+	fetch(SERVER_ADDRESS + '/rest/attributes/search?entityName=' + contentType)
+	.then(response => response.json())
+	.then(attributes => {
+		var subrequest = hidden ? "hidden" : "visible";
+		var address = `${SERVER_ADDRESS}/rest/notes/${contentType}/${subrequest}`;
+		fetch(address, {
+			method: "GET",
+			headers: { "Accept": APPLICATION_JSON, "Content-Type": APPLICATION_JSON }
+		})
+		.then(response => response.json())
+		.then(notes => {
+			getEmptyElement(DATA_ELEMENT);
+			var table = getEmptyElement(DATA_TABLE);
+			createNotesTableHead(table, attributes);
+			createNotesTableBody(table, attributes, notes);
+		});
+	});
+}
+
+
 function createNotesTableHead(table, attributes)
 {
 	var count = countColumnsWithoutButtons(attributes);
-	setContentColumnsCount(count);
+	table.style.gridTemplateColumns = "repeat(" + count + ", auto) min-content min-content";
 
 	// Headers for attributes
 	for (var i = 0; i < attributes.length; i++)
@@ -285,7 +312,7 @@ function countColumnsWithoutButtons(attributes)
 }
 
 
-function createNotesTableBody(table, attributes, notes)
+function createNotesTableBody(table, attributes, notes, contentType)
 {
 	if (notes == null)
 		return;
@@ -449,12 +476,16 @@ function createNotesTableBody(table, attributes, notes)
 
 					var incButton = document.createElement("td");
 					incButton.setAttribute(ATTRIBUTE_NAME, attributeName);
+					if (contentType)
+						incButton.setAttribute(CONTENT_TYPE, contentType);
 					setImageClass(incButton, "plus-image", true);
 					incButton.classList.add("plus-image-table");
 					incButton.onclick = function()
 					{
 						var id = this.parentNode.getAttribute(NOTE_ID);
-						fetch(SERVER_ADDRESS + '/rest/notes/' + getContentType() + "/" + id + "/inc/" + this.getAttribute(ATTRIBUTE_NAME), {
+						var currentContentType = this.getAttribute(CONTENT_TYPE);
+						var entityName = currentContentType ? currentContentType : getContentType();
+						fetch(SERVER_ADDRESS + '/rest/notes/' + entityName + "/" + id + "/inc/" + this.getAttribute(ATTRIBUTE_NAME), {
 							method: "PUT",
 							headers: { "Accept": TEXT_PLAIN, "Content-Type": APPLICATION_JSON }
 						})
@@ -580,11 +611,18 @@ function deleteNote(id)
 }
 
 
-function showNoteForm(id)
+function showNoteForm(id, entityName, parentNoteId, parentNoteAttribute, side)
 {
+	var contentType = entityName ? entityName : getContentType();
+
+	if (id)
+		window.history.pushState("", "Note", `/${contentType}/${id}`);
+	else
+		window.history.pushState("", "Note", `/${contentType}/new`);
+
 	switchToAddEditForm();
 
-	fetch(SERVER_ADDRESS + '/rest/attributes/search?entityName=' + getContentType())
+	fetch(SERVER_ADDRESS + '/rest/attributes/search?entityName=' + contentType)
 	.then(response => response.json())
 	.then(attributes => {
 		getEmptyElement(DATA_TABLE);
@@ -608,16 +646,20 @@ function showNoteForm(id)
 			}
 		}
 		menu.appendChild(deleteNoteButton);
+
 		var hideNoteButton = document.createElement("a");
+		if (parentNoteId)
+			hideNoteButton.style.display = "none";
 		hideNoteButton.id = "hide-note-button";
 		setImageClass(hideNoteButton, "hidden-image", true);
 		hideNoteButton.href = "#";
 		hideNoteButton.setAttribute(NOTE_ID, id);
+		hideNoteButton.setAttribute(CONTENT_TYPE, contentType);
 		hideNoteButton.onclick = function() 
 		{
 			if (this.classList.contains("hidden-image"))
 			{
-				fetch(SERVER_ADDRESS + "/rest/notes/" + getContentType() + "/" + this.getAttribute(NOTE_ID) + "/hide", {
+				fetch(SERVER_ADDRESS + "/rest/notes/" + this.getAttribute(CONTENT_TYPE) + "/" + this.getAttribute(NOTE_ID) + "/hide", {
 					method: "PUT",
 					headers: { "Accept": TEXT_PLAIN, "Content-Type": APPLICATION_JSON }
 				})
@@ -630,7 +672,7 @@ function showNoteForm(id)
 			}
 			else
 			{
-				fetch(SERVER_ADDRESS + "/rest/notes/" + getContentType() + "/" + id + "/reveal", {
+				fetch(SERVER_ADDRESS + "/rest/notes/" + this.getAttribute(CONTENT_TYPE) + "/" + id + "/reveal", {
 					method: "PUT",
 					headers: { "Accept": TEXT_PLAIN, "Content-Type": APPLICATION_JSON }
 				})
@@ -645,7 +687,10 @@ function showNoteForm(id)
 		menu.appendChild(hideNoteButton);
 
 		var cloneButton = document.createElement("a");
+		if (parentNoteId)
+			cloneButton.style.display = "none";
 		cloneButton.href = "#";
+		cloneButton.id = "copy-note-button";
 		setImageClass(cloneButton, "copy-note-image", true);
 		cloneButton.onclick = function() 
 		{
@@ -657,11 +702,11 @@ function showNoteForm(id)
 
 		dataElement.appendChild(menu);
 
-		createErrorLabel(dataElement);
+		recreateErrorLabel(DATA_ELEMENT);
 
 		if (id)
 		{
-			fetch(SERVER_ADDRESS + "/rest/notes/" + getContentType() + "/" + id)
+			fetch(SERVER_ADDRESS + "/rest/notes/" + contentType + "/" + id)
 			.then(response => response.json())
 			.then(note => {
 				if (note.hidden)
@@ -670,13 +715,13 @@ function showNoteForm(id)
 					changeImageClass(hideButton, "hidden-image", "visible-image");
 				}
 				prepareNoteAttributes(dataElement, note, attributes);
-				createNoteActionButtons(dataElement, id);
+				createNoteActionButtons(dataElement, id, parentNoteId, parentNoteAttribute, side);
 			})
 		}
 		else
 		{
 			prepareNoteAttributes(dataElement, null, attributes);
-			createNoteActionButtons(dataElement, id);
+			createNoteActionButtons(dataElement, id, parentNoteId, parentNoteAttribute, side);
 		}
 	});
 }
@@ -690,7 +735,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 	for (var i = 0; i < attributes.length; i++)
 	{
 		var attribute = attributes[i];
-		if (attribute.type == "row number")
+		if (attribute.type == "row number" || (note == null && isSkippableOnCreate(attribute.type)))
 			continue;
 
 		var label = document.createElement("label");
@@ -1006,11 +1051,11 @@ function prepareNoteAttributes(dataElement, note, attributes)
 				dataElement.appendChild(addButton);
 
 				var filesCollection = createFormInput("div", attribute);
-				filesCollection.className += " files-collection twoCols";
+				filesCollection.classList.add(TWO_COLS);
+				filesCollection.classList.add("files-collection")
 				filesCollection.id = attribute.name + "-input-files";
 				setElementSizeAtPage(filesCollection, attribute);
 				filesCollection.style.minWidth = "100%";
-				filesCollection.style.justifySelf = attribute.alignment;
 				filesCollection.setAttribute(FILES_COUNT, 0);
 				appendNewSpanAligning(filesCollection, "№", "right");
 				appendNewSpanAligning(filesCollection, "Title", "left");
@@ -1049,6 +1094,67 @@ function prepareNoteAttributes(dataElement, note, attributes)
 				};
 
 				dataElement.appendChild(input);
+				break;
+
+			case "nested notes":
+
+				// Menu
+				var dataMenu = document.createElement("div");
+				dataMenu.classList.add(DATA_MENU);
+				dataMenu.style.padding = "0";
+			
+				var addNoteButton = document.createElement("a");
+				addNoteButton.setAttribute("parent-note-id", note.id);
+				addNoteButton.setAttribute("parent-note-attribute", attribute.name);
+				addNoteButton.setAttribute("entity-name", attribute.entity);
+				setImageClass(addNoteButton, NEW_NOTE_IMAGE);
+				addNoteButton.href = "#";
+				addNoteButton.onclick = function() 
+				{
+					showNoteForm(null, 
+						this.getAttribute("entity-name"), 
+						this.getAttribute("parent-note-id"), 
+						this.getAttribute("parent-note-attribute")); 
+				};
+				dataMenu.appendChild(addNoteButton);
+
+				dataElement.appendChild(dataMenu);
+
+				// Notes
+				var nestedNotes = document.createElement("div");
+				nestedNotes.classList.add(TWO_COLS);
+				nestedNotes.classList.add(DATA_TABLE);
+				nestedNotes.classList.add(HAS_VERTICAL_PADDINGS);
+				nestedNotes.id = attribute.name + "-input-nested-notes";
+				setElementSizeAtPage(nestedNotes, attribute);
+				nestedNotes.style.minWidth = "100%";
+				nestedNotes.style.overflowY = "scroll";
+				dataElement.appendChild(nestedNotes);
+
+				showNestedNotes(attribute.entity, attribute.name, note.id, nestedNotes.id);
+				
+				break;
+
+			case "compared notes":
+
+				var comparedNotes = document.createElement("div");
+				comparedNotes.classList.add(TWO_COLS);
+				comparedNotes.classList.add(DATA_TABLE);
+				comparedNotes.classList.add(HAS_VERTICAL_PADDINGS);
+				comparedNotes.style.gridTemplateColumns = "1fr 1fr";
+				comparedNotes.style.minWidth = "100%";
+				
+				addComparedNotesMenu(comparedNotes, "left", note, attribute);
+				addComparedNotesMenu(comparedNotes, "right", note, attribute);
+
+				var leftTable = addComparedNotesTable(comparedNotes, "left", attribute);
+				var rightTable = addComparedNotesTable(comparedNotes, "right", attribute);
+
+				dataElement.appendChild(comparedNotes);
+
+				showComparedNotes(attribute.entity, attribute.name, note.id, leftTable.id, "left");
+				showComparedNotes(attribute.entity, attribute.name, note.id, rightTable.id, "right");
+
 				break;
 
 			// text, url, etc.
@@ -1338,18 +1444,30 @@ function setElementSizeAtPage(element, attribute)
 }
 
 
-function createNoteActionButtons(dataElement, id)
+function createNoteActionButtons(dataElement, id, parentNoteId, parentNoteAttribute, side)
 {
 	if (id)
 		setContentId(id);
+	else
+		clearContentId();
 
 	var editHandler = function() { showCurrentContent() };
 	var saveHandler = function() 
 	{
 		var objectToSave = new Object();
+
 		var contentId = getContentId();
 		if (contentId != null)
 			objectToSave.id = contentId;
+
+		var parentId = this.getAttribute("parent-note-id");
+		var parentAttr = this.getAttribute("parent-note-attribute");
+		var side = this.getAttribute("side");
+		if (side && parentId && parentAttr)
+			objectToSave.nested = `${parentAttr}/${side}/${parentId}`;
+		else if (parentId && parentAttr)
+			objectToSave.nested = `${parentAttr}/${parentId}`;
+
 		objectToSave.attributes = getNoteFromForm(dataElement);
 
 		fetch(SERVER_ADDRESS + '/rest/notes/' + getContentType(), {
@@ -1359,11 +1477,29 @@ function createNoteActionButtons(dataElement, id)
 		})
 		.then(response => {
 			if (response.status === 200)
-				showCurrentContent();
+			{
+				if (this.getAttribute("parent-note-id"))
+				{
+					// TODO return by window.history pop from stack
+					showCurrentContent();
+				}
+				else
+				{
+					showCurrentContent();
+				}
+			}
 		});
 	};
 
 	addFormButtons(dataElement, id != null, saveHandler, editHandler);
+
+	var saveButton = document.getElementById("save-button");
+	if (parentNoteId)
+		saveButton.setAttribute("parent-note-id", parentNoteId);
+	if (parentNoteAttribute)
+		saveButton.setAttribute("parent-note-attribute", parentNoteAttribute);
+	if (side)
+		saveButton.setAttribute("side", side);
 }
 
 
@@ -1428,4 +1564,43 @@ function setWidthRangeInTable(element, attribute)
 		element.style.maxWidth = attribute.maxWidth;
 	if (attribute.minWidth != null)
 		element.style.minWidth = attribute.minWidth;
+}
+
+function addComparedNotesMenu(parent, side, note, attribute)
+{
+	var menu = document.createElement("div");
+	menu.classList.add(DATA_MENU);
+	menu.style.padding = "0";
+
+	var addNoteButton = document.createElement("a");
+	addNoteButton.setAttribute("parent-note-id", note.id);
+	addNoteButton.setAttribute("parent-note-attribute", attribute.name);
+	addNoteButton.setAttribute("entity-name", attribute.entity);
+	addNoteButton.setAttribute("side", side);
+	setImageClass(addNoteButton, NEW_NOTE_IMAGE);
+	addNoteButton.href = "#";
+	addNoteButton.onclick = function() 
+	{ 
+		showNoteForm(null, 
+			this.getAttribute("entity-name"), 
+			this.getAttribute("parent-note-id"), 
+			this.getAttribute("parent-note-attribute"), 
+			this.getAttribute("side")); 
+	};
+
+	menu.appendChild(addNoteButton);
+	parent.appendChild(menu);
+}
+
+function addComparedNotesTable(parent, side, attribute)
+{
+	var table = document.createElement("div");
+	table.classList.add(DATA_TABLE);
+	table.id = attribute.name + "-input-compared-notes-" + side;
+	table.style.minWidth = "100%";
+	table.style.overflowY = "scroll";
+	setElementSizeAtPage(table, attribute);
+	parent.appendChild(table);
+
+	return table;
 }

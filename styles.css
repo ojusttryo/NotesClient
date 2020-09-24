@@ -33,7 +33,7 @@ body
 }
 
 
-#data-menu
+.data-menu
 {
 	display: flex;
 	flex-direction: row;
@@ -99,15 +99,22 @@ input[type=checkbox]
 }
 
 
-#data-table
+.has-vertical-padding
+{
+	padding-top: var(--padding);
+	padding-bottom: var(--padding);
+}
+
+
+.data-table
 {
 	display: grid;
-	grid-template-columns: repeat(var(--tableColumnsCount), auto) min-content min-content;
 	grid-row-gap: 5px;
 	grid-column-gap: 10px;	
 	width: 100%;
 	box-sizing: border-box;
-	padding: var(--padding);;
+	padding-left: var(--padding);
+	padding-right: var(--padding);
 	align-items: start;
 }
 
@@ -261,6 +268,8 @@ input[type=checkbox]
 	justify-items: left;
 	justify-self: left;
 	justify-content: start;
+	padding-top: var(--padding);
+	padding-bottom: var(--padding);
 }
 
 .colored-select

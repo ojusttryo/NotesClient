@@ -46,6 +46,8 @@ const SELECTED_KEY_ATTRIBUTE_IMAGE = "selected-key-attribute-image";
 const TWO_COLS = "twoCols";
 const CONTENT_NAME = "content-name";
 const IMAGE_ICON = "image-icon";
+const NEW_NOTE_IMAGE = "new-note-image";
+const HAS_VERTICAL_PADDINGS = "has-vertical-paddings";
 
 const NAME = "name";
 const TITLE = "title";

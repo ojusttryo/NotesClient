@@ -22,7 +22,7 @@ function showAttributes()
 
 function showAttributesMenu()
 {
-	var dataMenu = getEmptyElement(DATA_MENU);
+    var dataMenu = getEmptyElement(DATA_MENU);
 
 	var addAttributeButton = createInputButton();
 	addAttributeButton.value = "New attribute";
@@ -39,6 +39,7 @@ function showAttributesMenu()
 function createAttributesTableHead(table)
 {
     setContentColumnsCount(4);      // 4 - without buttons
+    document.getElementById(DATA_TABLE).style.gridTemplateColumns = "repeat(var(--tableColumnsCount), auto) min-content min-content";
 
 	appendNewSpan(table, "№");
     appendNewSpan(table, "Title");
@@ -106,7 +107,7 @@ function createAttributeForm(attributeName)
 {
     var dataElement = getEmptyElement(DATA_ELEMENT);
 
-    createErrorLabel(dataElement);
+    recreateErrorLabel(DATA_ELEMENT);
 
     if (attributeName)
     {
@@ -162,8 +163,8 @@ function createAttributeForm(attributeName)
         showInputAndLabelIf("attribute-select-options", hasOptions(type));
         showInputAndLabelIf("attribute-lines-count", type == "textarea");
         showInputAndLabelIf("attribute-images-size", type == "gallery");
-        showInputAndLabelIf("attribute-max-width", type != "file" && !isMultifile(type) && isNotesList(type));
-        showInputAndLabelIf("attribute-min-width", type != "file" && !isMultifile(type) && isNotesList(type));
+        showInputAndLabelIf("attribute-max-width", type != "file" && !isMultifile(type) && !isNotesList(type));
+        showInputAndLabelIf("attribute-min-width", type != "file" && !isMultifile(type) && !isNotesList(type));
         showInputAndLabelIf("attribute-max-height", isSizableOnForm(type));
         showInputAndLabelIf("attribute-min-height", isSizableOnForm(type));
         showInputAndLabelIf("attribute-max", isTextual(type) || isNumeric(type) || isFile(type) || isMultifile(type));
@@ -265,7 +266,7 @@ function isSkippableAttributeInNotesTable(type)
 
 function isSizableOnForm(type)
 {
-    return (type == "image" || isMultifile(type));
+    return (type == "image" || isMultifile(type) || isNotesList(type));
 }
 
 function hasDateFormat(type)
@@ -335,4 +336,10 @@ function couldBeCompareAttribute(type)
 function couldBeSortAttribute(type)
 {
     return (isTextual(type) || isNumeric(type) || type == "checkbox" || type == "select" || isUserDateOrTime(type));
+}
+
+
+function isSkippableOnCreate(type)
+{
+    return isNotesList(type);
 }
