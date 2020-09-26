@@ -17,7 +17,7 @@
 
 body
 {
-	background-color: yellow;
+	background-color: white;
 	font-size: var(--fontSize);
 }
 
@@ -49,8 +49,9 @@ body
 	font-size: var(--menuFontSize);
 	max-width: 15%;
 	order: 1;
-	background-color: green;
+	background-color: white;
 	padding: var(--padding);
+	border-right: 1px solid black;
 }
 
 #menu ul li
@@ -63,7 +64,7 @@ body
 {
 	cursor: pointer;
 	border-radius: 2px;
-	box-shadow: 0 0 5px 1px red, 0 0 5px 1px blue;
+	box-shadow: 0 0 5px 1px green, 0 0 5px 1px blue;
 }
 
 #history
@@ -84,7 +85,7 @@ body
 {
 	order: 2;
 	width: 100%;
-	background-color: indianred;
+	background-color: white;
 }
 
 input, select
@@ -180,6 +181,8 @@ input[type=checkbox]
 {
 	grid-column-start: 1;
 	grid-column-end: 3;
+	padding-left: 0px;
+	padding-right: 0px;
 }
 
 .gallery
@@ -336,7 +339,7 @@ input[type=checkbox]
 	clear: both;
 	background-position: left center;
 	background-repeat: no-repeat;
-	background-color: indianred;
+	background-color: white;
 	background-size: contain;
 }
 
@@ -352,7 +355,7 @@ input[type=checkbox]
 	clear: both;
 	background-position: left center;
 	background-repeat: no-repeat;
-	background-color: indianred;
+	background-color: white;
 	background-size: contain;
 }
 
@@ -385,8 +388,8 @@ input[type=checkbox]
 .multiselect 
 {
 	display: inline-block;
-	background-color: indigo;
-	background: indigo;
+	background-color: white;
+	background: white;
 }
 
 .selectBox 

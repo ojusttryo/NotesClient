@@ -263,7 +263,7 @@ async function showSearchResultForHidden(hidden)
 function createNotesTableHead(table, attributes)
 {
 	var count = countColumnsWithoutButtons(attributes);
-	table.style.gridTemplateColumns = "repeat(" + count + ", auto) min-content min-content";
+	table.style.gridTemplateColumns = "repeat(" + count + ", 1fr) min-content min-content";
 
 	// Headers for attributes
 	for (var i = 0; i < attributes.length; i++)
@@ -430,7 +430,30 @@ function createNotesTableBody(table, attributes, notes, contentType)
 					}
 					else
 					{
-						cell.innerHTML = currentValue != null ? currentValue : "";
+						if (currentValue != null)
+						{
+							var option = attribute.selectOptions.filter(x => x.split("=")[0] == currentValue);
+							if (option != null && option.length > 0 && option[0].split("=").length > 1)
+							{
+								var splittedValue = option[0].split("=");
+								var elem = document.createElement("span");
+								elem.innerText = splittedValue[0];
+								elem.style.backgroundColor = splittedValue[1];
+								elem.style.color = "white";
+								elem.style.borderRadius = "2px";
+								elem.style.paddingLeft = "2px";
+								elem.style.paddingRight = "2px";
+
+								cell.style.display = "flex";
+								cell.style.flexWrap = "wrap";
+								cell.appendChild(elem);
+							}
+							else
+							{
+								cell.innerHTML = currentValue;
+							}
+
+						}
 					}
 					table.appendChild(cell);
 					break;
@@ -448,7 +471,7 @@ function createNotesTableBody(table, attributes, notes, contentType)
 					{
 						var text = values[k];
 						var elem = document.createElement("span");
-						elem.className += " colored-select";
+						elem.classList.add(COLORED_SELECT);
 						elem.innerText = text;
 						if (attribute.type == "multiselect")
 							elem.style.borderColor = randomColor(text);
@@ -740,6 +763,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 
 		var label = document.createElement("label");
 		label.innerText = attribute[TITLE];
+		label.style.fontWeight = "bold";
 		dataElement.appendChild(label);
 
 		switch (attribute.type)
@@ -1129,6 +1153,8 @@ function prepareNoteAttributes(dataElement, note, attributes)
 				setElementSizeAtPage(nestedNotes, attribute);
 				nestedNotes.style.minWidth = "100%";
 				nestedNotes.style.overflowY = "scroll";
+				nestedNotes.style.paddingLeft = "0";
+				nestedNotes.style.paddingRight = "var(--padding)";
 				dataElement.appendChild(nestedNotes);
 
 				showNestedNotes(attribute.entity, attribute.name, note.id, nestedNotes.id);
@@ -1149,6 +1175,9 @@ function prepareNoteAttributes(dataElement, note, attributes)
 
 				var leftTable = addComparedNotesTable(comparedNotes, "left", attribute);
 				var rightTable = addComparedNotesTable(comparedNotes, "right", attribute);
+
+				leftTable.style.paddingRight = "var(--padding)";
+				rightTable.style.paddingRight = "var(--padding)";
 
 				dataElement.appendChild(comparedNotes);
 
@@ -1596,6 +1625,7 @@ function addComparedNotesTable(parent, side, attribute)
 {
 	var table = document.createElement("div");
 	table.classList.add(DATA_TABLE);
+	table.style.padding = "0";
 	table.id = attribute.name + "-input-compared-notes-" + side;
 	table.style.minWidth = "100%";
 	table.style.overflowY = "scroll";

@@ -711,9 +711,10 @@ function addOptions(select, options)
 {
 	for (var value of options)
 	{
+		var splittedValue = value.split("=");
 		var option = document.createElement("option");
-		option.innerText = value;
-		option.value = value;
+		option.innerText = splittedValue[0];
+		option.value = splittedValue[0];
 		select.appendChild(option);
 	}
 }
