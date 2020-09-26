@@ -15,7 +15,7 @@ async function showContentTableWithNotes(contentType)
 	switchToContent();
 	createUpperMenuForContent();
 
-	fetch(SERVER_ADDRESS + '/rest/attributes/search?entityName=' + contentType)
+	fetch(`${SERVER_ADDRESS}/rest/attributes/search?entityName=${contentType}&visible=true`)
 	.then(response => response.json())
 	.then(attributes => {
 		
@@ -173,7 +173,7 @@ async function showSearchResult(attributeName, searchRequest)
 
 	window.history.pushState("", "Notes", `/${contentType}?searchAttribute=${attributeName}&searchRequest=${searchRequest}`);
 
-	fetch(SERVER_ADDRESS + '/rest/attributes/search?entityName=' + contentType)
+	fetch(`${SERVER_ADDRESS}/rest/attributes/search?entityName=${contentType}&visible=true`)
 	.then(response => response.json())
 	.then(attributes => {
 		
@@ -196,7 +196,7 @@ async function showSearchResult(attributeName, searchRequest)
 
 async function showNestedNotes(contentType, attributeName, parentNoteId, tableId)
 {
-	fetch(SERVER_ADDRESS + '/rest/attributes/search?entityName=' + contentType)
+	fetch(`${SERVER_ADDRESS}/rest/attributes/search?entityName=${contentType}&visible=true`)
 	.then(response => response.json())
 	.then(attributes => {
 		fetch(`${SERVER_ADDRESS}/rest/notes/nested/${contentType}/${attributeName}/${parentNoteId}`, {
@@ -240,7 +240,7 @@ async function showSearchResultForHidden(hidden)
 
 	window.history.pushState("", "Notes", `/${contentType}?hidden=${hidden}`);
 
-	fetch(SERVER_ADDRESS + '/rest/attributes/search?entityName=' + contentType)
+	fetch(`${SERVER_ADDRESS}/rest/attributes/search?entityName=${contentType}&visible=true`)
 	.then(response => response.json())
 	.then(attributes => {
 		var subrequest = hidden ? "hidden" : "visible";
@@ -263,7 +263,7 @@ async function showSearchResultForHidden(hidden)
 function createNotesTableHead(table, attributes)
 {
 	var count = countColumnsWithoutButtons(attributes);
-	table.style.gridTemplateColumns = "repeat(" + count + ", 1fr) min-content min-content";
+	table.style.gridTemplateColumns = "repeat(" + count + ", auto) min-content min-content";
 
 	// Headers for attributes
 	for (var i = 0; i < attributes.length; i++)
@@ -446,6 +446,7 @@ function createNotesTableBody(table, attributes, notes, contentType)
 
 								cell.style.display = "flex";
 								cell.style.flexWrap = "wrap";
+								cell.style.justifyContent = attribute.alignment;
 								cell.appendChild(elem);
 							}
 							else
@@ -1534,7 +1535,7 @@ function createNoteActionButtons(dataElement, id, parentNoteId, parentNoteAttrib
 
 function needToSkipAttributeInTable(attribute)
 {
-	return (!attribute.visible || isSkippableAttributeInNotesTable(attribute.type))
+	return (isSkippableAttributeInNotesTable(attribute.type))
 }
 
 

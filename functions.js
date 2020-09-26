@@ -314,6 +314,14 @@ function getMetaObjectFromForm(parent)
 		result["sortDirection"] = (sortAttribute[0].classList.contains(ASC_SORT_ATTRIBUTE_IMAGE)) ? "ascending" : "descending";
 	}
 
+	var visibleAttributes = document.getElementsByClassName("selected-visible-attribute-image");
+	if (visibleAttributes != null && visibleAttributes.length > 0)
+	{
+		result["visibleAttributes"] = [];
+		for (var i = 0; i < visibleAttributes.length; i++)
+			result["visibleAttributes"].push(getAttrNameForButtonInAttrList(visibleAttributes[i]));
+	}
+
 	var comparedAttributes = document.getElementsByClassName("selected-compared-attribute-image");
 	if (comparedAttributes != null && comparedAttributes.length > 0)
 	{

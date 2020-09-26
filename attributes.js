@@ -133,7 +133,6 @@ function createAttributeForm(attributeName)
     addInputWithLabel("text",     false, dataElement, "dateFormat",      "Date format",                 "attribute-date-format");
     addSelectWithLabel(dataElement, "entity", "Entity", "attribute-entity", []);
     addSelectWithLabel(dataElement, "alignment", "Alignment", "attribute-alignment", alignments);
-    addInputWithLabel("checkbox", false, dataElement, "visible",         "Visible in table",            "attribute-visible");
     addInputWithLabel("checkbox", false, dataElement, "required",        "Required",                    "attribute-required");
     addInputWithLabel("checkbox", false, dataElement, "editableInTable", "Editable in table",           "attribute-editable-in-table");
     addInputWithLabel("number",   false, dataElement, "linesCount",      "Lines count",                 "attribute-lines-count");
@@ -175,7 +174,6 @@ function createAttributeForm(attributeName)
         showInputAndLabelIf("attribute-date-format", hasDateFormat(type));
         showInputAndLabelIf("attribute-default", (isTextual(type) || isNumeric(type) || hasOptions(type) || type == "checkbox" || type == "url"));
         showInputAndLabelIf("attribute-required", isTextual(type) || isNumeric(type) || type == "select" || isFile(type) || type == "url" || isUserDateOrTime(type));
-        showInputAndLabelIf("attribute-visible", !isSkippableAttributeInNotesTable(type));
         showInputAndLabelIf("attribute-method",  !isSkippableAttributeInNotesTable(type));
         showInputAndLabelIf("attribute-delimiter", type == "delimited text");
         showInputAndLabelIf("attribute-entity", type == "nested notes");
@@ -237,7 +235,6 @@ function fillAttributeValuesOnForm(attribute)
     document.getElementById("attribute-select-options").value = attribute["selectOptions"] != null ? attribute["selectOptions"].join("; ") : "";
     if (attribute["dateFormat"] != null)
         document.getElementById("attribute-date-format").value = attribute["dateFormat"];
-    document.getElementById("attribute-visible").checked = attribute["visible"];
     document.getElementById("attribute-required").checked = attribute["required"];
     document.getElementById("attribute-editable-in-table").checked = attribute["editableInTable"];
     document.getElementById("attribute-alignment").value = attribute["alignment"];

@@ -171,6 +171,12 @@ function createEntityForm(entityName)
                 changeImageClass(sortAttr, SORT_ATTRIBUTE_IMAGE, (entity.sortDirection == "ascending") ? ASC_SORT_ATTRIBUTE_IMAGE : DESC_SORT_ATTRIBUTE_IMAGE);
             }
 
+            for (var i = 0; i < entity.visibleAttributes.length; i++)
+            {
+                var visibleAttr = document.getElementById(entity.visibleAttributes[i] + "-visible-button");
+                changeImageClass(visibleAttr, VISIBLE_ATTRIBUTE_IMAGE, SELECTED_VISIBLE_ATTRIBUTE_IMAGE);
+            }
+
             for (var i = 0; i < entity.comparedAttributes.length; i++)
             {
                 var comparedAttr = document.getElementById(entity.comparedAttributes[i] + "-compared-button");
@@ -202,6 +208,7 @@ function createAttributesTable(attributes, side)
     {
         appendNewElement("th", theadRow, "");          // key attribute button
         appendNewElement("th", theadRow, "");          // Order attribute button
+        appendNewElement("th", theadRow, "");          // Visible attribute button
         appendNewElement("th", theadRow, "");          // Compare attribute button
     }
     thead.appendChild(theadRow);
@@ -323,6 +330,19 @@ function createAttributesTable(attributes, side)
             else
             {
                 tr.appendChild(document.createElement("td"));
+            }
+
+            if (!isSkippableAttributeInNotesTable(attribute.type))
+            {
+                var visibleAttrId = document.createElement("td");
+                visibleAttrId.style.textAlign = "center";
+                visibleAttrId.style.width = "0";
+                var visibleAttr = document.createElement("a");
+                setImageClass(visibleAttr, VISIBLE_ATTRIBUTE_IMAGE, true);
+                visibleAttr.id = attribute.name + "-visible-button";
+                visibleAttr.onclick = function() { changeImageClassToOpposite(this, SELECTED_VISIBLE_ATTRIBUTE_IMAGE, VISIBLE_ATTRIBUTE_IMAGE); }
+                visibleAttrId.appendChild(visibleAttr);
+                tr.appendChild(visibleAttrId);
             }
 
             if (couldBeCompareAttribute(attribute.type))
