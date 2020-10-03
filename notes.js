@@ -640,9 +640,11 @@ function createButtonToDeleteNote(id, contentType)
 		.then(keyAttrResponse => keyAttrResponse.text())
 		.then(keyAttr => {
 			if (keyAttr == null || typeof keyAttr == "undefined")
-				keyAttr = "";
+				keyAttr = "note";
+			if (typeof keyAttr == "string")
+				keyAttr = keyAttr.split("\n")[0];
 				
-			var result = confirm(`Delete note ${keyAttr}?`);
+			var result = confirm(`Delete ${keyAttr}?`);
 			if (result)
 			{
 				deleteNote(noteId, contentType)
@@ -1116,7 +1118,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 				appendNewSpanAligning(filesCollection, "№", "right");
 				appendNewSpanAligning(filesCollection, "Title", "left");
 				appendNewSpanAligning(filesCollection, "Type", "center");
-				appendNewSpanAligning(filesCollection, "Size", "right");
+				appendNewSpanAligning(filesCollection, "Size, Kb", "right");
 				appendNewSpanAligning(filesCollection, "Uploaded", "center");
 				appendNewSpan(filesCollection, "");			 // Download
 				appendNewSpan(filesCollection, "");		     // Remove
@@ -1430,11 +1432,12 @@ function asyncDownloadFiles(identifiers, filesCollection)
 function addFileCollectionRow(metadata, filesCollection)
 {
 	var number = parseInt(filesCollection.getAttribute(FILES_COUNT)) + 1;
-	appendNewSpanAligning(filesCollection, number, "right");
+	var numberSpan = appendNewSpanAligning(filesCollection, number, "right");
+	numberSpan.style.minWidth = "23px";
 	appendNewSpanAligning(filesCollection, metadata.title, "left");
 	appendNewSpanAligning(filesCollection, metadata.contentType, "center");
-	appendNewSpanAligning(filesCollection, metadata.size, "right");
-	appendNewSpanAligning(filesCollection, moment(metadata.uploaded).format('LLL'), "center");
+	appendNewSpanAligning(filesCollection, Math.round(metadata.size / 1024), "right");
+	appendNewSpanAligning(filesCollection, moment(metadata.uploaded * 1000).format('DD.MM.YYYY HH:mm'), "center");
 
 	var downloadButton = document.createElement("a");
 	setImageClass(downloadButton, "download-image");

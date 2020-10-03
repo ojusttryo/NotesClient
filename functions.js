@@ -289,6 +289,7 @@ function appendNewSpanAligning(parent, innerText, alignment)
 {
 	var element = appendNewSpan(parent, innerText);
 	element.style.justifySelf = alignment;
+	element.style.textAlign = alignment;
 	return element;
 }
 
