@@ -449,19 +449,21 @@ function createNotesTableBody(table, attributes, notes, contentType, parentNoteI
 							if (option != null && option.length > 0)
 							{
 								var splittedValue = option[0].split("=");
-								var colour = splittedValue[1] ? splittedValue[1] : randomColor(splittedValue[0]);
+								var color = splittedValue[1] ? splittedValue[1] : randomColor(splittedValue[0]);
 
 								var elem = document.createElement("span");
 								elem.innerText = splittedValue[0];
-								elem.style.backgroundColor = colour;
+								elem.style.backgroundColor = color;
 								elem.style.color = "white";
 								elem.style.borderRadius = "2px";
 								elem.style.paddingLeft = "2px";
 								elem.style.paddingRight = "2px";
+								enableSearchByClick(elem, attributeName, contentType, parentNoteId);
 
 								cell.style.display = "flex";
 								cell.style.flexWrap = "wrap";
 								cell.style.justifyContent = attribute.alignment;
+								
 								cell.appendChild(elem);
 							}
 							else
@@ -491,6 +493,7 @@ function createNotesTableBody(table, attributes, notes, contentType, parentNoteI
 						elem.innerText = text;
 						if (attribute.type == "multiselect")
 							elem.style.borderColor = randomColor(text);
+						enableSearchByClick(elem, attributeName, contentType, parentNoteId);
 
 						cell.style.display = "flex";
 						cell.style.flexWrap = "wrap";
@@ -592,7 +595,6 @@ function createNotesTableBody(table, attributes, notes, contentType, parentNoteI
 
 				default:
 					cell.innerHTML = currentValue != null ? currentValue : "";
-					cell.style.maxWidth = "100%";
 					table.appendChild(cell);
 					break;
 			}
@@ -1668,4 +1670,21 @@ function addComparedNotesTable(parent, side, attribute)
 	parent.appendChild(table);
 
 	return table;
+}
+
+
+function enableSearchByClick(elem, attributeName, contentType, parentNoteId)
+{
+	if (!parentNoteId)
+	{
+		elem.setAttribute(ATTRIBUTE_NAME, attributeName);
+		elem.setAttribute(CONTENT_TYPE, contentType);
+		elem.onclick = function() 
+		{
+			var attr = this.getAttribute(ATTRIBUTE_NAME);
+			var content = this.getAttribute(CONTENT_TYPE);
+			window.history.pushState("showSearchResult", "Notes", `/${content}?searchAttribute=${attr}&searchRequest=${this.innerText}`);
+			showSearchResult(attr, this.innerText, content);
+		}
+	}
 }
