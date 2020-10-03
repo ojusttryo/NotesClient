@@ -11,8 +11,6 @@ function showEntities()
         if (!entities)
             return;
             
-        window.history.pushState("", "Entities", "/entities");
-
         var table = getEmptyElement(DATA_TABLE);
         createEntitiesTableHead(table, entities);
         createEntitiesTableBody(table, entities);
@@ -31,6 +29,7 @@ function showEntitiesMenu()
     addEntityButton.onclick = function() 
     { 
         createEntityForm(null);
+        pushEntityState(null);
         switchToAddEditForm();
     };
 
@@ -40,10 +39,10 @@ function showEntitiesMenu()
 
 function createEntitiesTableHead(table)
 {
-    setContentColumnsCount(4);          // 4 - without buttons
-    document.getElementById(DATA_TABLE).style.gridTemplateColumns = "repeat(var(--tableColumnsCount), auto) min-content min-content";
+    setContentColumnsCount(3);          // 3 - without buttons and row number
+    document.getElementById(DATA_TABLE).style.gridTemplateColumns = "min-content repeat(var(--tableColumnsCount), auto) min-content min-content";
 
-	appendNewSpan(table, "№");
+	appendNewSpanAligning(table, "№", "center");
     appendNewSpan(table, "Title");
     appendNewSpan(table, "Name");
     appendNewSpan(table, "Visible");
@@ -57,7 +56,7 @@ function createEntitiesTableBody(table, entities)
     // Inside loop elements should be ordered as in createEntitiesTableHead()
 	for (var i = 0; i < entities.length; i++)
 	{
-        appendNewSpan(table, (i + 1).toString());
+        appendNewSpanAligning(table, (i + 1).toString(), "right");
         appendNewSpan(table, entities[i].title);
         appendNewSpan(table, entities[i].name);
         appendNewSpan(table, entities[i].visible);
@@ -67,6 +66,7 @@ function createEntitiesTableBody(table, entities)
         editButton.setAttribute(CONTENT_NAME, entities[i].name);
         editButton.onclick = function() 
         {
+            pushEntityState(this.getAttribute(CONTENT_NAME));
             createEntityForm(this.getAttribute(CONTENT_NAME));
             switchToAddEditForm();
         };
@@ -83,7 +83,10 @@ function createEntitiesTableBody(table, entities)
                 fetch(SERVER_ADDRESS + '/rest/entities/' + this.getAttribute(CONTENT_NAME), { method: "DELETE" })
                 .then(response => {
                     if (response.status === 200)
+                    {
+                        pushEntityTableState();
                         showEntities();
+                    }
                 })
             }
         };
@@ -96,25 +99,21 @@ function createEntityForm(entityName)
 {
     var dataElement = getEmptyElement(DATA_ELEMENT);
 
-    recreateErrorLabel(DATA_ELEMENT);
-
     if (entityName)
-    {
-        setContentId(entityName);
-        window.history.pushState("", "Entity", "/entities/" + entityName);
-    }
+        dataElement.setAttribute(CONTENT_ID, entityName);
     else
-    {
-        clearContentId();
-        window.history.pushState("", "Entity", "/entity");
-    }
+        dataElement.removeAttribute(CONTENT_ID);
 
     addInputWithLabel("text",     true,  dataElement, "title",   "Title",         "entity-title");
     addInputWithLabel("text",     true,  dataElement, "name",    "Name (unique)", "entity-name");
     addInputWithLabel("checkbox", false, dataElement, "visible", "Visible",       "entity-visible");
 
-    var saveHandler = function() { saveMetaObjectInfo(DATA_ELEMENT, "/rest/entities", showEntities) };
-    var cancelHandler = function() { showEntities() };
+    var saveHandler = function() { saveMetaObjectInfo("/rest/entities", showEntities) };
+    var cancelHandler = function() 
+    {
+        window.history.back();
+        showEntities() 
+    };
     var buttons = addFormButtons(dataElement, entityName != null, saveHandler, cancelHandler);
 
     var label = document.createElement("label");
@@ -142,7 +141,7 @@ function createEntityForm(entityName)
         if (!entityName)
             return;
 
-        fetch(SERVER_ADDRESS + '/rest/entities/search?name=' + getContentId())
+        fetch(SERVER_ADDRESS + '/rest/entities/search?name=' + dataElement.getAttribute(CONTENT_ID))
         .then(response => response.json())
         .then(entity => {
             document.getElementById("entity-title").value = entity["title"];
@@ -260,6 +259,8 @@ function createAttributesTable(attributes, side)
             changeImageClassForHiddenElements(SELECTED_KEY_ATTRIBUTE_IMAGE, KEY_ATTRIBUTE_IMAGE);
             changeImageClassForHiddenElements(ASC_SORT_ATTRIBUTE_IMAGE, SORT_ATTRIBUTE_IMAGE);
             changeImageClassForHiddenElements(DESC_SORT_ATTRIBUTE_IMAGE, SORT_ATTRIBUTE_IMAGE);
+            changeImageClassForHiddenElements(SELECTED_VISIBLE_ATTRIBUTE_IMAGE, VISIBLE_ATTRIBUTE_IMAGE);
+            changeImageClassForHiddenElements(SELECTED_COMPARED_ATTRIBUTE_IMAGE, COMPARED_ATTRIBUTE_IMAGE);
         }
         signTd.appendChild(sign);
         tr.appendChild(signTd);

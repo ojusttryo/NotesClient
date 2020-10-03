@@ -6,14 +6,7 @@
  */
 async function showContentTableWithNotes(contentType)
 {
-	recreateErrorLabel(DATA_TABLE);
-
-	setContentType(contentType);
-
-	window.history.pushState("", "Notes", `/${contentType}`);
-
-	switchToContent();
-	createUpperMenuForContent();
+	createUpperMenuForContent(contentType);
 
 	fetch(`${SERVER_ADDRESS}/rest/attributes/search?entityName=${contentType}&visible=true`)
 	.then(response => response.json())
@@ -29,13 +22,15 @@ async function showContentTableWithNotes(contentType)
 			getEmptyElement(DATA_ELEMENT);
 			var table = getEmptyElement(DATA_TABLE);
 			createNotesTableHead(table, attributes);
-			createNotesTableBody(table, attributes, notes);
+			createNotesTableBody(table, attributes, notes, contentType);
+
+			switchToContent();
 		});
 	});
 }
 
 
-function createUpperMenuForContent()
+function createUpperMenuForContent(contentType, attributeName, searchRequest)
 {
 	var dataMenu = getEmptyElement(DATA_MENU);
 
@@ -47,12 +42,12 @@ function createUpperMenuForContent()
 	searchInputWrapper.id = "search-input-wrapper";
 	dataMenu.appendChild(searchInputWrapper);
 
-	fetch(SERVER_ADDRESS + '/rest/attributes/search?entityName=' + getContentType())
+	fetch(SERVER_ADDRESS + '/rest/attributes/search?entityName=' + contentType)
 	.then(response => response.json())
 	.then(attributes => {
 		var select = document.getElementById("search-attributes");
 		select.style.overflow = "visible";
-		//select.style.minWidth = "100%";
+
 		for (var i = 0; i < attributes.length; i++)
 		{
 			var type = attributes[i].type;
@@ -64,9 +59,12 @@ function createUpperMenuForContent()
 			option.value = attributes[i].name;
 			option.setAttribute(ATTRIBUTE_NAME, attributes[i].name);
 			option.setAttribute(ATTRIBUTE_TYPE, attributes[i].type);
+			if (attributeName && attributes[i].name == attributeName)
+				option.selected = "selected";
 			select.appendChild(option);
 		}
-		select.onchange = function() 
+
+		select.onchange = function(value)
 		{
 			var currentOption = this.children.item(this.selectedIndex);
 			var inputWrapper = document.getElementById("search-input-wrapper");
@@ -80,7 +78,7 @@ function createUpperMenuForContent()
 				case "number":
 				case "inc":
 					var searchInput = document.createElement("input");
-					searchInput.className += " search-input-text";
+					searchInput.classList.add("search-input-text");
 					searchInput.id = "search-input";
 					searchInput.addEventListener("keyup", event => {
 						if (event.key !== "Enter")
@@ -88,6 +86,8 @@ function createUpperMenuForContent()
 						document.getElementById("search-button").click();
 						event.preventDefault();
 					})
+					if (value && typeof value == "string")
+						searchInput.value = value;
 					inputWrapper.appendChild(searchInput);
 					break;
 				case "select":
@@ -98,7 +98,10 @@ function createUpperMenuForContent()
 						var select = document.createElement("select");
 						select.id = "search-input";
 						addOptions(select, attribute.selectOptions);
-						select.selectedIndex = 0;
+						if (value && typeof value == "string")
+							select.value = value;
+						else
+							select.selectedIndex = 0;
 						inputWrapper.appendChild(select);
 					});
 					break;
@@ -106,20 +109,29 @@ function createUpperMenuForContent()
 					var checkbox = document.createElement("input");
 					checkbox.type = "checkbox";
 					checkbox.id = "search-input";
+					checkbox.checked = (value && typeof value == "boolean" && value == true);
 					inputWrapper.appendChild(checkbox);
 					break;
 				default:
 					break;
 			}
 		}
-		select.selectedIndex = 0;
-		select.onchange();
+
+		if (!attributeName && !searchRequest)
+		{
+			select.selectedIndex = 0;
+			select.onchange();
+		}
+		else
+		{
+			select.onchange(searchRequest);
+		}
 	});
 
 	var searchButton = document.createElement("a");
 	searchButton.id = "search-button";
 	setImageClass(searchButton, "search-image", true);
-	searchButton.href = "#";
+	searchButton.setAttribute(CONTENT_TYPE, contentType);
 	searchButton.onclick = function() 
 	{
 		var searchAttributes = document.getElementById("search-attributes");
@@ -135,43 +147,38 @@ function createUpperMenuForContent()
 			default: searchRequest = searchInput.value; break;
 		}
 
-		showSearchResult(attributeName, searchRequest);
+		window.history.pushState("showSearchResult", "Notes", `/${this.getAttribute(CONTENT_TYPE)}?searchAttribute=${attributeName}&searchRequest=${searchRequest}`);
+		showSearchResult(attributeName, searchRequest, this.getAttribute(CONTENT_TYPE));
 	};
 	dataMenu.appendChild(searchButton);
 
 	var hiddenNotesButton = document.createElement("a");
 	setImageClass(hiddenNotesButton, "hidden-image", true);
-	hiddenNotesButton.href = "#";
+	hiddenNotesButton.setAttribute(CONTENT_TYPE, contentType);
 	hiddenNotesButton.onclick = function() 
 	{
-		if (this.classList.contains("hidden-image"))
-		{
-			changeImageClass(this, "hidden-image", "visible-image");
-			showSearchResultForHidden(true);
-		}
-		else
-		{
-			changeImageClass(this, "visible-image", "hidden-image");
-			showSearchResultForHidden(false);
-		}
+		var hidden = (this.classList.contains("hidden-image"));
+		changeImageClass(this, hidden ? "hidden-image" : "visible-image", hidden ? "visible-image" : "hidden-image");
+		window.history.pushState("showSearchResultForHidden", "Notes", `/${this.getAttribute(CONTENT_TYPE)}?hidden=${hidden}`);
+		showSearchResultForHidden(hidden, this.getAttribute(CONTENT_TYPE));
 	}
 	dataMenu.appendChild(hiddenNotesButton);
 
 	var addNoteButton = document.createElement("a");
 	setImageClass(addNoteButton, NEW_NOTE_IMAGE);
-	addNoteButton.href = "#";
-	addNoteButton.onclick = function() { showNoteForm(null) };
+	addNoteButton.setAttribute(CONTENT_TYPE, contentType);
+	addNoteButton.onclick = function() 
+	{
+		pushNoteState(null, this.getAttribute(CONTENT_TYPE));
+		showNoteForm(null, this.getAttribute(CONTENT_TYPE)) 
+	};
 	dataMenu.appendChild(addNoteButton);
 }
 
 
-async function showSearchResult(attributeName, searchRequest)
+async function showSearchResult(attributeName, searchRequest, contentType)
 {
-	recreateErrorLabel(DATA_TABLE);
-
-	var contentType = getContentType();
-
-	window.history.pushState("", "Notes", `/${contentType}?searchAttribute=${attributeName}&searchRequest=${searchRequest}`);
+	createUpperMenuForContent(contentType, attributeName, searchRequest);
 
 	fetch(`${SERVER_ADDRESS}/rest/attributes/search?entityName=${contentType}&visible=true`)
 	.then(response => response.json())
@@ -188,7 +195,9 @@ async function showSearchResult(attributeName, searchRequest)
 			getEmptyElement(DATA_ELEMENT);
 			var table = getEmptyElement(DATA_TABLE);
 			createNotesTableHead(table, attributes);
-			createNotesTableBody(table, attributes, notes);
+			createNotesTableBody(table, attributes, notes, contentType);
+
+			switchToContent();
 		});
 	});
 }
@@ -207,7 +216,7 @@ async function showNestedNotes(contentType, attributeName, parentNoteId, tableId
 		.then(notes => {
 			var table = document.getElementById(tableId);
 			createNotesTableHead(table, attributes);
-			createNotesTableBody(table, attributes, notes, contentType);
+			createNotesTableBody(table, attributes, notes, contentType, parentNoteId);
 		});
 	});
 }
@@ -226,20 +235,14 @@ async function showComparedNotes(contentType, attributeName, parentNoteId, table
 		.then(notes => {
 			var table = document.getElementById(tableId);
 			createNotesTableHead(table, attributes);
-			createNotesTableBody(table, attributes, notes, contentType);
+			createNotesTableBody(table, attributes, notes, contentType, parentNoteId);
 		});
 	});
 }
 
 
-async function showSearchResultForHidden(hidden)
+async function showSearchResultForHidden(hidden, contentType)
 {
-	recreateErrorLabel(DATA_TABLE);
-
-	var contentType = getContentType();
-
-	window.history.pushState("", "Notes", `/${contentType}?hidden=${hidden}`);
-
 	fetch(`${SERVER_ADDRESS}/rest/attributes/search?entityName=${contentType}&visible=true`)
 	.then(response => response.json())
 	.then(attributes => {
@@ -254,7 +257,7 @@ async function showSearchResultForHidden(hidden)
 			getEmptyElement(DATA_ELEMENT);
 			var table = getEmptyElement(DATA_TABLE);
 			createNotesTableHead(table, attributes);
-			createNotesTableBody(table, attributes, notes);
+			createNotesTableBody(table, attributes, notes, contentType);
 		});
 	});
 }
@@ -263,7 +266,7 @@ async function showSearchResultForHidden(hidden)
 function createNotesTableHead(table, attributes)
 {
 	var count = countColumnsWithoutButtons(attributes);
-	table.style.gridTemplateColumns = "repeat(" + count + ", auto) min-content min-content";
+	var gridTemplateColumns = "";
 
 	// Headers for attributes
 	for (var i = 0; i < attributes.length; i++)
@@ -271,9 +274,14 @@ function createNotesTableHead(table, attributes)
 		if (needToSkipAttributeInTable(attributes[i]))
 			continue;
 
+		if (attributes[i].type == "row number")
+			gridTemplateColumns += " min-content";
+		else
+			gridTemplateColumns += " auto";
+
 		var wrapper = document.createElement("div");
 
-		var span = appendNewSpanAligning(wrapper, attributes[i]["title"], "center");
+		appendNewSpanAligning(wrapper, attributes[i]["title"], "center");
 		setWidthRangeInTable(wrapper, attributes[i]);
 		table.appendChild(wrapper);
 
@@ -294,6 +302,9 @@ function createNotesTableHead(table, attributes)
 		}
 	}
 
+	gridTemplateColumns += " min-content min-content";
+	table.style.gridTemplateColumns = gridTemplateColumns;
+
 	// Edit and Delete buttons
 	appendNewSpan(table, "");
 	appendNewSpan(table, "");
@@ -312,7 +323,7 @@ function countColumnsWithoutButtons(attributes)
 }
 
 
-function createNotesTableBody(table, attributes, notes, contentType)
+function createNotesTableBody(table, attributes, notes, contentType, parentNoteId)
 {
 	if (notes == null)
 		return;
@@ -349,7 +360,7 @@ function createNotesTableBody(table, attributes, notes, contentType)
 					table.appendChild(cell);
 					break;
 				case "url":
-					if (currentValue == null)
+					if (currentValue == null || currentValue.length == 0 || !currentValue.startsWith("http"))
 					{
 						table.appendChild(cell);
 						break;
@@ -389,13 +400,14 @@ function createNotesTableBody(table, attributes, notes, contentType)
 						else
 							checkbox.checked = isTrue(attribute.defaultValue);
 						checkbox.setAttribute(PREVIOUS_VALUE, checkbox.checked);
+						checkbox.setAttribute(CONTENT_TYPE, contentType);
 						
 						checkbox.onchange = function()
 						{
 							var objectToSave = new Object();
 							objectToSave[this.parentNode.getAttribute(ATTRIBUTE_NAME)] = this.checked;
 
-							updateNote(objectToSave, this.parentNode.getAttribute(NOTE_ID))
+							updateNote(objectToSave, this.parentNode.getAttribute(NOTE_ID), this.getAttribute(CONTENT_TYPE))
 							.then(response => handleUpdateNoteResponse(response));
 						}
 
@@ -415,6 +427,7 @@ function createNotesTableBody(table, attributes, notes, contentType)
 						addOptions(select, attribute.selectOptions);
 						select.value = valueOrEmptyString(note.attributes[attribute.name]);
 						select.setAttribute(PREVIOUS_VALUE, select.value);
+						select.setAttribute(CONTENT_TYPE, contentType);
 						select.style.overflow = "visible";
 						select.style.minWidth = "100%";
 
@@ -423,7 +436,7 @@ function createNotesTableBody(table, attributes, notes, contentType)
 							var objectToSave = new Object();
 							objectToSave[this.parentNode.getAttribute(ATTRIBUTE_NAME)] = this.value;
 
-							updateNote(objectToSave, this.parentNode.getAttribute(NOTE_ID))
+							updateNote(objectToSave, this.parentNode.getAttribute(NOTE_ID), this.getAttribute(CONTENT_TYPE))
 							.then(response => handleUpdateNoteResponse(response));
 						}
 						cell.appendChild(select);
@@ -433,12 +446,14 @@ function createNotesTableBody(table, attributes, notes, contentType)
 						if (currentValue != null)
 						{
 							var option = attribute.selectOptions.filter(x => x.split("=")[0] == currentValue);
-							if (option != null && option.length > 0 && option[0].split("=").length > 1)
+							if (option != null && option.length > 0)
 							{
 								var splittedValue = option[0].split("=");
+								var colour = splittedValue[1] ? splittedValue[1] : randomColor(splittedValue[0]);
+
 								var elem = document.createElement("span");
 								elem.innerText = splittedValue[0];
-								elem.style.backgroundColor = splittedValue[1];
+								elem.style.backgroundColor = colour;
 								elem.style.color = "white";
 								elem.style.borderRadius = "2px";
 								elem.style.paddingLeft = "2px";
@@ -500,16 +515,13 @@ function createNotesTableBody(table, attributes, notes, contentType)
 
 					var incButton = document.createElement("td");
 					incButton.setAttribute(ATTRIBUTE_NAME, attributeName);
-					if (contentType)
-						incButton.setAttribute(CONTENT_TYPE, contentType);
+					incButton.setAttribute(CONTENT_TYPE, contentType);
 					setImageClass(incButton, "plus-image", true);
 					incButton.classList.add("plus-image-table");
 					incButton.onclick = function()
 					{
 						var id = this.parentNode.getAttribute(NOTE_ID);
-						var currentContentType = this.getAttribute(CONTENT_TYPE);
-						var entityName = currentContentType ? currentContentType : getContentType();
-						fetch(SERVER_ADDRESS + '/rest/notes/' + entityName + "/" + id + "/inc/" + this.getAttribute(ATTRIBUTE_NAME), {
+						fetch(SERVER_ADDRESS + '/rest/notes/' + this.getAttribute(CONTENT_TYPE) + "/" + id + "/inc/" + this.getAttribute(ATTRIBUTE_NAME), {
 							method: "PUT",
 							headers: { "Accept": TEXT_PLAIN, "Content-Type": APPLICATION_JSON }
 						})
@@ -533,7 +545,6 @@ function createNotesTableBody(table, attributes, notes, contentType)
 					}
 
 					var download = document.createElement("a");
-					download.href = "#";
 					download.id = note.id + "-" + attribute.name + "-label";
 					setImageClass(download, "download-image");
 					download.setAttribute(FILE_ID, currentValue);
@@ -587,37 +598,45 @@ function createNotesTableBody(table, attributes, notes, contentType)
 			}
 		}
 
-		table.appendChild(createButtonToShowNoteEditForm(note.id));
-		table.appendChild(createButtonToDeleteNote(note.id));
+		table.appendChild(createButtonToShowNoteEditForm(note.id, contentType, parentNoteId));
+		table.appendChild(createButtonToDeleteNote(note.id, contentType));
 	}
 }
 
 
-function createButtonToShowNoteEditForm(id)
+function createButtonToShowNoteEditForm(id, contentType, parentNoteId)
 {
 	var editButton = document.createElement("td");
-	editButton.className += " " + EDIT_BUTTON;
+	editButton.classList.add(EDIT_BUTTON);
 	editButton.setAttribute(NOTE_ID, id);
+	editButton.setAttribute(CONTENT_TYPE, contentType);
+	editButton.setAttribute(PARENT_NOTE_ID, parentNoteId);
 	editButton.onclick = function() 
 	{
-		window.history.pushState("", "Note", `/${getContentType()}/${id}`);
-		showNoteForm(id);
+		pushNoteState(this.getAttribute(NOTE_ID), this.getAttribute(CONTENT_TYPE), this.getAttribute(PARENT_NOTE_ID));
+		showNoteForm(this.getAttribute(NOTE_ID), this.getAttribute(CONTENT_TYPE), this.getAttribute(PARENT_NOTE_ID)); 
 	};
 	return editButton;
 }
 
-function createButtonToDeleteNote(id)
+function createButtonToDeleteNote(id, contentType)
 {
 	var deleteButton = document.createElement("td");
-	deleteButton.className += " " + DELETE_BUTTON;
+	deleteButton.classList.add(DELETE_BUTTON);
 	deleteButton.setAttribute(NOTE_ID, id);
+	deleteButton.setAttribute(CONTENT_TYPE, contentType);
 	deleteButton.onclick = function() 
 	{
 		var result = confirm("Delete note?");
 		if (result)
 		{
-			deleteNote(id)
-			.then(updateContentTableVisibility());
+			deleteNote(this.getAttribute(NOTE_ID), this.getAttribute(CONTENT_TYPE))
+			.then(response => {
+				if (response.status === 500)
+					showError(response.message);
+				else if (response.status === 200)
+					window.location.reload();
+			});
 		}
 	};
 
@@ -625,25 +644,20 @@ function createButtonToDeleteNote(id)
 }
 
 
-function deleteNote(id)
+function deleteNote(id, contentType)
 {
-	return fetch(SERVER_ADDRESS + '/rest/notes/' + getContentType() + '/' + id, { method: "DELETE" })
+	return fetch(SERVER_ADDRESS + '/rest/notes/' + contentType + '/' + id, { method: "DELETE" })
 	.then(response => {
-		if (response.status === 200)
-			showCurrentContent();
+		if (response.status === 500)
+			showError(response.message);
+		else if (response.status === 200)
+			return response;
 	})
 }
 
 
-function showNoteForm(id, entityName, parentNoteId, parentNoteAttribute, side)
+function showNoteForm(id, contentType, parentNoteId, parentNoteAttribute, side)
 {
-	var contentType = entityName ? entityName : getContentType();
-
-	if (id)
-		window.history.pushState("", "Note", `/${contentType}/${id}`);
-	else
-		window.history.pushState("", "Note", `/${contentType}/new`);
-
 	switchToAddEditForm();
 
 	fetch(SERVER_ADDRESS + '/rest/attributes/search?entityName=' + contentType)
@@ -657,16 +671,18 @@ function showNoteForm(id, entityName, parentNoteId, parentNoteAttribute, side)
 		var menu = document.createElement("div");
 		menu.style.justifySelf = "right";
 		var deleteNoteButton = document.createElement("a");
-		deleteNoteButton.href = "#";
 		setImageClass(deleteNoteButton, "delete-note-image", true);
 		deleteNoteButton.setAttribute(NOTE_ID, id);
+		deleteNoteButton.setAttribute(CONTENT_TYPE, contentType);
 		deleteNoteButton.onclick = function() 
 		{
 			var result = confirm("Delete note?");
 			if (result)
 			{
-				deleteNote(this.getAttribute(NOTE_ID))
-				.then(switchToContent());
+				deleteNote(this.getAttribute(NOTE_ID), this.getAttribute(CONTENT_TYPE))
+				.then(() => {
+					window.history.back();
+				});
 			}
 		}
 		menu.appendChild(deleteNoteButton);
@@ -676,7 +692,6 @@ function showNoteForm(id, entityName, parentNoteId, parentNoteAttribute, side)
 			hideNoteButton.style.display = "none";
 		hideNoteButton.id = "hide-note-button";
 		setImageClass(hideNoteButton, "hidden-image", true);
-		hideNoteButton.href = "#";
 		hideNoteButton.setAttribute(NOTE_ID, id);
 		hideNoteButton.setAttribute(CONTENT_TYPE, contentType);
 		hideNoteButton.onclick = function() 
@@ -713,7 +728,6 @@ function showNoteForm(id, entityName, parentNoteId, parentNoteAttribute, side)
 		var cloneButton = document.createElement("a");
 		if (parentNoteId)
 			cloneButton.style.display = "none";
-		cloneButton.href = "#";
 		cloneButton.id = "copy-note-button";
 		setImageClass(cloneButton, "copy-note-image", true);
 		cloneButton.onclick = function() 
@@ -726,8 +740,6 @@ function showNoteForm(id, entityName, parentNoteId, parentNoteAttribute, side)
 
 		dataElement.appendChild(menu);
 
-		recreateErrorLabel(DATA_ELEMENT);
-
 		if (id)
 		{
 			fetch(SERVER_ADDRESS + "/rest/notes/" + contentType + "/" + id)
@@ -739,13 +751,13 @@ function showNoteForm(id, entityName, parentNoteId, parentNoteAttribute, side)
 					changeImageClass(hideButton, "hidden-image", "visible-image");
 				}
 				prepareNoteAttributes(dataElement, note, attributes);
-				createNoteActionButtons(dataElement, id, parentNoteId, parentNoteAttribute, side);
+				createNoteActionButtons(dataElement, id, parentNoteId, parentNoteAttribute, side, contentType);
 			})
 		}
 		else
 		{
 			prepareNoteAttributes(dataElement, null, attributes);
-			createNoteActionButtons(dataElement, id, parentNoteId, parentNoteAttribute, side);
+			createNoteActionButtons(dataElement, id, parentNoteId, parentNoteAttribute, side, contentType);
 		}
 	});
 }
@@ -772,8 +784,9 @@ function prepareNoteAttributes(dataElement, note, attributes)
 			case "select":
 				var input = createFormInput("select", attribute);
 				addOptions(input, attribute.selectOptions);
-				input.value = getStringValueOrDefault(note, attribute);
-				input.className += " limitedInputWidth";	
+				var val = getStringValueOrDefault(note, attribute);
+				input.value = val.split("=")[0];
+				input.classList.add("limitedInputWidth");
 				dataElement.appendChild(input);
 				break;
 
@@ -817,7 +830,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 			case "inc":
 				var input = createFormInput("input", attribute, "number");
 				input.value = getStringValueOrDefault(note, attribute);
-				input.className += " limitedInputWidth";
+				input.classList.add("limitedInputWidth");
 				if (attribute.min != null)
 					input.min = attribute.min;
 				if (attribute.max != null)
@@ -868,7 +881,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 			case "user time":
 				var input = createFormInput("input", attribute, (attribute.type == "user date") ? "date" : "time");
 				input.value = getStringValueOrDefault(note, attribute);
-				input.className += " limitedInputWidth";
+				input.classList.add("limitedInputWidth");
 				dataElement.appendChild(input);
 				break;
 
@@ -887,7 +900,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 
 				var fileName = document.createElement("label");
 				fileName.id = input.id + "-label";
-				fileName.className += " file";
+				fileName.classList.add("file");
 				fileDiv.appendChild(fileName);
 				fileName.onclick = function()
 				{
@@ -906,7 +919,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 
 				var fileButton = createInputButton();
 				fileButton.setAttribute("related-button-id", input.id);
-				fileButton.className += " " + UPLOAD_FILE_BUTTON;
+				fileButton.classList.add(UPLOAD_FILE_BUTTON);
 				fileButton.onclick = function() 
 				{
 					var relatedButtonId = this.getAttribute("related-button-id");
@@ -916,7 +929,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 
 				var deleteFileButton = createInputButton(input.id + "-delete");
 				deleteFileButton.setAttribute("related-input-id", input.id);
-				deleteFileButton.className += " " + DELETE_FILE_BUTTON;
+				deleteFileButton.classList.add(DELETE_FILE_BUTTON);
 				deleteFileButton.onclick = function() 
 				{
 					var relatedInputId = this.getAttribute("related-input-id");
@@ -945,7 +958,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 					var image = document.createElement("img");
 					image.id = input.id + "-image";
 					image.style.display = "none";
-					image.className += " twoCols";
+					image.classList.add(TWO_COLS);
 					image.alt = attribute.title;
 					setElementSizeAtPage(image, attribute);
 					image.style.justifySelf = attribute.alignment;
@@ -1004,7 +1017,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 
 				var addButton = createInputButton();
 				addButton.setAttribute("related-button-id", attribute.name);
-				addButton.className += " " + UPLOAD_FILE_BUTTON;
+				addButton.classList.add(UPLOAD_FILE_BUTTON);
 				addButton.style.justifySelf = "right";
 				addButton.onclick = function() 
 				{
@@ -1014,7 +1027,8 @@ function prepareNoteAttributes(dataElement, note, attributes)
 				dataElement.appendChild(addButton);
 				
 				var gallery = createFormInput("div", attribute);
-				gallery.className += " gallery twoCols";
+				gallery.classList.add(TWO_COLS);
+				gallery.classList.add("gallery");
 				gallery.id = attribute.name + "-gallery";
 				setElementSizeAtPage(gallery, attribute);
 				gallery.style.minWidth = "100%";
@@ -1066,7 +1080,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 
 				var addButton = createInputButton();
 				addButton.setAttribute("related-button-id", attribute.name + "-input");
-				addButton.className += " " + UPLOAD_FILE_BUTTON;
+				addButton.classList.add(UPLOAD_FILE_BUTTON);
 				addButton.style.justifySelf = "right";
 				addButton.onclick = function() 
 				{
@@ -1129,16 +1143,16 @@ function prepareNoteAttributes(dataElement, note, attributes)
 				dataMenu.style.padding = "0";
 			
 				var addNoteButton = document.createElement("a");
-				addNoteButton.setAttribute("parent-note-id", note.id);
+				addNoteButton.setAttribute(PARENT_NOTE_ID, note.id);
 				addNoteButton.setAttribute("parent-note-attribute", attribute.name);
 				addNoteButton.setAttribute("entity-name", attribute.entity);
 				setImageClass(addNoteButton, NEW_NOTE_IMAGE);
-				addNoteButton.href = "#";
 				addNoteButton.onclick = function() 
 				{
+					pushNoteState(null, this.getAttribute("entity-name"), this.getAttribute(PARENT_NOTE_ID));
 					showNoteForm(null, 
 						this.getAttribute("entity-name"), 
-						this.getAttribute("parent-note-id"), 
+						this.getAttribute(PARENT_NOTE_ID), 
 						this.getAttribute("parent-note-attribute")); 
 				};
 				dataMenu.appendChild(addNoteButton);
@@ -1164,6 +1178,11 @@ function prepareNoteAttributes(dataElement, note, attributes)
 
 			case "compared notes":
 
+				var titles = attribute.title.split(";");
+				var hasSeparateTitles = (titles.length == 2);
+				if (hasSeparateTitles)
+					dataElement.removeChild(label);
+
 				var comparedNotes = document.createElement("div");
 				comparedNotes.classList.add(TWO_COLS);
 				comparedNotes.classList.add(DATA_TABLE);
@@ -1171,8 +1190,8 @@ function prepareNoteAttributes(dataElement, note, attributes)
 				comparedNotes.style.gridTemplateColumns = "1fr 1fr";
 				comparedNotes.style.minWidth = "100%";
 				
-				addComparedNotesMenu(comparedNotes, "left", note, attribute);
-				addComparedNotesMenu(comparedNotes, "right", note, attribute);
+				addComparedNotesMenu(comparedNotes, "left", note, attribute, hasSeparateTitles ? titles[0] : null);
+				addComparedNotesMenu(comparedNotes, "right", note, attribute, hasSeparateTitles ? titles[1] : null);
 
 				var leftTable = addComparedNotesTable(comparedNotes, "left", attribute);
 				var rightTable = addComparedNotesTable(comparedNotes, "right", attribute);
@@ -1303,11 +1322,11 @@ function asyncDownloadImage(fileId, inputId, size)
 			img.onclick = function()
 			{
 				var popup = document.createElement("div");
-				popup.className += " popup";
+				popup.classList.add("popup");
 				popup.onclick = function() { setTimeout(() => this.parentNode.removeChild(this), 0); }
 				var popupImage = document.createElement("img");
 				popupImage.setAttribute("related-img-id", img.id);
-				popupImage.className += "popup-img";
+				popupImage.classList.add("popup-img");
 				popupImage.onclick = function() { setTimeout(() => this.parentNode.parentNode.removeChild(this.parentNode), 0); }
 				popup.appendChild(popupImage);
 
@@ -1338,12 +1357,11 @@ function asyncDownloadImage(fileId, inputId, size)
 			}
 
 			var buttons = document.createElement("span");
-			buttons.className += " icon-buttons";
+			buttons.classList.add("icon-buttons");
 
 			var download = document.createElement("a");
 			download.id = inputId + "-" + fileId;
 			setImageClass(download, "download-image");
-			download.href = "#";
 			download.setAttribute(FILE_ID, fileId);
 			download.onclick = function() 
 			{
@@ -1358,7 +1376,6 @@ function asyncDownloadImage(fileId, inputId, size)
 
 			var remove = document.createElement("a");
 			setImageClass(remove, "remove-image");
-			remove.href = "#";
 			remove.setAttribute("related-input-id", img.id);
 			remove.onclick = function() 
 			{ 
@@ -1404,7 +1421,6 @@ function addFileCollectionRow(metadata, filesCollection)
 
 	var downloadButton = document.createElement("a");
 	setImageClass(downloadButton, "download-image");
-	downloadButton.href = "#";
 	downloadButton.setAttribute(FILE_ID, metadata.id);
 	downloadButton.setAttribute("title", metadata.title);
 	downloadButton.onclick = function() 
@@ -1420,7 +1436,7 @@ function addFileCollectionRow(metadata, filesCollection)
 	filesCollection.appendChild(downloadButton);
 
 	var deleteButton = document.createElement("span");
-	deleteButton.className += " " + DELETE_BUTTON;
+	deleteButton.classList.add(DELETE_BUTTON);
 	deleteButton.setAttribute(FILE_ID, metadata.id);
 	deleteButton.onclick = function() 
 	{
@@ -1474,23 +1490,24 @@ function setElementSizeAtPage(element, attribute)
 }
 
 
-function createNoteActionButtons(dataElement, id, parentNoteId, parentNoteAttribute, side)
+function createNoteActionButtons(dataElement, id, parentNoteId, parentNoteAttribute, side, contentType)
 {
-	if (id)
-		setContentId(id);
-	else
-		clearContentId();
-
-	var editHandler = function() { showCurrentContent() };
+	var cancelHandler = function() 
+	{
+		window.history.back();
+		if (!this.hasAttribute(PARENT_NOTE_ID))
+			showCurrentContent(this.getAttribute(CONTENT_TYPE)) 
+	};
 	var saveHandler = function() 
 	{
 		var objectToSave = new Object();
 
-		var contentId = getContentId();
+		var contentId = this.getAttribute(CONTENT_ID);
 		if (contentId != null)
 			objectToSave.id = contentId;
 
-		var parentId = this.getAttribute("parent-note-id");
+		var contentType = this.getAttribute(CONTENT_TYPE);
+		var parentId = this.getAttribute(PARENT_NOTE_ID);
 		var parentAttr = this.getAttribute("parent-note-attribute");
 		var side = this.getAttribute("side");
 		if (side && parentId && parentAttr)
@@ -1500,7 +1517,7 @@ function createNoteActionButtons(dataElement, id, parentNoteId, parentNoteAttrib
 
 		objectToSave.attributes = getNoteFromForm(dataElement);
 
-		fetch(SERVER_ADDRESS + '/rest/notes/' + getContentType(), {
+		fetch(SERVER_ADDRESS + '/rest/notes/' + contentType, {
 			method: objectToSave.id == null ? "POST" : "PUT",
 			body: JSON.stringify(objectToSave),
 			headers: { "Accept": TEXT_PLAIN, "Content-Type": APPLICATION_JSON }
@@ -1508,28 +1525,30 @@ function createNoteActionButtons(dataElement, id, parentNoteId, parentNoteAttrib
 		.then(response => {
 			if (response.status === 200)
 			{
-				if (this.getAttribute("parent-note-id"))
-				{
-					// TODO return by window.history pop from stack
-					showCurrentContent();
-				}
-				else
-				{
-					showCurrentContent();
-				}
+				window.history.back();
+				if (!this.hasAttribute(PARENT_NOTE_ID))
+					showCurrentContent(contentType);
 			}
 		});
 	};
 
-	addFormButtons(dataElement, id != null, saveHandler, editHandler);
+	addFormButtons(dataElement, id != null, saveHandler, cancelHandler);
+
+	var cancelButton = document.getElementById("cancel-button");
+	cancelButton.setAttribute(CONTENT_TYPE, contentType);
+	if (parentNoteId)
+		cancelButton.setAttribute("parent-note-id", parentNoteId);
 
 	var saveButton = document.getElementById("save-button");
+	saveButton.setAttribute(CONTENT_TYPE, contentType);
 	if (parentNoteId)
 		saveButton.setAttribute("parent-note-id", parentNoteId);
 	if (parentNoteAttribute)
 		saveButton.setAttribute("parent-note-attribute", parentNoteAttribute);
 	if (side)
 		saveButton.setAttribute("side", side);
+	if (id)
+		saveButton.setAttribute(CONTENT_ID, id);
 }
 
 
@@ -1564,9 +1583,9 @@ function openDownloadPrompt(fileData, title)
 }
 
 
-function updateNote(objectToSave, id)
+function updateNote(objectToSave, id, contentType)
 {
-	return fetch(SERVER_ADDRESS + '/rest/notes/' + getContentType() + "/" + id, {
+	return fetch(SERVER_ADDRESS + '/rest/notes/' + contentType + "/" + id, {
 		method: "PUT",
 		body: JSON.stringify(objectToSave),
 		headers: { "Accept": TEXT_PLAIN, "Content-Type": APPLICATION_JSON }
@@ -1596,30 +1615,45 @@ function setWidthRangeInTable(element, attribute)
 		element.style.minWidth = attribute.minWidth;
 }
 
-function addComparedNotesMenu(parent, side, note, attribute)
+function addComparedNotesMenu(parent, side, note, attribute, title)
 {
+	var envelope = document.createElement("div");
+
+	if (title)
+	{
+		envelope.style.display = "grid";
+		envelope.style.gridTemplateColumns = "auto auto";
+
+		var label = document.createElement("label");
+		label.innerText = title;
+		label.style.fontWeight = "bold";
+		envelope.appendChild(label);
+	}
+
 	var menu = document.createElement("div");
 	menu.classList.add(DATA_MENU);
 	menu.style.padding = "0";
 
 	var addNoteButton = document.createElement("a");
-	addNoteButton.setAttribute("parent-note-id", note.id);
-	addNoteButton.setAttribute("parent-note-attribute", attribute.name);
 	addNoteButton.setAttribute("entity-name", attribute.entity);
+	addNoteButton.setAttribute(PARENT_NOTE_ID, note.id);
+	addNoteButton.setAttribute("parent-note-attribute", attribute.name);
 	addNoteButton.setAttribute("side", side);
 	setImageClass(addNoteButton, NEW_NOTE_IMAGE);
-	addNoteButton.href = "#";
 	addNoteButton.onclick = function() 
-	{ 
+	{
+		pushNoteState(null, this.getAttribute("entity-name"), this.getAttribute(PARENT_NOTE_ID));
 		showNoteForm(null, 
 			this.getAttribute("entity-name"), 
-			this.getAttribute("parent-note-id"), 
+			this.getAttribute(PARENT_NOTE_ID), 
 			this.getAttribute("parent-note-attribute"), 
 			this.getAttribute("side")); 
 	};
 
 	menu.appendChild(addNoteButton);
-	parent.appendChild(menu);
+
+	envelope.appendChild(menu);
+	parent.appendChild(envelope);
 }
 
 function addComparedNotesTable(parent, side, attribute)

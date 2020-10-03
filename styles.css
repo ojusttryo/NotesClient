@@ -48,6 +48,7 @@ body
 {
 	font-size: var(--menuFontSize);
 	max-width: 15%;
+	min-width: 12%;
 	order: 1;
 	background-color: white;
 	padding: var(--padding);
@@ -88,7 +89,7 @@ body
 	background-color: white;
 }
 
-input, select
+input, select, textarea
 {
 	font-size: var(--selectSize);
 }
@@ -434,4 +435,9 @@ input[type=checkbox]
 .search-input-text
 {
 	width: 100%;
+}
+
+img
+{
+	border-radius: 5px;
 }

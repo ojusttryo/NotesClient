@@ -1,11 +1,17 @@
 
 
-
+window.addEventListener('popstate', (event) => 
+{
+	console.log("location: " + document.location + ", state: " + JSON.stringify(event.state));
+	handleRequest();
+});
 
 
 
 function handleRequest()
 {
+	console.log("redirect " + window.location.pathname);
+
 	var pathname = window.location.pathname.startsWith('/') ? window.location.pathname.substring(1) : window.location.pathname;
 	if (pathname == "")
 	{
@@ -26,63 +32,59 @@ function handleRequest()
 
 			case "entity":
 				loadMenu();
-				createEntityForm(null);
+				if (path[1] == null)
+					showError("Wrong url");
+				createEntityForm(path[1] == "new" ? null : path[1]);
 				switchToAddEditForm();
 				break;
 
 			case "entities":
 				loadMenu();
-				if (path[1] == null)
-				{
-					switchToContent();
-					showEntities();
-				}
-				else
-				{
-					switchToAddEditForm();
-					setContentName(path[1]);
-					createEntityForm(path[1]);
-				}
+				switchToContent();
+				showEntities();
 				break;
 
 			case "attribute":
 				loadMenu();
-				createAttributeForm(null);
+				if (path[1] == null)
+					showError("Wrong url");
+
+				if (path[1] == "new")
+					showAttributeForm(null);
+				else
+					createEditAttributeForm(path[1]);
 				switchToAddEditForm();
 				break;
 
 			case "attributes":
 				loadMenu();
-				if (path[1] == null)
-				{
-					switchToContent();
-					showAttributes();
-				}
-				else
-				{
-					switchToAddEditForm();
-					setContentName(path[1]);
-					createEditAttributeForm(path[1]);
-				}
+				showAttributes();
+				switchToContent();
 				break;
 				
 			default:
 				loadMenu()
 				.then(() => {
 					var entities = document.getElementById(MENU_LIST).getElementsByTagName("li");
+					var contentType = path[0];
+					var params = getParametersFromUrl();
 					// All notes
 					if (path[1] == null)
 					{
 						for (var e = 0; e < entities.length; e++)
 						{
-							if (entities[e].getAttribute(CONTENT_TYPE) == path[0])
+							if (entities[e].getAttribute(CONTENT_TYPE) == contentType)
 							{
-								entities[e].onclick();
+								var searchAttribute = params["searchAttribute"];
+								var searchRequest = params["searchRequest"];
+								if (searchAttribute != null && searchRequest != null)
+									showSearchResult(searchAttribute, searchRequest, contentType);
+								else
+									showContentTableWithNotes(contentType); 
 								return;
 							}
 						}
 	
-						recreateErrorLabel(CONTENT);
 						showError("No such entity");
 					}
 					// One note (new or already existent)
@@ -92,13 +94,12 @@ function handleRequest()
 						{
 							if (entities[e].getAttribute(CONTENT_TYPE) == path[0])
 							{
-								setContentType(entities[e].getAttribute(CONTENT_TYPE));
-								showNoteForm((path[1] == "new") ? null : path[1]);
+								var id = (path[1] == "new") ? null : path[1];
+								showNoteForm(id, path[0], params["parentId"]);
 								return;
 							}
 						}
 	
-						recreateErrorLabel(CONTENT);
 						showError("No such entity or note");
 					}
 				});
@@ -117,7 +118,6 @@ function loadMenu()
 	.then(response => response.json())
 	.then(entities => {
 		var menuList = getEmptyElement(MENU_LIST);
-		entities = entities.filter(entity => entity.visible);
 
 		for (var i = 0; i < entities.length; i++)
 		{
@@ -125,10 +125,17 @@ function loadMenu()
 			var name = entities[i].name;
 			var li = document.createElement("li");
 			li.setAttribute(CONTENT_TYPE, name);
-			li.onclick = function() { showContentTableWithNotes(this.getAttribute(CONTENT_TYPE)); };
+			li.onclick = function() 
+			{
+				window.history.pushState("showContentTableWithNotes", "Notes", `/${this.getAttribute(CONTENT_TYPE)}`);
+				showContentTableWithNotes(this.getAttribute(CONTENT_TYPE)); 
+			};
 			li.id = name + "-button";
 			li.innerText = title;
 			menuList.appendChild(li);
+
+			if (!entities[i].visible)
+				li.style.display = "none";
 		}
 	
 		if (entities.length > 0)
@@ -138,12 +145,20 @@ function loadMenu()
 	
 		var attributesLi = document.createElement("li");
 		attributesLi.innerText = "Attributes";
-		attributesLi.onclick = function() { showAttributes(); };
+		attributesLi.onclick = function() 
+		{
+			pushAttributeTableState();
+			showAttributes(); 
+		};
 		menuList.appendChild(attributesLi);
 	
 		var entitiesLi = document.createElement("li");
 		entitiesLi.innerText = "Entities";
-		entitiesLi.onclick = function() { showEntities(); };
+		entitiesLi.onclick = function() 
+		{ 
+			pushEntityTableState();
+			showEntities(); 
+		};
 		menuList.appendChild(entitiesLi);
 
 		var logLi = document.createElement("li");
@@ -200,9 +215,9 @@ function showLog()
 
 
 
-function showCurrentContent()
+function showCurrentContent(contentType)
 {
-	showContentTableWithNotes(getContentType());
+	showContentTableWithNotes(contentType);
 	switchToContent();
 }
 
@@ -466,10 +481,12 @@ function addLeadingZeroIfLessThan10(number)
 function createMultiselectWithCheckboxes(attrName, options)
 {
 	var multiselect = document.createElement("div");
-	multiselect.className += " multiselect doNotStretch";
+	multiselect.classList.add("multiselect");
+	multiselect.classList.add(DO_NOT_STRETCH);
 
 	var selectBox = document.createElement("div");
-	selectBox.className += " selectBox doNotStretch";
+	selectBox.classList.add("selectBox");
+	selectBox.classList.add(DO_NOT_STRETCH);
 	selectBox.setAttribute("attribute", attrName);
 	selectBox.onclick = function() { showCheckboxes(this); };
 
@@ -489,7 +506,7 @@ function createMultiselectWithCheckboxes(attrName, options)
 	select.appendChild(option);
 
 	var overSelect = document.createElement("div");
-	overSelect.className += " overSelect";
+	overSelect.classList.add("overSelect");
 
 	selectBox.appendChild(select);
 	selectBox.appendChild(overSelect);
@@ -538,11 +555,11 @@ function showCheckboxes(selectBox)
 }
 
 
-function saveMetaObjectInfo(parentId, restUrl, afterSaveHandler)
+function saveMetaObjectInfo(restUrl, afterSaveHandler)
 {
-    var parent = document.getElementById(parentId);
-	var objectToSave = getMetaObjectFromForm(parent);
-	var name = getContentId();
+    var dataElement = document.getElementById(DATA_ELEMENT);
+	var objectToSave = getMetaObjectFromForm(dataElement);
+	var name = dataElement.getAttribute(CONTENT_ID);
     if (name)
         objectToSave.name = name;
 
@@ -577,7 +594,7 @@ function addInputWithLabel(type, stretch, parent, attrName, labelText, inputId)
     input.id = inputId;
 	input.setAttribute(ATTRIBUTE_NAME, attrName);
 	if (!stretch)
-		input.className += " doNotStretch";
+		input.classList.add(DO_NOT_STRETCH);
 
 	var label = document.createElement("label");
 	label.innerText = labelText;
@@ -594,7 +611,7 @@ function addSelectWithLabel(parent, attrName, labelText, inputId, options)
     var select = document.createElement("select");
     select.id = inputId;
 	select.setAttribute(ATTRIBUTE_NAME, attrName);
-	select.className += " doNotStretch";
+	select.classList.add(DO_NOT_STRETCH);
 
 	addOptions(select, options);
 
@@ -612,7 +629,7 @@ function addButton(parent, buttonId, buttonValue, onclick)
     var input = createInputButton(buttonId);
 	input.value = buttonValue;
 	input.style.display = "grid";
-	input.className += " doNotStretch";
+	input.classList.add(DO_NOT_STRETCH);
     input.onclick = onclick;
 
     parent.appendChild(input);
@@ -669,52 +686,6 @@ function convertObjectToArray(attributes)
 }
 
 
-function getContentType()
-{
-	return document.getElementById(CONTENT).getAttribute(CONTENT_TYPE);
-}
-
-function setContentType(contentType)
-{
-	document.getElementById(CONTENT).setAttribute(CONTENT_TYPE, contentType);
-}
-
-function clearContentType()
-{
-	document.getElementById(CONTENT).removeAttribute(CONTENT_TYPE);
-}
-
-function setContentName(contentName)
-{
-	document.getElementById(CONTENT).setAttribute(CONTENT_NAME, contentName);
-}
-
-function getContentName()
-{
-	return document.getElementById(CONTENT).getAttribute(CONTENT_NAME);
-}
-
-function clearContentName()
-{
-	document.getElementById(CONTENT).removeAttribute(CONTENT_NAME);
-}
-
-function setContentId(contentId)
-{
-	document.getElementById(CONTENT).setAttribute(CONTENT_ID, contentId);
-}
-
-function getContentId()
-{
-	return document.getElementById(CONTENT).getAttribute(CONTENT_ID);
-}
-
-function clearContentId()
-{
-	document.getElementById(CONTENT).removeAttribute(CONTENT_ID);
-}
-
-
 function addOptions(select, options)
 {
 	for (var value of options)
@@ -747,34 +718,12 @@ function hideError()
 		errorLabel.style.display = "none";
 }
 
-function createErrorLabel(dataElement)
-{
-	return;
-
-	var errorLabel = document.createElement("label");
-    errorLabel.id = "error-label";
-    errorLabel.style.display = "none";
-    errorLabel.className += " twoCols";
-    dataElement.appendChild(errorLabel);
-}
-
-function recreateErrorLabel(parentId)
-{
-	return;
-
-	var errorLabel = document.getElementById("error-label");
-	if (errorLabel)
-		errorLabel.parentNode.removeChild(errorLabel);
-
-	var parent = document.getElementById(parentId);
-	createErrorLabel(parent);
-}
 
 function addFormButtons(parent, isNewObject, saveHandler, cancelHandler)
 {
 	var buttons = document.createElement("div");
-    buttons.className += " objectButtons";
-    buttons.className += " twoCols";
+	buttons.classList.add("objectButtons");
+	buttons.classList.add(TWO_COLS);
 	var saveButton = addButton(buttons, "save-button", isNewObject ? "Edit" : "Save", saveHandler);
     addButton(buttons, "cancel-button", "Cancel", cancelHandler);
 	parent.appendChild(buttons);
@@ -860,4 +809,53 @@ function setImageClass(element, newClass, hasMargin)
 		element.style.marginLeft = "5px";
 		element.style.marginRight = "5px";
 	}
+}
+
+function pushNoteState(id, contentType, parentId)
+{
+	var url = id ? `/${contentType}/${id}` : `/${contentType}/new`;
+	if (!parentId || parentId == "undefined")
+		window.history.pushState("showNoteForm", "Note", url);
+	else
+		window.history.pushState("showNoteForm", "Note", url + "?parentId=" + parentId);
+}
+
+function pushNoteTableState(contentType)
+{
+	window.history.pushState("showNotesTable", "Notes", `/${contentType}`);
+}
+
+function pushEntityTableState()
+{
+	window.history.pushState("", "Entities", "/entities");
+}
+
+function pushEntityState(entityName)
+{
+	var entity = entityName ? entityName : "new";
+	window.history.pushState("entity", "Entity", "/entity/" + entity);
+}
+
+function pushAttributeTableState()
+{
+	window.history.pushState("", "Attributes", "/attributes");
+}
+
+function pushAttributeState(attributeName)
+{
+	var attr = attributeName ? attributeName : "new";
+	window.history.pushState("attribute", "Attribute", "/attribute/" + attr);
+}
+
+function getParametersFromUrl() 
+{
+    var result = new Object();
+    var tmp = [];
+    var items = location.search.substr(1).split("&");
+	for (var i = 0; i < items.length; i++)
+	{
+		tmp = items[i].split("=");
+		result[tmp[0]] = decodeURIComponent(tmp[1]);
+    }
+    return result;
 }

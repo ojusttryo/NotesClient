@@ -12,8 +12,6 @@ function showAttributes()
         if (!attributes)
 		    return;
 
-        window.history.pushState("", "Attributes", "/attributes");
-
         var table = getEmptyElement(DATA_TABLE);
         createAttributesTableHead(table);
         createAttributesTableBody(table, attributes);
@@ -27,8 +25,9 @@ function showAttributesMenu()
 	var addAttributeButton = createInputButton();
 	addAttributeButton.value = "New attribute";
     addAttributeButton.onclick = function() 
-    { 
-        createAttributeForm(null);
+    {
+        pushAttributeState(null);
+        showAttributeForm(null, null);
         switchToAddEditForm();
     };
 
@@ -38,10 +37,10 @@ function showAttributesMenu()
 
 function createAttributesTableHead(table)
 {
-    setContentColumnsCount(4);      // 4 - without buttons
-    document.getElementById(DATA_TABLE).style.gridTemplateColumns = "repeat(var(--tableColumnsCount), auto) min-content min-content";
+    setContentColumnsCount(3);      // 3 - without buttons and row number
+    document.getElementById(DATA_TABLE).style.gridTemplateColumns = "min-content repeat(var(--tableColumnsCount), auto) min-content min-content";
 
-	appendNewSpan(table, "№");
+    appendNewSpanAligning(table, "№", "center");
     appendNewSpan(table, "Title");
     appendNewSpan(table, "Name");
     appendNewSpan(table, "Type");
@@ -53,23 +52,24 @@ function createAttributesTableBody(table, attributes)
 {
 	for (var i = 0; i < attributes.length; i++)
 	{
-        appendNewSpan(table, (i + 1).toString());
+        appendNewSpanAligning(table, (i + 1).toString(), "right");
         appendNewSpan(table, attributes[i].title);
         appendNewSpan(table, attributes[i].name);
         appendNewSpan(table, attributes[i].type);
 
-		var editButton = document.createElement("td");
-        editButton.className += " " + EDIT_BUTTON;
+        var editButton = document.createElement("td");
+        editButton.classList.add(EDIT_BUTTON);
         editButton.setAttribute(ATTRIBUTE_NAME, attributes[i].name);
         editButton.onclick = function() 
         {
+            pushAttributeState(this.getAttribute(ATTRIBUTE_NAME));
             createEditAttributeForm(this.getAttribute(ATTRIBUTE_NAME));
             switchToAddEditForm();
         };
 		table.appendChild(editButton);		
 
-		var deleteButton = document.createElement("td");
-        deleteButton.className += " " + DELETE_BUTTON;
+        var deleteButton = document.createElement("td");
+        deleteButton.classList.add(DELETE_BUTTON);
         deleteButton.setAttribute(ATTRIBUTE_NAME, attributes[i].name);
         deleteButton.onclick = function() 
         {
@@ -87,7 +87,10 @@ function deleteAttribute(name)
     fetch(SERVER_ADDRESS + '/rest/attributes/' + name, { method: "DELETE" })
     .then(response => {
         if (response.status === 200)
+        {
+            pushAttributeTableState();
             showAttributes();
+        }
     });
 }
 
@@ -97,33 +100,33 @@ function createEditAttributeForm(name)
     fetch(SERVER_ADDRESS + '/rest/attributes/search?name=' + name)
     .then(response => response.json())
     .then(attribute => {
-        createAttributeForm(name);
-        fillAttributeValuesOnForm(attribute);
+        showAttributeForm(name, attribute);
     });
 }
 
 
-function createAttributeForm(attributeName)
+function showAttributeForm(name, attribute)
+{
+    createAttributeForm(name, attribute);
+    if (attribute)
+        fillAttributeValuesOnForm(attribute);
+    document.getElementById("attribute-type").onchange();
+}
+
+
+function createAttributeForm(attributeName, attribute)
 {
     var dataElement = getEmptyElement(DATA_ELEMENT);
 
-    recreateErrorLabel(DATA_ELEMENT);
-
     if (attributeName)
-    {
-        setContentId(attributeName);
-        window.history.pushState("", "Attribute", "/attributes/" + attributeName);
-    }
+        dataElement.setAttribute(CONTENT_ID, attributeName);
     else
-    {
-        window.history.pushState("", "Attribute", "/attribute");
-        clearContentId();
-    }
+        dataElement.removeAttribute(CONTENT_ID);
 
     var alignments = [ "left", "right", "center" ];
     var types = [ "row number", "text", "textarea", "delimited text", "number", "select", "multiselect", "checkbox", "inc", "url", 
         "save time", "update time", "user date", "user time", "file", "image", "files", "gallery", "related notes", "nested notes", "compared notes"];
-    var methods = [ "none", "folder name", "avg", "count" ];
+    var methods = [ "none", "avg", "count", "empty", "max", "min", "range", "sum" ];
     var imageSizes = [ "50x50", "100x100", "200x200" ];
 
     addInputWithLabel("text",     true,  dataElement, "title",           "Title",                       "attribute-title");
@@ -149,11 +152,18 @@ function createAttributeForm(attributeName)
     addInputWithLabel("text",     true,  dataElement, "regex",           "Regular expression to check", "attribute-regex");
     addInputWithLabel("text",     false, dataElement, "delimiter",       "Delimiter",                   "attribute-delimiter");
 
-    var saveHandler = function() { saveMetaObjectInfo(DATA_ELEMENT, "/rest/attributes", showAttributes) };
-    var cancelHandler = function() { showAttributes() };
+    var saveHandler = function() { saveMetaObjectInfo("/rest/attributes", showAttributes) };
+    var cancelHandler = function() 
+    { 
+        window.history.back();
+        showAttributes() 
+    };
     addFormButtons(dataElement, attributeName != null, saveHandler, cancelHandler, attributeName);
     
     document.getElementById("attribute-date-format").placeholder = "https://momentjs.com/";
+
+    if (attribute && attribute.entity)
+        document.getElementById("attribute-entity").setAttribute(ENTITY, attribute.entity);
 
     // Changing the type of attribute, other fields may become excess
     document.getElementById("attribute-type").onchange = function() 
@@ -176,7 +186,7 @@ function createAttributeForm(attributeName)
         showInputAndLabelIf("attribute-required", isTextual(type) || isNumeric(type) || type == "select" || isFile(type) || type == "url" || isUserDateOrTime(type));
         showInputAndLabelIf("attribute-method",  !isSkippableAttributeInNotesTable(type));
         showInputAndLabelIf("attribute-delimiter", type == "delimited text");
-        showInputAndLabelIf("attribute-entity", type == "nested notes");
+        showInputAndLabelIf("attribute-entity", type == "nested notes" || type == "compared notes");
         showInputAndLabelIf("attribute-alignment", !isNotesList(type) && !isMultifile(type));
 
         document.getElementById("attribute-max-width-label").innerText = isSizableOnForm(type) ? "Max width at page" : "Max width in table";
@@ -211,8 +221,6 @@ function createAttributeForm(attributeName)
             .then(entities => {
                 var select = getEmptyElement("attribute-entity");
                 
-                entities = entities.filter(entity => entity.visible);
-
                 for (var i = 0; i < entities.length; i++)
                 {
                     var option = document.createElement("option");
@@ -220,18 +228,21 @@ function createAttributeForm(attributeName)
                     option.value = entities[i].name;
                     select.appendChild(option);
                 }
+
+                var entity = select.getAttribute(ENTITY);
+                if (entity)
+                    select.value = entity;
             });
         }
     }
-    document.getElementById("attribute-type").onchange();
 }
 
 
 function fillAttributeValuesOnForm(attribute)
 {
+    document.getElementById("attribute-type").value = attribute["type"];
     document.getElementById("attribute-name").value = attribute["name"];
     document.getElementById("attribute-title").value = attribute["title"];
-    document.getElementById("attribute-type").value = attribute["type"];
     document.getElementById("attribute-select-options").value = attribute["selectOptions"] != null ? attribute["selectOptions"].join("; ") : "";
     if (attribute["dateFormat"] != null)
         document.getElementById("attribute-date-format").value = attribute["dateFormat"];
@@ -251,8 +262,7 @@ function fillAttributeValuesOnForm(attribute)
     document.getElementById("attribute-regex").value = attribute["regex"];
     document.getElementById("attribute-lines-count").value = attribute["linesCount"];
     document.getElementById("attribute-delimiter").value = attribute["delimiter"];
-
-    document.getElementById("attribute-type").onchange();
+    document.getElementById("attribute-entity").value = attribute["entity"];
 }
 
 
