@@ -483,6 +483,11 @@ function createNotesTableBody(table, attributes, notes, contentType, parentNoteI
 						table.appendChild(cell);
 						break;
 					}
+
+					cell.style.display = "flex";
+					cell.style.flexWrap = "wrap";
+					cell.style.alignItems = "center";
+					cell.style.justifyContent = attribute.alignment;
 					
 					var values = (attribute.type == "delimited text") ? currentValue.split(attribute.delimiter).map(function (x) { return x.trim() }) : currentValue;
 					for (var k = 0; k < values.length; k++)
@@ -629,17 +634,27 @@ function createButtonToDeleteNote(id, contentType)
 	deleteButton.setAttribute(CONTENT_TYPE, contentType);
 	deleteButton.onclick = function() 
 	{
-		var result = confirm("Delete note?");
-		if (result)
-		{
-			deleteNote(this.getAttribute(NOTE_ID), this.getAttribute(CONTENT_TYPE))
-			.then(response => {
-				if (response.status === 500)
-					showError(response.message);
-				else if (response.status === 200)
-					window.location.reload();
-			});
-		}
+		var contentType = this.getAttribute(CONTENT_TYPE);
+		var noteId = this.getAttribute(NOTE_ID);
+		fetch(`${SERVER_ADDRESS}/rest/notes/${contentType}/${noteId}/key`)
+		.then(keyAttrResponse => keyAttrResponse.text())
+		.then(keyAttr => {
+			if (keyAttr == null || typeof keyAttr == "undefined")
+				keyAttr = "";
+				
+			var result = confirm(`Delete note ${keyAttr}?`);
+			if (result)
+			{
+				deleteNote(noteId, contentType)
+				.then(response => {
+					if (response.status === 500)
+						showError(response.message);
+					else if (response.status === 200)
+						window.location.reload();
+				});
+			}
+		})
+
 	};
 
 	return deleteButton;
