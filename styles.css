@@ -68,6 +68,12 @@ body
 	box-shadow: 0 0 5px 1px green, 0 0 5px 1px blue;
 }
 
+.menu-selected
+{
+	border-radius: 1px;
+	box-shadow: 0 0 5px 1px rgba(0, 128, 0, 0.3), 0 0 5px 1px rgba(0, 0, 255, 0.3);
+}
+
 #history
 {
 	display: grid;

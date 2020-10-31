@@ -53,6 +53,7 @@ const IMAGE_ICON = "image-icon";
 const NEW_NOTE_IMAGE = "new-note-image";
 const HAS_VERTICAL_PADDINGS = "has-vertical-paddings";
 const COLORED_SELECT = "colored-select";
+const MENU_SELECTED = "menu-selected";
 
 const NAME = "name";
 const TITLE = "title";

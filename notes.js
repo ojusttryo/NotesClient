@@ -280,6 +280,8 @@ function createNotesTableHead(table, attributes)
 			gridTemplateColumns += " auto";
 
 		var wrapper = document.createElement("div");
+		wrapper.style.display = "grid";
+
 
 		appendNewSpanAligning(wrapper, attributes[i]["title"], "center");
 		setWidthRangeInTable(wrapper, attributes[i]);
@@ -289,7 +291,6 @@ function createNotesTableHead(table, attributes)
 		if (attributes[i].type == "inc" && attributes[i].editableInTable)
 		{
 			wrapper.style.verticalAlign = "top";
-			wrapper.style.display = "grid";
 			wrapper.style.gridTemplateColumns = "auto min-content";
 
 			// for alignment only
@@ -1116,9 +1117,9 @@ function prepareNoteAttributes(dataElement, note, attributes)
 				filesCollection.style.minWidth = "100%";
 				filesCollection.setAttribute(FILES_COUNT, 0);
 				appendNewSpanAligning(filesCollection, "№", "right");
-				appendNewSpanAligning(filesCollection, "Title", "left");
+				appendNewSpanAligning(filesCollection, "Title", "center");
 				appendNewSpanAligning(filesCollection, "Type", "center");
-				appendNewSpanAligning(filesCollection, "Size, Kb", "right");
+				appendNewSpanAligning(filesCollection, "Size, Kb", "center");
 				appendNewSpanAligning(filesCollection, "Uploaded", "center");
 				appendNewSpan(filesCollection, "");			 // Download
 				appendNewSpan(filesCollection, "");		     // Remove

@@ -11,6 +11,7 @@ window.addEventListener('popstate', (event) =>
 function handleRequest()
 {
 	console.log("redirect " + window.location.pathname);
+	clearSelectedMenuItem();
 
 	var pathname = window.location.pathname.startsWith('/') ? window.location.pathname.substring(1) : window.location.pathname;
 	if (pathname == "")
@@ -68,6 +69,7 @@ function handleRequest()
 					var entities = document.getElementById(MENU_LIST).getElementsByTagName("li");
 					var contentType = path[0];
 					var params = getParametersFromUrl();
+					setSelectedMenuItem(contentType);
 					// All notes
 					if (path[1] == null)
 					{
@@ -127,8 +129,10 @@ function loadMenu()
 			li.setAttribute(CONTENT_TYPE, name);
 			li.onclick = function() 
 			{
-				window.history.pushState("showContentTableWithNotes", "Notes", `/${this.getAttribute(CONTENT_TYPE)}`);
-				showContentTableWithNotes(this.getAttribute(CONTENT_TYPE)); 
+				var contentType = this.getAttribute(CONTENT_TYPE);
+				window.history.pushState("showContentTableWithNotes", "Notes", `/${contentType}`);
+				setSelectedMenuItem(contentType);
+				showContentTableWithNotes(contentType); 
 			};
 			li.id = name + "-button";
 			li.innerText = title;
@@ -148,7 +152,8 @@ function loadMenu()
 		attributesLi.onclick = function() 
 		{
 			pushAttributeTableState();
-			showAttributes(); 
+			clearSelectedMenuItem();
+			showAttributes();
 		};
 		menuList.appendChild(attributesLi);
 	
@@ -157,6 +162,7 @@ function loadMenu()
 		entitiesLi.onclick = function() 
 		{ 
 			pushEntityTableState();
+			clearSelectedMenuItem();
 			showEntities(); 
 		};
 		menuList.appendChild(entitiesLi);
@@ -166,6 +172,7 @@ function loadMenu()
 		logLi.onclick = function() 
 		{
 			window.history.pushState("", "Log", "/log");
+			clearSelectedMenuItem();
 			showLog();
 			switchToMainPage();
 		};
@@ -859,4 +866,30 @@ function getParametersFromUrl()
 		result[tmp[0]] = decodeURIComponent(tmp[1]);
     }
     return result;
+}
+
+
+function setSelectedMenuItem(contentType)
+{
+	var menuList = document.getElementById(MENU_LIST);
+	for (var i = 0; i < menuList.childNodes.length; i++)
+	{
+		var li = menuList.childNodes[i];
+		if (li.getAttribute(CONTENT_TYPE) && li.getAttribute(CONTENT_TYPE) == contentType && !li.classList.contains(MENU_SELECTED))
+			li.classList.add(MENU_SELECTED);
+		else if (li.classList.contains(MENU_SELECTED))
+			li.classList.remove(MENU_SELECTED);
+	}
+}
+
+
+function clearSelectedMenuItem()
+{
+	var menuList = document.getElementById(MENU_LIST);
+	for (var i = 0; i < menuList.childNodes.length; i++)
+	{
+		var li = menuList.childNodes[i];
+		if (li.classList.contains(MENU_SELECTED))
+			li.classList.remove(MENU_SELECTED);
+	}
 }

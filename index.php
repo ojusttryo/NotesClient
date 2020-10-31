@@ -4,6 +4,7 @@
 		<title>Notes</title>
 		<meta charset="utf-8" />
 		<link rel="stylesheet" type="text/css" href="styles.css?<?php echo date('l jS \of F Y h:i:s A'); ?>" />
+		<link rel="icon" href="notes.svg">
 		<script type="text/javascript" src="notes.js"></script>
 		<script type="text/javascript" src="constants.js"></script>
 		<script type="text/javascript" src="functions.js"></script>
