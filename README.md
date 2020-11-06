@@ -11,3 +11,9 @@ RewriteRule ^.*(/[a-zA-Z0-9]+.css)$ $1 [L]
 RewriteRule ^.*(/[a-zA-Z0-9]+.svg)$ /img$1 [L]
 RewriteCond %{REQUEST_URI} !=/index.php
 RewriteRule ^.*$ /index.php [L]
+
+MongoDB *.conf file should contain:
+
+security.authorization: enabled
+
+And there should be at least one user in database

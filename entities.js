@@ -39,13 +39,14 @@ function showEntitiesMenu()
 
 function createEntitiesTableHead(table)
 {
-    setContentColumnsCount(3);          // 3 - without buttons and row number
-    document.getElementById(DATA_TABLE).style.gridTemplateColumns = "min-content repeat(var(--tableColumnsCount), auto) min-content min-content";
+    setContentColumnsCount(4);          // 3 - without buttons and row number
+    table.style.gridTemplateColumns = "min-content repeat(var(--tableColumnsCount), auto) min-content min-content";
 
 	appendNewSpanAligning(table, "№", "center");
     appendNewSpan(table, "Title");
     appendNewSpan(table, "Name");
     appendNewSpan(table, "Visible");
+    appendNewSpan(table, "Attributes");
 	appendNewSpan(table, "");		     // Edit
 	appendNewSpan(table, "");		     // Remove
 }
@@ -60,6 +61,19 @@ function createEntitiesTableBody(table, entities)
         appendNewSpan(table, entities[i].title);
         appendNewSpan(table, entities[i].name);
         appendNewSpan(table, entities[i].visible);
+
+        var attributes = appendNewSpan(table, "");
+        attributes.classList.add("entity-attributes");
+        attributes.style.display = "flex";
+        entities[i].attributes.forEach(function (item, index) {
+            var attribute = document.createElement("a");
+            attribute.href = window.location.href.replace(window.location.pathname, `/attribute/${item}`);
+            attribute.style.textDecoration = "none";
+            attribute.style.color = "black";
+            attribute.style.paddingRight = "5px";
+            attribute.innerText = item;
+            attributes.appendChild(attribute);
+        })
 
 		var editButton = document.createElement("td");
         editButton.classList.add(EDIT_BUTTON);
@@ -124,7 +138,11 @@ function createEntityForm(entityName)
     var empty = document.createElement("div");
     dataElement.insertBefore(empty, buttons);
 
-    fetch(SERVER_ADDRESS + "/rest/attributes")
+    var url = SERVER_ADDRESS + "/rest/attributes/search?shared=true";
+    if (entityName)
+        url += "&entityName=" + entityName;
+     
+    fetch(url)
 	.then(response => response.json())
 	.then(attributes => {
 
@@ -291,7 +309,7 @@ function createAttributesTable(attributes, side)
                 tr.appendChild(document.createElement("td"));
             }
 
-            if (attribute.required && couldBeSortAttribute(attribute.type))
+            if (couldBeSortAttribute(attribute.type))
             {
                 var sortAttributeTd = document.createElement("td");
                 sortAttributeTd.style.textAlign = "center";

@@ -151,12 +151,31 @@ function createAttributeForm(attributeName, attribute)
     addInputWithLabel("number",   false, dataElement, "step",            "Step",                        "attribute-step");
     addInputWithLabel("text",     true,  dataElement, "regex",           "Regular expression to check", "attribute-regex");
     addInputWithLabel("text",     false, dataElement, "delimiter",       "Delimiter",                   "attribute-delimiter");
+    addInputWithLabel("checkbox", false, dataElement, "shared",          "Shared",                      "attribute-shared");
+    
+    // Don't show attribute usages for new attribute
+    if (attributeName)
+    {
+        var entitiesLabel = document.createElement("label");
+        entitiesLabel.innerText = "Usages";
+        dataElement.appendChild(entitiesLabel);
+        var entitiesTable = document.createElement("div");
+        entitiesTable.id = "entities-table";
+        entitiesTable.classList.add(TWO_COLS);
+        entitiesTable.classList.add(DATA_TABLE);
+        entitiesTable.classList.add(HAS_VERTICAL_PADDINGS);
+        dataElement.appendChild(entitiesTable);
+    }
 
-    var saveHandler = function() { saveMetaObjectInfo("/rest/attributes", showAttributes) };
+    var saveHandler = function() 
+    {
+        window.history.back();
+        saveMetaObjectInfo("/rest/attributes", showAttributes) 
+    };
     var cancelHandler = function() 
     { 
         window.history.back();
-        showAttributes() 
+        showAttributes();
     };
     addFormButtons(dataElement, attributeName != null, saveHandler, cancelHandler, attributeName);
     
@@ -234,6 +253,8 @@ function createAttributeForm(attributeName, attribute)
                     select.value = entity;
             });
         }
+
+        document.getElementById("attribute-lines-count").value = 1;
     }
 }
 
@@ -263,6 +284,21 @@ function fillAttributeValuesOnForm(attribute)
     document.getElementById("attribute-lines-count").value = attribute["linesCount"];
     document.getElementById("attribute-delimiter").value = attribute["delimiter"];
     document.getElementById("attribute-entity").value = attribute["entity"];
+    document.getElementById("attribute-shared").checked = attribute["shared"];
+
+    fetch(SERVER_ADDRESS + '/rest/entities/search?attribute=' + attribute["name"])
+    .then(response => response.json())
+    .then(entities => {
+        var entitiesTable = document.getElementById("entities-table");
+        if (!entities)
+        {
+            return;
+        }
+        
+        var entitiesTable = document.getElementById("entities-table");
+        createEntitiesTableHead(entitiesTable, entities, true);
+        createEntitiesTableBody(entitiesTable, entities, true);
+    })
 }
 
 

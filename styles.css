@@ -448,3 +448,12 @@ img
 {
 	border-radius: 5px;
 }
+
+.entity-attributes
+{
+	display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: flex-start;
+}
