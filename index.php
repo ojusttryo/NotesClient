@@ -16,7 +16,7 @@
 	<body onload="handleRequest();">
 		<div id="main">
 			<div id="menu">
-				<ul id="menu-list"></ul>
+				<div id="menu-list"></div>
 			</div>
 			<div id="content">
 				<div id="error-label"></div>

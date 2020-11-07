@@ -66,7 +66,7 @@ function handleRequest()
 			default:
 				loadMenu()
 				.then(() => {
-					var entities = document.getElementById(MENU_LIST).getElementsByTagName("li");
+					var entities = document.getElementById(MENU_LIST).getElementsByTagName("a");
 					var contentType = path[0];
 					var params = getParametersFromUrl();
 					setSelectedMenuItem(contentType);
@@ -125,21 +125,22 @@ function loadMenu()
 		{
 			var title = entities[i].title;
 			var name = entities[i].name;
-			var li = document.createElement("li");
-			li.setAttribute(CONTENT_TYPE, name);
-			li.onclick = function() 
+			var element = document.createElement("a");
+			element.href = getNewPath(`/${name}`);
+			element.setAttribute(CONTENT_TYPE, name);
+			element.onclick = function() 
 			{
 				var contentType = this.getAttribute(CONTENT_TYPE);
 				window.history.pushState("showContentTableWithNotes", "Notes", `/${contentType}`);
 				setSelectedMenuItem(contentType);
 				showContentTableWithNotes(contentType); 
 			};
-			li.id = name + "-button";
-			li.innerText = title;
-			menuList.appendChild(li);
+			element.id = name + "-button";
+			element.innerText = title;
+			menuList.appendChild(element);
 
 			if (!entities[i].visible)
-				li.style.display = "none";
+			element.style.display = "none";
 		}
 	
 		if (entities.length > 0)
@@ -147,36 +148,39 @@ function loadMenu()
 			menuList.appendChild(document.createElement("br"));
 		}
 	
-		var attributesLi = document.createElement("li");
-		attributesLi.innerText = "Attributes";
-		attributesLi.onclick = function() 
+		var attributesElement = document.createElement("a");
+		attributesElement.href = getNewPath('/attributes');
+		attributesElement.innerText = "Attributes";
+		attributesElement.onclick = function() 
 		{
 			pushAttributeTableState();
 			clearSelectedMenuItem();
 			showAttributes();
 		};
-		menuList.appendChild(attributesLi);
+		menuList.appendChild(attributesElement);
 	
-		var entitiesLi = document.createElement("li");
-		entitiesLi.innerText = "Entities";
-		entitiesLi.onclick = function() 
+		var entitiesElement = document.createElement("a");
+		entitiesElement.href = getNewPath('/entities');
+		entitiesElement.innerText = "Entities";
+		entitiesElement.onclick = function() 
 		{ 
 			pushEntityTableState();
 			clearSelectedMenuItem();
 			showEntities(); 
 		};
-		menuList.appendChild(entitiesLi);
+		menuList.appendChild(entitiesElement);
 
-		var logLi = document.createElement("li");
-		logLi.innerText = "Log";
-		logLi.onclick = function() 
+		var logElement = document.createElement("a");
+		logElement.href = getNewPath('/log');
+		logElement.innerText = "Log";
+		logElement.onclick = function() 
 		{
 			window.history.pushState("", "Log", "/log");
 			clearSelectedMenuItem();
 			showLog();
 			switchToMainPage();
 		};
-		menuList.appendChild(logLi);
+		menuList.appendChild(logElement);
 	});
 }
 
@@ -886,10 +890,17 @@ function setSelectedMenuItem(contentType)
 function clearSelectedMenuItem()
 {
 	var menuList = document.getElementById(MENU_LIST);
+
 	for (var i = 0; i < menuList.childNodes.length; i++)
 	{
 		var li = menuList.childNodes[i];
 		if (li.classList.contains(MENU_SELECTED))
 			li.classList.remove(MENU_SELECTED);
 	}
+}
+
+
+function getNewPath(pathName)
+{
+	return window.location.href.replace(window.location.pathname, pathName);
 }

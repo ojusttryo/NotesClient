@@ -55,13 +55,15 @@ body
 	border-right: 1px solid black;
 }
 
-#menu ul li
+#menu a
 {
+	display: block;
 	padding: 2px;
-	list-style: none;
+	text-decoration: none;
+	color: black;
 }
 
-#menu ul li:hover
+#menu a:hover
 {
 	cursor: pointer;
 	border-radius: 2px;
