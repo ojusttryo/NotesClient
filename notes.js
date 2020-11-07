@@ -153,12 +153,12 @@ function createUpperMenuForContent(contentType, attributeName, searchRequest)
 	dataMenu.appendChild(searchButton);
 
 	var hiddenNotesButton = document.createElement("a");
-	setImageClass(hiddenNotesButton, "hidden-image", true);
+	setImageClass(hiddenNotesButton, HIDDEN_IMAGE, true);
 	hiddenNotesButton.setAttribute(CONTENT_TYPE, contentType);
 	hiddenNotesButton.onclick = function() 
 	{
-		var hidden = (this.classList.contains("hidden-image"));
-		changeImageClass(this, hidden ? "hidden-image" : "visible-image", hidden ? "visible-image" : "hidden-image");
+		var hidden = (this.classList.contains(HIDDEN_IMAGE));
+		changeImageClass(this, hidden ? HIDDEN_IMAGE : VISIBLE_IMAGE, hidden ? VISIBLE_IMAGE : HIDDEN_IMAGE);
 		window.history.pushState("showSearchResultForHidden", "Notes", `/${this.getAttribute(CONTENT_TYPE)}?hidden=${hidden}`);
 		showSearchResultForHidden(hidden, this.getAttribute(CONTENT_TYPE));
 	}
@@ -618,7 +618,8 @@ function createButtonToShowNoteEditForm(id, contentType, parentNoteId)
 	editButton.classList.add(EDIT_BUTTON);
 	editButton.setAttribute(NOTE_ID, id);
 	editButton.setAttribute(CONTENT_TYPE, contentType);
-	editButton.setAttribute(PARENT_NOTE_ID, parentNoteId);
+	if (parentNoteId)
+		editButton.setAttribute(PARENT_NOTE_ID, parentNoteId);
 	editButton.onclick = function() 
 	{
 		pushNoteState(this.getAttribute(NOTE_ID), this.getAttribute(CONTENT_TYPE), this.getAttribute(PARENT_NOTE_ID));
@@ -680,6 +681,9 @@ function showNoteForm(id, contentType, parentNoteId, parentNoteAttribute, side)
 {
 	switchToAddEditForm();
 
+	if (parentNoteId == 'undefined')
+		parentNoteId = null;
+
 	fetch(SERVER_ADDRESS + '/rest/attributes/search?entityName=' + contentType)
 	.then(response => response.json())
 	.then(attributes => {
@@ -711,12 +715,12 @@ function showNoteForm(id, contentType, parentNoteId, parentNoteAttribute, side)
 		if (parentNoteId)
 			hideNoteButton.style.display = "none";
 		hideNoteButton.id = "hide-note-button";
-		setImageClass(hideNoteButton, "hidden-image", true);
+		setImageClass(hideNoteButton, HIDDEN_IMAGE, true);
 		hideNoteButton.setAttribute(NOTE_ID, id);
 		hideNoteButton.setAttribute(CONTENT_TYPE, contentType);
 		hideNoteButton.onclick = function() 
 		{
-			if (this.classList.contains("hidden-image"))
+			if (this.classList.contains(HIDDEN_IMAGE))
 			{
 				fetch(SERVER_ADDRESS + "/rest/notes/" + this.getAttribute(CONTENT_TYPE) + "/" + this.getAttribute(NOTE_ID) + "/hide", {
 					method: "PUT",
@@ -725,7 +729,7 @@ function showNoteForm(id, contentType, parentNoteId, parentNoteAttribute, side)
 				.then(response => {
 					if (response.status == 200)
 					{
-						changeImageClass(this, "hidden-image", "visible-image");
+						changeImageClass(this, HIDDEN_IMAGE, VISIBLE_IMAGE);
 					}
 				});
 			}
@@ -738,7 +742,7 @@ function showNoteForm(id, contentType, parentNoteId, parentNoteAttribute, side)
 				.then(response => {
 					if (response.status == 200)
 					{
-						changeImageClass("visible-image", "hidden-image");
+						changeImageClass(this, VISIBLE_IMAGE, HIDDEN_IMAGE);
 					}
 				});
 			}
@@ -768,7 +772,7 @@ function showNoteForm(id, contentType, parentNoteId, parentNoteAttribute, side)
 				if (note.hidden)
 				{
 					var hideButton = document.getElementById("hide-note-button");
-					changeImageClass(hideButton, "hidden-image", "visible-image");
+					changeImageClass(hideButton, HIDDEN_IMAGE, VISIBLE_IMAGE);
 				}
 				prepareNoteAttributes(dataElement, note, attributes);
 				createNoteActionButtons(dataElement, id, parentNoteId, parentNoteAttribute, side, contentType);
