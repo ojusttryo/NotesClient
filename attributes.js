@@ -15,6 +15,8 @@ function showAttributes()
         var table = getEmptyElement(DATA_TABLE);
         createAttributesTableHead(table);
         createAttributesTableBody(table, attributes);
+
+        setPageTitle("Attributes");
     })
 }
 
@@ -118,10 +120,16 @@ function createAttributeForm(attributeName, attribute)
 {
     var dataElement = getEmptyElement(DATA_ELEMENT);
 
-    if (attributeName)
+    if (attributeName && attribute)
+    {
         dataElement.setAttribute(CONTENT_ID, attributeName);
+        setPageTitle("Attribute " + attribute.title);
+    }
     else
+    {
         dataElement.removeAttribute(CONTENT_ID);
+        setPageTitle("New attribute");
+    }
 
     var alignments = [ "left", "right", "center" ];
     var types = [ "row number", "text", "textarea", "delimited text", "number", "select", "multiselect", "checkbox", "inc", "url", 
@@ -183,6 +191,8 @@ function createAttributeForm(attributeName, attribute)
 
     if (attribute && attribute.entity)
         document.getElementById("attribute-entity").setAttribute(ENTITY, attribute.entity);
+
+    document.getElementById("attribute-lines-count").value = 1;
 
     // Changing the type of attribute, other fields may become excess
     document.getElementById("attribute-type").onchange = function() 
@@ -253,8 +263,6 @@ function createAttributeForm(attributeName, attribute)
                     select.value = entity;
             });
         }
-
-        document.getElementById("attribute-lines-count").value = 1;
     }
 }
 
@@ -366,7 +374,7 @@ function getImagesSize(size)
 
 function couldBeKeyAttribute(type)
 {
-    return (isTextual(type) || isNumeric(type) || hasOptions(type) || type == "checkbox" || type == "url" || isUserDateOrTime(type) || isFile(type)); 
+    return (isTextual(type) || isNumeric(type) || type == "select"); 
 }
 
 

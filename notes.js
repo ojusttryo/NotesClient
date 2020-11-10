@@ -23,7 +23,7 @@ async function showContentTableWithNotes(contentType)
 			var table = getEmptyElement(DATA_TABLE);
 			createNotesTableHead(table, attributes);
 			createNotesTableBody(table, attributes, notes, contentType);
-
+			setPageTitleFromEntityTitle(contentType);
 			switchToContent();
 		});
 	});
@@ -196,7 +196,7 @@ async function showSearchResult(attributeName, searchRequest, contentType)
 			var table = getEmptyElement(DATA_TABLE);
 			createNotesTableHead(table, attributes);
 			createNotesTableBody(table, attributes, notes, contentType);
-
+			setPageTitleFromEntityTitle(contentType);
 			switchToContent();
 		});
 	});
@@ -258,6 +258,7 @@ async function showSearchResultForHidden(hidden, contentType)
 			var table = getEmptyElement(DATA_TABLE);
 			createNotesTableHead(table, attributes);
 			createNotesTableBody(table, attributes, notes, contentType);
+			setPageTitleFromEntityTitle(contentType);
 		});
 	});
 }
@@ -681,9 +682,6 @@ function showNoteForm(id, contentType, parentNoteId, parentNoteAttribute, side)
 {
 	switchToAddEditForm();
 
-	if (parentNoteId == 'undefined')
-		parentNoteId = null;
-
 	fetch(SERVER_ADDRESS + '/rest/attributes/search?entityName=' + contentType)
 	.then(response => response.json())
 	.then(attributes => {
@@ -776,12 +774,15 @@ function showNoteForm(id, contentType, parentNoteId, parentNoteAttribute, side)
 				}
 				prepareNoteAttributes(dataElement, note, attributes);
 				createNoteActionButtons(dataElement, id, parentNoteId, parentNoteAttribute, side, contentType);
+
+				setPageTitleFromNoteKeyAttribute(contentType, note);
 			})
 		}
 		else
 		{
 			prepareNoteAttributes(dataElement, null, attributes);
 			createNoteActionButtons(dataElement, id, parentNoteId, parentNoteAttribute, side, contentType);
+			setPageTitle("New note");
 		}
 	});
 }
@@ -1710,4 +1711,27 @@ function enableSearchByClick(elem, attributeName, contentType, parentNoteId)
 			showSearchResult(attr, this.innerText, content);
 		}
 	}
+}
+
+
+function setPageTitleFromNoteKeyAttribute(contentType, note)
+{
+	// Set page title from key attribute
+	fetch(SERVER_ADDRESS + "/rest/entities/search?name=" + contentType)
+	.then(response => response.json())
+	.then(entity => {
+		var title = note.attributes[entity.keyAttribute].toString();
+		if (title.includes("\n"))
+			title = title.substring(0, title.indexOf("\n") + 1);
+		if (title.length > 52)
+			title = title.substring(0, 50) + "...";
+		setPageTitle(title);
+	});
+}
+
+function setPageTitleFromEntityTitle(contentType)
+{
+	fetch(SERVER_ADDRESS + "/rest/entities/search?name=" + contentType)
+	.then(response => response.json())
+	.then(entity => setPageTitle(entity.title));
 }

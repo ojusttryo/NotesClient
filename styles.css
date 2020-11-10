@@ -3,6 +3,7 @@
 	--fontSize: 12px;
 	--menuFontSize: 14px;
 	--buttonSize: 14px;
+	--switchButtonSize: 20px;
 	--selectSize: 10px;
 	--tableColumnsCount: 1;
 	--padding: 10px;
@@ -24,7 +25,6 @@ body
 
 #main
 {
-    height: calc(100vh);
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
@@ -52,7 +52,63 @@ body
 	order: 1;
 	background-color: white;
 	padding: var(--padding);
+	padding-bottom: 0;
 	border-right: 1px solid black;
+	height: 100%;
+}
+
+
+#switch
+{
+	display: block;
+	padding-left: 5px;
+	padding-top: 15px;
+}
+
+#switch a:hover
+{
+	cursor: pointer;
+}
+
+#settings-button
+{
+	display: block;
+	width: var(--switchButtonSize);
+	height: var(--switchButtonSize);
+	padding-bottom: 5px;
+	background-size: contain;
+	background-repeat: no-repeat;
+	align-self: center;
+	background-image: url("img/settings.svg");
+}
+
+#notes-button
+{
+	display: block;
+	width: var(--switchButtonSize);
+	height: var(--switchButtonSize);
+	padding-bottom: 5px;
+	background-size: contain;
+	background-repeat: no-repeat;
+	align-self: center;
+	background-image: url("img/notes.svg");
+}
+
+#log-button
+{
+	display: block;
+	width: var(--switchButtonSize);
+	height: var(--switchButtonSize);
+	padding-bottom: 5px;
+	background-size: contain;
+	background-repeat: no-repeat;
+	align-self: center;
+	background-image: url("img/log.svg");
+}
+
+#menu-list
+{
+	padding-bottom: 5px;
 }
 
 #menu a
@@ -63,7 +119,7 @@ body
 	color: black;
 }
 
-#menu a:hover
+#menu .decorated-menu-element:hover
 {
 	cursor: pointer;
 	border-radius: 2px;

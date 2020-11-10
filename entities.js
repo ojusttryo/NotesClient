@@ -15,8 +15,9 @@ function showEntities()
         createEntitiesTableHead(table, entities);
         createEntitiesTableBody(table, entities);
         
-        loadMenu();
         switchToContent();
+
+        setPageTitle("Entities");
     })
 }
 
@@ -157,11 +158,16 @@ function createEntityForm(entityName)
         dataElement.insertBefore(attributesSelect, buttons);
 
         if (!entityName)
+        {
+            setPageTitle("New entity");
             return;
+        }
 
         fetch(SERVER_ADDRESS + '/rest/entities/search?name=' + dataElement.getAttribute(CONTENT_ID))
         .then(response => response.json())
         .then(entity => {
+            setPageTitle("Entity " + entity.title);
+
             document.getElementById("entity-title").value = entity["title"];
             document.getElementById("entity-name").value = entity["name"];
             document.getElementById("entity-visible").checked = entity["visible"];

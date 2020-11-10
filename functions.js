@@ -7,18 +7,16 @@ window.addEventListener('popstate', (event) =>
 });
 
 
-
 function handleRequest()
 {
 	console.log("redirect " + window.location.pathname);
 	clearSelectedMenuItem();
+	setPageTitle("Notes");	// In all right ways of execution this title should be replaced.
 
 	var pathname = window.location.pathname.startsWith('/') ? window.location.pathname.substring(1) : window.location.pathname;
 	if (pathname == "")
 	{
-		loadMenu();
-		showLog();
-		switchToMainPage();
+		switchToLog();
 	}
 	else
 	{
@@ -26,27 +24,31 @@ function handleRequest()
 		switch (path[0])
 		{
 			case "log":
-				loadMenu();
-				showLog();
-				switchToMainPage();
+				switchToLog();
 				break;
 
 			case "entity":
-				loadMenu();
+				showSettingsMenu();
+
 				if (path[1] == null)
 					showError("Wrong url");
-				createEntityForm(path[1] == "new" ? null : path[1]);
+				
+				if (path[1] == "new")
+					createEntityForm(null);
+				else
+					createEntityForm(path[1]);
+
 				switchToAddEditForm();
+				
 				break;
 
 			case "entities":
-				loadMenu();
-				switchToContent();
-				showEntities();
+				switchToEntities();
 				break;
 
 			case "attribute":
-				loadMenu();
+				showSettingsMenu();
+
 				if (path[1] == null)
 					showError("Wrong url");
 
@@ -54,17 +56,17 @@ function handleRequest()
 					showAttributeForm(null);
 				else
 					createEditAttributeForm(path[1]);
+
 				switchToAddEditForm();
+
 				break;
 
 			case "attributes":
-				loadMenu();
-				showAttributes();
-				switchToContent();
+				switchToAttributes();
 				break;
 				
 			default:
-				loadMenu()
+				showNotesMenu()
 				.then(() => {
 					var entities = document.getElementById(MENU_LIST).getElementsByTagName("a");
 					var contentType = path[0];
@@ -82,7 +84,7 @@ function handleRequest()
 								if (searchAttribute != null && searchRequest != null)
 									showSearchResult(searchAttribute, searchRequest, contentType);
 								else
-									showContentTableWithNotes(contentType); 
+									showContentTableWithNotes(contentType);
 								return;
 							}
 						}
@@ -111,10 +113,51 @@ function handleRequest()
 }
 
 
+function hideMenu()
+{
+	document.getElementById("menu").style.display = "none";
+}
+
+function showMenu()
+{
+	document.getElementById("menu").style.display = "block";
+}
+
+
+function showSettingsMenu()
+{
+	var menuList = getEmptyElement(MENU_LIST);
+
+	var attributesElement = document.createElement("a");
+	attributesElement.href = getNewPath('/attributes');
+	attributesElement.innerText = "Attributes";
+	attributesElement.onclick = function() 
+	{
+		pushAttributeTableState();
+		clearSelectedMenuItem();
+		showAttributes();
+	};
+	menuList.appendChild(attributesElement);
+
+	var entitiesElement = document.createElement("a");
+	entitiesElement.href = getNewPath('/entities');
+	entitiesElement.innerText = "Entities";
+	entitiesElement.onclick = function() 
+	{ 
+		pushEntityTableState();
+		clearSelectedMenuItem();
+		showEntities(); 
+	};
+	menuList.appendChild(entitiesElement);
+
+	showMenu();
+}
+
+
 /**
- * Load the left side menu of entities on onload event action.
+ * Load the left side menu for note types
  */
-function loadMenu()
+function showNotesMenu()
 {
 	return fetch(SERVER_ADDRESS + '/rest/entities')
 	.then(response => response.json())
@@ -128,6 +171,7 @@ function loadMenu()
 			var element = document.createElement("a");
 			element.href = getNewPath(`/${name}`);
 			element.setAttribute(CONTENT_TYPE, name);
+			element.classList.add("decorated-menu-element");
 			element.onclick = function() 
 			{
 				var contentType = this.getAttribute(CONTENT_TYPE);
@@ -140,47 +184,8 @@ function loadMenu()
 			menuList.appendChild(element);
 
 			if (!entities[i].visible)
-			element.style.display = "none";
+				element.style.display = "none";
 		}
-	
-		if (entities.length > 0)
-		{
-			menuList.appendChild(document.createElement("br"));
-		}
-	
-		var attributesElement = document.createElement("a");
-		attributesElement.href = getNewPath('/attributes');
-		attributesElement.innerText = "Attributes";
-		attributesElement.onclick = function() 
-		{
-			pushAttributeTableState();
-			clearSelectedMenuItem();
-			showAttributes();
-		};
-		menuList.appendChild(attributesElement);
-	
-		var entitiesElement = document.createElement("a");
-		entitiesElement.href = getNewPath('/entities');
-		entitiesElement.innerText = "Entities";
-		entitiesElement.onclick = function() 
-		{ 
-			pushEntityTableState();
-			clearSelectedMenuItem();
-			showEntities(); 
-		};
-		menuList.appendChild(entitiesElement);
-
-		var logElement = document.createElement("a");
-		logElement.href = getNewPath('/log');
-		logElement.innerText = "Log";
-		logElement.onclick = function() 
-		{
-			window.history.pushState("", "Log", "/log");
-			clearSelectedMenuItem();
-			showLog();
-			switchToMainPage();
-		};
-		menuList.appendChild(logElement);
 	});
 }
 
@@ -230,6 +235,8 @@ function showCurrentContent(contentType)
 {
 	showContentTableWithNotes(contentType);
 	switchToContent();
+
+	document.title = contentType;
 }
 
 
@@ -255,13 +262,52 @@ function switchToAddEditForm()
 }
 
 
-function switchToMainPage()
+function switchToLog()
 {
+	pushLogState();
+
+	hideMenu();
+	showLog();
+
 	hideError();
 	hideHtmlElementById(DATA_ELEMENT);
 	showHtmlGridElementById(HISTORY);
 	hideHtmlElementById(DATA_TABLE);
 	hideHtmlElementById(DATA_MENU);
+}
+
+
+function switchToEntities()
+{
+	pushEntityTableState();
+	showSettingsMenu();
+	showEntities();
+	switchToContent();
+}
+
+
+function switchToAttributes()
+{
+	pushAttributeTableState();
+	showSettingsMenu();
+	showAttributes();
+	switchToContent();
+}
+
+
+function switchToNotes()
+{
+	showNotesMenu()
+	.then(() => {
+		var entities = document.getElementById(MENU_LIST).getElementsByTagName("a");
+		if (entities.length > 0)
+		{
+			var contentType = entities[0].getAttribute(CONTENT_TYPE);
+			pushNoteTableState(contentType);
+			setSelectedMenuItem(contentType);
+			showContentTableWithNotes(contentType);
+		}
+	});
 }
 
 
@@ -859,6 +905,11 @@ function pushAttributeState(attributeName)
 	window.history.pushState("attribute", "Attribute", "/attribute/" + attr);
 }
 
+function pushLogState()
+{
+	window.history.pushState("", "Log", "/log");
+}
+
 function getParametersFromUrl() 
 {
     var result = new Object();
@@ -904,3 +955,10 @@ function getNewPath(pathName)
 {
 	return window.location.href.replace(window.location.pathname, pathName);
 }
+
+
+function setPageTitle(title)
+{
+	document.title = title;
+}
+
