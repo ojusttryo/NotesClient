@@ -324,7 +324,7 @@ input[type=checkbox]
 	text-decoration: none;
 	background-size: contain;
 	background-repeat: no-repeat;
-	align-self: center;
+	align-self: top;
 	z-index: 100;
 }
 
