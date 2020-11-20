@@ -27,6 +27,10 @@ function handleRequest()
 				switchToLog();
 				break;
 
+			case "info":
+				switchToInfo();
+				break;
+
 			case "entity":
 				showSettingsMenu();
 
@@ -199,7 +203,7 @@ function showLog()
 	fetch(SERVER_ADDRESS + "/rest/log/50")
 	.then(response => response.json())
 	.then(logs => {
-		var history = getEmptyElement("history");
+		var data = getEmptyElement(DATA);
 		for (var i = 0; i < logs.length; i++)
 		{
 			var date = new Date(logs[i].time);
@@ -224,11 +228,121 @@ function showLog()
 			}
 			var p = document.createElement("p");
 			p.innerText = message;
-			history.appendChild(p);
+			data.appendChild(p);
 		}
 	});	
 }
 
+
+/**
+ * Show information about database's collections and other stuff
+ */
+function showInfo()
+{
+	const urls = [
+		SERVER_ADDRESS + "/rest/info/notes",
+		SERVER_ADDRESS + "/rest/info/files",
+		SERVER_ADDRESS + "/rest/info/db",
+		SERVER_ADDRESS + "/rest/info/icons"
+	];
+
+	const allRequests = urls.map(url => fetch(url).then(response => response.json()));
+
+	Promise.all(allRequests)
+	.then(response => {
+
+		var data = getEmptyElement(DATA);
+
+		var infoTable = document.createElement("div");
+		infoTable.classList.add(DATA_TABLE);
+		infoTable.style.minWidth = "100%";
+		infoTable.style.gridTemplateColumns = "1fr 1fr 1fr 1fr 1fr";
+		infoTable.style.padding = "10px";
+
+		var dbInfo = response[2];
+
+		var dbTitle = appendNewSpanAligning(infoTable, "Database information", "center", true);
+		dbTitle.style.gridColumnStart = "1";
+		dbTitle.style.gridColumnEnd = "6";
+
+		addSpans(infoTable, 10);
+
+		appendNewSpan(infoTable, "");
+		appendNewSpanAligning(infoTable, "Name", "left", true);
+		appendNewSpanAligning(infoTable, "Count of collections", "right", true);
+		appendNewSpanAligning(infoTable, "Size", "right", true);
+		appendNewSpanAligning(infoTable, "Storage size", "right", true);
+
+		appendNewSpan(infoTable, "");
+		appendNewSpanAligning(infoTable, dbInfo.name, "left");
+		appendNewSpanAligning(infoTable, dbInfo.collections.toLocaleString(), "right");
+		appendNewSpanAligning(infoTable, dbInfo.dataSize.toLocaleString(), "right");
+		appendNewSpanAligning(infoTable, dbInfo.storageSize.toLocaleString(), "right");
+
+		addSpans(infoTable, 20);
+
+		var filesTitle = appendNewSpanAligning(infoTable, "Files information", "center", true);
+		filesTitle.style.gridColumnStart = "1";
+		filesTitle.style.gridColumnEnd = "6";
+
+		addSpans(infoTable, 10);
+
+		var contentTypeTitle = appendNewSpanAligning(infoTable, "File type", "left", true);
+		contentTypeTitle.classList.add(TWO_COLS);
+		appendNewSpanAligning(infoTable, "Count of files", "right", true);
+		appendNewSpanAligning(infoTable, "Size", "right", true);
+		appendNewSpan(infoTable, "");
+
+		var files = response[1];
+		for (var i = 0; i < files.length; i++)
+		{
+			var contentType = appendNewSpan(infoTable, files[i].contentType);
+			contentType.classList.add(TWO_COLS);
+			appendNewSpanAligning(infoTable, files[i].count.toLocaleString(), "right");
+			appendNewSpanAligning(infoTable, files[i].size.toLocaleString(), "right");
+			appendNewSpan(infoTable, "");
+		}
+		var icons = response[3];
+		var iconsType = appendNewSpan(infoTable, icons.contentType, true);
+		iconsType.classList.add(TWO_COLS);
+		appendNewSpanAligning(infoTable, icons.count.toLocaleString(), "right");
+		appendNewSpanAligning(infoTable, icons.size.toLocaleString(), "right");
+		appendNewSpan(infoTable, "");
+
+		addSpans(infoTable, 20);
+
+		var notesTitle = appendNewSpanAligning(infoTable, "Notes information", "center", true);
+		notesTitle.style.gridColumnStart = "1";
+		notesTitle.style.gridColumnEnd = "6";
+
+		addSpans(infoTable, 10);
+
+		appendNewSpanAligning(infoTable, "Title", "left", true);
+		appendNewSpanAligning(infoTable, "Name", "left", true);
+		appendNewSpanAligning(infoTable, "Count of notes", "right", true);
+		appendNewSpanAligning(infoTable, "Size", "right", true);
+		appendNewSpanAligning(infoTable, "Storage size", "right", true);
+
+		var notes = response[0];
+		for (var i = 0; i < notes.length; i++)
+		{
+			appendNewSpan(infoTable, notes[i].entityTitle);
+			appendNewSpan(infoTable, notes[i].entityName);
+			appendNewSpanAligning(infoTable, notes[i].count.toLocaleString(), "right");
+			appendNewSpanAligning(infoTable, notes[i].size.toLocaleString(), "right");
+			appendNewSpanAligning(infoTable, notes[i].storageSize.toLocaleString(), "right");
+		}
+
+		data.appendChild(infoTable);
+	});
+}
+
+
+function addSpans(parent, count)
+{
+	for (var i = 0; i < count; i++)
+		appendNewSpan(parent, " ");
+}
 
 
 function showCurrentContent(contentType)
@@ -245,7 +359,7 @@ function switchToContent()
 {
 	hideError();
 	hideHtmlElementById(DATA_ELEMENT);
-	hideHtmlElementById(HISTORY);
+	hideHtmlElementById(DATA);
 	showHtmlGridElementById(DATA_TABLE);
 	showHtmlElement(DATA_MENU, "flex");
 }
@@ -257,7 +371,7 @@ function switchToAddEditForm()
 	hideError();
 	hideHtmlElementById(DATA_TABLE);
 	hideHtmlElementById(DATA_MENU);
-	hideHtmlElementById(HISTORY);
+	hideHtmlElementById(DATA);
 	showHtmlGridElementById(DATA_ELEMENT);
 }
 
@@ -271,7 +385,7 @@ function switchToLog()
 
 	hideError();
 	hideHtmlElementById(DATA_ELEMENT);
-	showHtmlGridElementById(HISTORY);
+	showHtmlGridElementById(DATA);
 	hideHtmlElementById(DATA_TABLE);
 	hideHtmlElementById(DATA_MENU);
 }
@@ -295,10 +409,26 @@ function switchToAttributes()
 }
 
 
+function switchToInfo()
+{
+	pushInfoState();
+
+	hideMenu();
+	showInfo();
+
+	hideError();
+	hideHtmlElementById(DATA_ELEMENT);
+	showHtmlGridElementById(DATA);
+	hideHtmlElementById(DATA_TABLE);
+	hideHtmlElementById(DATA_MENU);
+}
+
+
 function switchToNotes()
 {
 	showNotesMenu()
 	.then(() => {
+		showMenu();
 		var entities = document.getElementById(MENU_LIST).getElementsByTagName("a");
 		if (entities.length > 0)
 		{
@@ -321,32 +451,36 @@ function updateContentTableVisibility()
 }
 
 
-function appendNewSpan(parent, innerText)
+function appendNewSpan(parent, innerText, isBold)
 {
-	return appendNewElement("span", parent, innerText);
+	return appendNewElement("span", parent, innerText, isBold);
 }
 
 
-function appendNewTd(parent, innerText)
+function appendNewTd(parent, innerText, isBold)
 {
-	return appendNewElement("td", parent, innerText);
+	return appendNewElement("td", parent, innerText, isBold);
 }
 
 
-function appendNewElement(type, parent, innerText)
+function appendNewElement(type, parent, innerText, isBold)
 {
 	var element = document.createElement(type);
 	element.innerText = innerText;
+	if (isBold)
+		element.style.fontWeight = "bold";
 	parent.appendChild(element);
 	return element;
 }
 
 
-function appendNewSpanAligning(parent, innerText, alignment)
+function appendNewSpanAligning(parent, innerText, alignment, isBold)
 {
 	var element = appendNewSpan(parent, innerText);
 	element.style.justifySelf = alignment;
 	element.style.textAlign = alignment;
+	if (isBold)
+		element.style.fontWeight = "bold";
 	return element;
 }
 
@@ -910,6 +1044,11 @@ function pushLogState()
 	window.history.pushState("", "Log", "/log");
 }
 
+function pushInfoState()
+{
+	window.history.pushState("", "info", "/info");
+}
+
 function getParametersFromUrl() 
 {
     var result = new Object();
@@ -953,7 +1092,7 @@ function clearSelectedMenuItem()
 
 function getNewPath(pathName)
 {
-	return window.location.href.replace(window.location.pathname, pathName);
+	return window.location.href.split("?")[0].replace(window.location.pathname, pathName);
 }
 
 

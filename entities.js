@@ -43,11 +43,11 @@ function createEntitiesTableHead(table)
     setContentColumnsCount(4);          // 3 - without buttons and row number
     table.style.gridTemplateColumns = "min-content repeat(var(--tableColumnsCount), auto) min-content min-content";
 
-	appendNewSpanAligning(table, "№", "center");
-    appendNewSpan(table, "Title");
-    appendNewSpan(table, "Name");
-    appendNewSpan(table, "Visible");
-    appendNewSpan(table, "Attributes");
+	appendNewSpanAligning(table, "№", "center", true);
+    appendNewSpan(table, "Title", true);
+    appendNewSpan(table, "Name", true);
+    appendNewSpan(table, "Visible", true);
+    appendNewSpan(table, "Attributes", true);
 	appendNewSpan(table, "");		     // Edit
 	appendNewSpan(table, "");		     // Remove
 }

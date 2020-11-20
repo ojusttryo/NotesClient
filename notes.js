@@ -203,12 +203,12 @@ async function showSearchResult(attributeName, searchRequest, contentType)
 }
 
 
-async function showNestedNotes(contentType, attributeName, parentNoteId, tableId)
+async function showNestedNotes(contentType, parentNoteAttribute, parentNoteId, tableId)
 {
 	fetch(`${SERVER_ADDRESS}/rest/attributes/search?entityName=${contentType}&visible=true`)
 	.then(response => response.json())
 	.then(attributes => {
-		fetch(`${SERVER_ADDRESS}/rest/notes/nested/${contentType}/${attributeName}/${parentNoteId}`, {
+		fetch(`${SERVER_ADDRESS}/rest/notes/nested/${contentType}/${parentNoteAttribute}/${parentNoteId}`, {
 			method: "GET",
 			headers: { "Accept": APPLICATION_JSON, "Content-Type": APPLICATION_JSON }
 		})
@@ -216,18 +216,18 @@ async function showNestedNotes(contentType, attributeName, parentNoteId, tableId
 		.then(notes => {
 			var table = document.getElementById(tableId);
 			createNotesTableHead(table, attributes, parentNoteId);
-			createNotesTableBody(table, attributes, notes, contentType, parentNoteId);
+			createNotesTableBody(table, attributes, notes, contentType, parentNoteId, parentNoteAttribute);
 		});
 	});
 }
 
 
-async function showComparedNotes(contentType, attributeName, parentNoteId, tableId, side)
+async function showComparedNotes(contentType, parentNoteAttribute, parentNoteId, tableId, side)
 {
 	fetch(SERVER_ADDRESS + '/rest/attributes/compared/' + contentType)
 	.then(response => response.json())
 	.then(attributes => {
-		fetch(`${SERVER_ADDRESS}/rest/notes/nested/${contentType}/${attributeName}/${parentNoteId}?side=${side}`, {
+		fetch(`${SERVER_ADDRESS}/rest/notes/nested/${contentType}/${parentNoteAttribute}/${parentNoteId}?side=${side}`, {
 			method: "GET",
 			headers: { "Accept": APPLICATION_JSON, "Content-Type": APPLICATION_JSON }
 		})
@@ -235,7 +235,7 @@ async function showComparedNotes(contentType, attributeName, parentNoteId, table
 		.then(notes => {
 			var table = document.getElementById(tableId);
 			createNotesTableHead(table, attributes, parentNoteId);
-			createNotesTableBody(table, attributes, notes, contentType, parentNoteId);
+			createNotesTableBody(table, attributes, notes, contentType, parentNoteId, parentNoteAttribute);
 		});
 	});
 }
@@ -330,7 +330,7 @@ function countColumnsWithoutButtons(attributes)
 }
 
 
-function createNotesTableBody(table, attributes, notes, contentType, parentNoteId)
+function createNotesTableBody(table, attributes, notes, contentType, parentNoteId, parentNoteAttribute)
 {
 	if (notes == null)
 		return;
@@ -614,7 +614,7 @@ function createNotesTableBody(table, attributes, notes, contentType, parentNoteI
 
 		if (!parentNoteId)
 			table.appendChild(createButtonToHideNote(note.id, contentType, note.hidden));
-		table.appendChild(createButtonToShowNoteEditForm(note.id, contentType, parentNoteId));
+		table.appendChild(createButtonToShowNoteEditForm(note.id, contentType, parentNoteId, parentNoteAttribute));
 		table.appendChild(createButtonToDeleteNote(note.id, contentType));
 	}
 }
@@ -624,7 +624,6 @@ function createButtonToHideNote(id, contentType, isHidden)
 {
 	var hideButton = document.createElement("td");
 	setImageClass(hideButton, isHidden ? VISIBLE_IMAGE : HIDDEN_IMAGE, false);
-	//hideButton.classList.add(isVisible ? HIDDEN_IMAGE : VISIBLE_IMAGE);
 	hideButton.setAttribute(NOTE_ID, id);
 	hideButton.setAttribute(CONTENT_TYPE, contentType);
 	hideButton.onclick = changeNoteVisibilityButtonClickHandler;
@@ -632,18 +631,20 @@ function createButtonToHideNote(id, contentType, isHidden)
 }
 
 
-function createButtonToShowNoteEditForm(id, contentType, parentNoteId)
+function createButtonToShowNoteEditForm(id, contentType, parentNoteId, parentNoteAttribute)
 {
 	var editButton = document.createElement("td");
 	editButton.classList.add(EDIT_BUTTON);
 	editButton.setAttribute(NOTE_ID, id);
 	editButton.setAttribute(CONTENT_TYPE, contentType);
+	if (parentNoteAttribute)
+		editButton.setAttribute(PARENT_NOTE_ATTRIBUTE, parentNoteAttribute);
 	if (parentNoteId)
 		editButton.setAttribute(PARENT_NOTE_ID, parentNoteId);
 	editButton.onclick = function() 
 	{
 		pushNoteState(this.getAttribute(NOTE_ID), this.getAttribute(CONTENT_TYPE), this.getAttribute(PARENT_NOTE_ID));
-		showNoteForm(this.getAttribute(NOTE_ID), this.getAttribute(CONTENT_TYPE), this.getAttribute(PARENT_NOTE_ID)); 
+		showNoteForm(this.getAttribute(NOTE_ID), this.getAttribute(CONTENT_TYPE), this.getAttribute(PARENT_NOTE_ID), this.getAttribute(PARENT_NOTE_ATTRIBUTE)); 
 	};
 	return editButton;
 }
@@ -708,10 +709,15 @@ function showNoteForm(id, contentType, parentNoteId, parentNoteAttribute, side)
 		var dataElement = getEmptyElement(DATA_ELEMENT);
 
 		dataElement.appendChild(document.createElement("div"));
-		
+
 		var menu = document.createElement("div");
 		menu.style.justifySelf = "right";
+
 		var deleteNoteButton = document.createElement("a");
+		// Cannot delete a new note.
+		if (!id)
+			deleteNoteButton.style.display = "none";
+		deleteNoteButton.id = "delete-note-button";
 		setImageClass(deleteNoteButton, "delete-note-image", true);
 		deleteNoteButton.setAttribute(NOTE_ID, id);
 		deleteNoteButton.setAttribute(CONTENT_TYPE, contentType);
@@ -729,7 +735,8 @@ function showNoteForm(id, contentType, parentNoteId, parentNoteAttribute, side)
 		menu.appendChild(deleteNoteButton);
 
 		var hideNoteButton = document.createElement("a");
-		if (parentNoteId)
+		// Cannot hide a nested note and a new note.
+		if (parentNoteId || !id)
 			hideNoteButton.style.display = "none";
 		hideNoteButton.id = "hide-note-button";
 		setImageClass(hideNoteButton, HIDDEN_IMAGE, true);
@@ -739,15 +746,18 @@ function showNoteForm(id, contentType, parentNoteId, parentNoteAttribute, side)
 		menu.appendChild(hideNoteButton);
 
 		var cloneButton = document.createElement("a");
-		if (parentNoteId)
+		// Cannot clone a new note.
+		if (!id)
 			cloneButton.style.display = "none";
 		cloneButton.id = "copy-note-button";
 		setImageClass(cloneButton, "copy-note-image", true);
 		cloneButton.onclick = function() 
 		{
 			var saveButton = document.getElementById("save-button");
-			saveButton.removeAttribute(NOTE_ID);
+			saveButton.removeAttribute(CONTENT_ID);
 			saveButton.value = "Save";
+			var deleteButton = document.getElementById("delete-note-button");
+			deleteButton.style.display = "none";
 		}
 		menu.appendChild(cloneButton);
 
@@ -1160,7 +1170,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 			
 				var addNoteButton = document.createElement("a");
 				addNoteButton.setAttribute(PARENT_NOTE_ID, note.id);
-				addNoteButton.setAttribute("parent-note-attribute", attribute.name);
+				addNoteButton.setAttribute(PARENT_NOTE_ATTRIBUTE, attribute.name);
 				addNoteButton.setAttribute("entity-name", attribute.entity);
 				setImageClass(addNoteButton, NEW_NOTE_IMAGE);
 				addNoteButton.onclick = function() 
@@ -1169,7 +1179,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 					showNoteForm(null, 
 						this.getAttribute("entity-name"), 
 						this.getAttribute(PARENT_NOTE_ID), 
-						this.getAttribute("parent-note-attribute")); 
+						this.getAttribute(PARENT_NOTE_ATTRIBUTE)); 
 				};
 				dataMenu.appendChild(addNoteButton);
 
@@ -1525,7 +1535,7 @@ function createNoteActionButtons(dataElement, id, parentNoteId, parentNoteAttrib
 
 		var contentType = this.getAttribute(CONTENT_TYPE);
 		var parentId = this.getAttribute(PARENT_NOTE_ID);
-		var parentAttr = this.getAttribute("parent-note-attribute");
+		var parentAttr = this.getAttribute(PARENT_NOTE_ATTRIBUTE);
 		var side = this.getAttribute("side");
 		if (side && parentId && parentAttr)
 			objectToSave.nested = `${parentAttr}/${side}/${parentId}`;
@@ -1554,14 +1564,14 @@ function createNoteActionButtons(dataElement, id, parentNoteId, parentNoteAttrib
 	var cancelButton = document.getElementById("cancel-button");
 	cancelButton.setAttribute(CONTENT_TYPE, contentType);
 	if (parentNoteId)
-		cancelButton.setAttribute("parent-note-id", parentNoteId);
+		cancelButton.setAttribute(PARENT_NOTE_ID, parentNoteId);
 
 	var saveButton = document.getElementById("save-button");
 	saveButton.setAttribute(CONTENT_TYPE, contentType);
 	if (parentNoteId)
-		saveButton.setAttribute("parent-note-id", parentNoteId);
+		saveButton.setAttribute(PARENT_NOTE_ID, parentNoteId);
 	if (parentNoteAttribute)
-		saveButton.setAttribute("parent-note-attribute", parentNoteAttribute);
+		saveButton.setAttribute(PARENT_NOTE_ATTRIBUTE, parentNoteAttribute);
 	if (side)
 		saveButton.setAttribute("side", side);
 	if (id)
@@ -1654,7 +1664,7 @@ function addComparedNotesMenu(parent, side, note, attribute, title)
 	var addNoteButton = document.createElement("a");
 	addNoteButton.setAttribute("entity-name", attribute.entity);
 	addNoteButton.setAttribute(PARENT_NOTE_ID, note.id);
-	addNoteButton.setAttribute("parent-note-attribute", attribute.name);
+	addNoteButton.setAttribute(PARENT_NOTE_ATTRIBUTE, attribute.name);
 	addNoteButton.setAttribute("side", side);
 	setImageClass(addNoteButton, NEW_NOTE_IMAGE);
 	addNoteButton.onclick = function() 
@@ -1663,7 +1673,7 @@ function addComparedNotesMenu(parent, side, note, attribute, title)
 		showNoteForm(null, 
 			this.getAttribute("entity-name"), 
 			this.getAttribute(PARENT_NOTE_ID), 
-			this.getAttribute("parent-note-attribute"), 
+			this.getAttribute(PARENT_NOTE_ATTRIBUTE), 
 			this.getAttribute("side")); 
 	};
 

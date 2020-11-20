@@ -43,9 +43,9 @@ function createAttributesTableHead(table)
     document.getElementById(DATA_TABLE).style.gridTemplateColumns = "min-content repeat(var(--tableColumnsCount), auto) min-content min-content";
 
     appendNewSpanAligning(table, "№", "center");
-    appendNewSpan(table, "Title");
-    appendNewSpan(table, "Name");
-    appendNewSpan(table, "Type");
+    appendNewSpan(table, "Title", true);
+    appendNewSpan(table, "Name", true);
+    appendNewSpan(table, "Type", true);
 	appendNewSpan(table, "");		// Edit
 	appendNewSpan(table, "");		// Remove
 }

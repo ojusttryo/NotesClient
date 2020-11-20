@@ -12,7 +12,7 @@ const FORM_CONTAINER = "form-container";
 const DATA_MENU = "data-menu";
 const DATA_TABLE = "data-table";
 const DATA_ELEMENT = "data-element";
-const HISTORY = "history";
+const DATA = "data";
 const CONTENT_ID = "content-id";
 const NOTE_ID = "note-id";
 const CONTENT_LEVEL = "content-level";
@@ -34,6 +34,7 @@ const MAX_SIZE = "maxSize";
 const MIN_SIZE = "minSize";
 const DO_NOT_STRETCH = "doNotStretch";
 const PARENT_NOTE_ID = "parent-note-id";
+const PARENT_NOTE_ATTRIBUTE = "parent-note-attribute";
 const FILE_ID = "file-id";
 const FILES_COUNT = "files-count";
 const ATTRIBUTES_SELECT = "attributes-select";
@@ -85,7 +86,6 @@ const DELETE_BUTTON = "deleteButton";
 const UPLOAD_FILE_BUTTON = "uploadFileButton";
 const DELETE_FILE_BUTTON = "deleteFileButton";
 
-const DATA = "Data";
 const NOTES = "Notes";
 const FOLDERS = "Folders";
 

@@ -19,13 +19,14 @@
 				<a id="notes-button" onclick="switchToNotes();"></a>
 				<a id="settings-button" onclick="switchToEntities();"></a>
 				<a id="log-button" onclick="switchToLog();"></a>
+				<a id="info-button" onclick="switchToInfo();"></a>
 			</div>
 			<div id="menu">
 				<div id="menu-list"></div>
 			</div>
 			<div id="content">
 				<div id="error-label"></div>
-				<div id="history"></div>
+				<div id="data"></div>
 				<div id="data-menu" class="data-menu"></div>
 				<div id="data-table" class="data-table has-vertical-padding"></div>
 				<div id="data-element"></div>
