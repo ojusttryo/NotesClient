@@ -57,7 +57,7 @@ function handleRequest()
 					showError("Wrong url");
 
 				if (path[1] == "new")
-					showAttributeForm(null);
+					showAttributeForm(null, null);
 				else
 					createEditAttributeForm(path[1]);
 
@@ -916,7 +916,7 @@ function addFormButtons(parent, isNewObject, saveHandler, cancelHandler)
 	var buttons = document.createElement("div");
 	buttons.classList.add("objectButtons");
 	buttons.classList.add(TWO_COLS);
-	var saveButton = addButton(buttons, "save-button", isNewObject ? "Edit" : "Save", saveHandler);
+	addButton(buttons, "save-button", isNewObject ? "Edit" : "Save", saveHandler);
     addButton(buttons, "cancel-button", "Cancel", cancelHandler);
 	parent.appendChild(buttons);
 	
@@ -1101,3 +1101,8 @@ function setPageTitle(title)
 	document.title = title;
 }
 
+
+function getBack() 
+{
+	window.history.back();
+}

@@ -177,13 +177,11 @@ function createAttributeForm(attributeName, attribute)
 
     var saveHandler = function() 
     {
-        window.history.back();
-        saveMetaObjectInfo("/rest/attributes", showAttributes) 
+        saveMetaObjectInfo("/rest/attributes", getBack);
     };
     var cancelHandler = function() 
     { 
-        window.history.back();
-        showAttributes();
+        getBack();
     };
     addFormButtons(dataElement, attributeName != null, saveHandler, cancelHandler, attributeName);
     

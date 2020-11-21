@@ -123,11 +123,13 @@ function createEntityForm(entityName)
     addInputWithLabel("text",     true,  dataElement, "name",    "Name (unique)", "entity-name");
     addInputWithLabel("checkbox", false, dataElement, "visible", "Visible",       "entity-visible");
 
-    var saveHandler = function() { saveMetaObjectInfo("/rest/entities", showEntities) };
+    var saveHandler = function() 
+    {
+        saveMetaObjectInfo("/rest/entities", getBack);
+    };
     var cancelHandler = function() 
     {
-        window.history.back();
-        showEntities() 
+        getBack();
     };
     var buttons = addFormButtons(dataElement, entityName != null, saveHandler, cancelHandler);
 
