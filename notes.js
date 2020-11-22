@@ -999,7 +999,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 				input.onchange = function(event)
 				{
 					var file = event.target.files[0];
-					checkFileSize(this.getAttribute(MIN_SIZE), this.getAttribute(MAX_SIZE), file.size / 1024);
+					checkFileSize(this.getAttribute(MIN_SIZE), this.getAttribute(MAX_SIZE), file.size);
 
 					saveFile(file)
 					.then(response => {
@@ -1071,7 +1071,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 				input.onchange = function(event)
 				{
 					for (var j = 0; j < event.target.files.length; j++)
-						checkFileSize(this.getAttribute(MIN_SIZE), this.getAttribute(MAX_SIZE), event.target.files[j].size / 1024);
+						checkFileSize(this.getAttribute(MIN_SIZE), this.getAttribute(MAX_SIZE), event.target.files[j].size);
 
 					for (var j = 0; j < event.target.files.length; j++)
 					{
@@ -1142,7 +1142,7 @@ function prepareNoteAttributes(dataElement, note, attributes)
 				input.onchange = function(event)
 				{
 					for (var j = 0; j < event.target.files.length; j++)
-						checkFileSize(this.getAttribute(MIN_SIZE), this.getAttribute(MAX_SIZE), event.target.files[j].size / 1024);
+						checkFileSize(this.getAttribute(MIN_SIZE), this.getAttribute(MAX_SIZE), event.target.files[j].size);
 
 					var promise = function(value, index) 
 					{ 
@@ -1481,9 +1481,9 @@ function addFileCollectionRow(metadata, filesCollection)
 
 function checkFileSize(min, max, fileSize)
 {
-	if (max != null && fileSize > max)
+	if (max != null && (fileSize / 1024) > max)
 		showError("File size is greater than " + max.toString());
-	if (min != null && fileSize < min)
+	if (min != null && (fileSize / 1024) < min)
 		showError("File size is less than " + min.toString());
 }
 
@@ -1642,6 +1642,7 @@ function setWidthRangeInTable(element, attribute)
 		element.style.minWidth = attribute.minWidth;
 }
 
+
 function addComparedNotesMenu(parent, side, note, attribute, title)
 {
 	var envelope = document.createElement("div");
@@ -1682,6 +1683,7 @@ function addComparedNotesMenu(parent, side, note, attribute, title)
 	envelope.appendChild(menu);
 	parent.appendChild(envelope);
 }
+
 
 function addComparedNotesTable(parent, side, attribute)
 {

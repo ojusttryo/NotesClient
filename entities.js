@@ -338,6 +338,7 @@ function createAttributesTable(attributes, side)
                     var allKeys = document.querySelectorAll(`.${ASC_SORT_ATTRIBUTE_IMAGE},.${DESC_SORT_ATTRIBUTE_IMAGE}`);
                     for (var k = 0; k < allKeys.length; k++)
                     {
+                        allKeys[k].classList.remove(SORT_ATTRIBUTE_IMAGE);
                         changeImageClass(allKeys[k], ASC_SORT_ATTRIBUTE_IMAGE, SORT_ATTRIBUTE_IMAGE);
                         changeImageClass(allKeys[k], DESC_SORT_ATTRIBUTE_IMAGE, SORT_ATTRIBUTE_IMAGE);
                     }
@@ -348,7 +349,7 @@ function createAttributesTable(attributes, side)
                         setImageClass(this, DESC_SORT_ATTRIBUTE_IMAGE, true);
                     else if (currentClass == SORT_ATTRIBUTE_IMAGE)
                         setImageClass(this, ASC_SORT_ATTRIBUTE_IMAGE, true);
-                    else
+                    else if (currentClass == DESC_SORT_ATTRIBUTE_IMAGE)
                         setImageClass(this, SORT_ATTRIBUTE_IMAGE, true);
                 }
                 sortAttributeTd.appendChild(sortAttribute);

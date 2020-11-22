@@ -946,10 +946,7 @@ function changeImageClass(element, from, to)
 		element.style.backgroundImage = "";
 	}
 
-	if (!element.classList.contains(to))
-	{
-		setImageClass(element, to);
-	}
+	setImageClass(element, to);
 }
 
 
@@ -988,10 +985,8 @@ function setImageClass(element, newClass, hasMargin)
 	if (!element.classList.contains(IMAGE_ICON))
 		element.classList.add(IMAGE_ICON);
 
-	if (element.classList.contains(newClass))
-		return;	
-
-	element.classList.add(newClass);
+	if (!element.classList.contains(newClass))
+		element.classList.add(newClass);
 
 	var url = `url(img/${newClass.replace("-image", "")}.svg)`;
 	element.style.backgroundImage = url.replaceAll("-", "");
