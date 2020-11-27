@@ -75,7 +75,7 @@ function createAttributesTableBody(table, attributes)
         deleteButton.setAttribute(ATTRIBUTE_NAME, attributes[i].name);
         deleteButton.onclick = function() 
         {
-            var result = confirm("Delete attribute?");
+            var result = confirm(`Delete attribute ${this.getAttribute(ATTRIBUTE_NAME)}?`);
             if (result)
                 deleteAttribute(this.getAttribute(ATTRIBUTE_NAME));
         };

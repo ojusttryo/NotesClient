@@ -92,7 +92,7 @@ function createEntitiesTableBody(table, entities)
         deleteButton.setAttribute(CONTENT_NAME, entities[i].name);
         deleteButton.onclick = function() 
         {
-            var result = confirm("Delete entity?");
+            var result = confirm(`Delete entity ${this.getAttribute(CONTENT_NAME)}?`);
             if (result)
             {
                 fetch(SERVER_ADDRESS + '/rest/entities/' + this.getAttribute(CONTENT_NAME), { method: "DELETE" })

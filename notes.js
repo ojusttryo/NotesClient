@@ -659,6 +659,7 @@ function createButtonToDeleteNote(id, contentType)
 	{
 		var contentType = this.getAttribute(CONTENT_TYPE);
 		var noteId = this.getAttribute(NOTE_ID);
+		
 		fetch(`${SERVER_ADDRESS}/rest/notes/${contentType}/${noteId}/key`)
 		.then(keyAttrResponse => keyAttrResponse.text())
 		.then(keyAttr => {
