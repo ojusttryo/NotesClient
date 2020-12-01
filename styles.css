@@ -366,10 +366,10 @@ input, select, textarea
 }
 
 
-
 #error-label
 {
 	color: red;
+	padding: var(--padding);
 }
 
 .editButton
@@ -513,7 +513,7 @@ img
 	border-radius: 5px;
 }
 
-.entity-attributes
+.usage-list
 {
 	display: flex;
     flex-direction: row;

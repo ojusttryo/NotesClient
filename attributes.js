@@ -39,13 +39,14 @@ function showAttributesMenu()
 
 function createAttributesTableHead(table)
 {
-    setContentColumnsCount(3);      // 3 - without buttons and row number
+    setContentColumnsCount(4);      // 4 - without buttons and row number
     document.getElementById(DATA_TABLE).style.gridTemplateColumns = "min-content repeat(var(--tableColumnsCount), auto) min-content min-content";
 
     appendNewSpanAligning(table, "№", "center");
     appendNewSpan(table, "Title", true);
     appendNewSpan(table, "Name", true);
     appendNewSpan(table, "Type", true);
+    appendNewSpan(table, "Entities", true);
 	appendNewSpan(table, "");		// Edit
 	appendNewSpan(table, "");		// Remove
 }
@@ -58,6 +59,19 @@ function createAttributesTableBody(table, attributes)
         appendNewSpan(table, attributes[i].title);
         appendNewSpan(table, attributes[i].name);
         appendNewSpan(table, attributes[i].type);
+        
+        var usage = appendNewSpan(table, "");
+        usage.classList.add("usage-list");
+        usage.style.display = "flex";
+        attributes[i].usage.forEach(function (item, index) {
+            var entity = document.createElement("a");
+            entity.href = window.location.href.replace(window.location.pathname, `/entity/${item}`);
+            entity.style.textDecoration = "none";
+            entity.style.color = "black";
+            entity.style.paddingRight = "5px";
+            entity.innerText = item;
+            usage.appendChild(entity);
+        })
 
         var editButton = document.createElement("td");
         editButton.classList.add(EDIT_BUTTON);
@@ -149,12 +163,12 @@ function createAttributeForm(attributeName, attribute)
     addInputWithLabel("number",   false, dataElement, "linesCount",      "Lines count",                 "attribute-lines-count");
     addSelectWithLabel(dataElement, "method", "Method", "attribute-method", methods);
     addSelectWithLabel(dataElement, "imagesSize", "Images size", "attribute-images-size", imageSizes);
-    addInputWithLabel("text",     false, dataElement, "maxWidth",        "Max width in table",          "attribute-max-width");
     addInputWithLabel("text",     false, dataElement, "minWidth",        "Min width in table",          "attribute-min-width");
-    addInputWithLabel("text",     false, dataElement, "maxHeight",       "Max height at page",          "attribute-max-height");
+    addInputWithLabel("text",     false, dataElement, "maxWidth",        "Max width in table",          "attribute-max-width");
     addInputWithLabel("text",     false, dataElement, "minHeight",       "Min height at page",          "attribute-min-height");
-    addInputWithLabel("text",     false, dataElement, "max",             "Max value/length/size",       "attribute-max");
+    addInputWithLabel("text",     false, dataElement, "maxHeight",       "Max height at page",          "attribute-max-height");
     addInputWithLabel("text",     false, dataElement, "min",             "Min value/length/size",       "attribute-min");
+    addInputWithLabel("text",     false, dataElement, "max",             "Max value/length/size",       "attribute-max");
     addInputWithLabel("text",     true,  dataElement, "defaultValue",    "Default value",               "attribute-default");
     addInputWithLabel("number",   false, dataElement, "step",            "Step",                        "attribute-step");
     addInputWithLabel("text",     true,  dataElement, "regex",           "Regular expression to check", "attribute-regex");

@@ -538,7 +538,7 @@ function createNotesTableBody(table, attributes, notes, contentType, parentNoteI
 						var id = this.parentNode.getAttribute(NOTE_ID);
 						fetch(SERVER_ADDRESS + '/rest/notes/' + this.getAttribute(CONTENT_TYPE) + "/" + id + "/inc/" + this.getAttribute(ATTRIBUTE_NAME), {
 							method: "PUT",
-							headers: { "Accept": TEXT_PLAIN, "Content-Type": APPLICATION_JSON }
+							headers: { "Accept": APPLICATION_JSON }
 						})
 						.then(response => {
 							if (response.status != 200)
@@ -659,8 +659,11 @@ function createButtonToDeleteNote(id, contentType)
 	{
 		var contentType = this.getAttribute(CONTENT_TYPE);
 		var noteId = this.getAttribute(NOTE_ID);
-		
-		fetch(`${SERVER_ADDRESS}/rest/notes/${contentType}/${noteId}/key`)
+
+		fetch(`${SERVER_ADDRESS}/rest/notes/${contentType}/${noteId}/key`, { 
+			method: "GET",
+			headers: { "Accept": APPLICATION_JSON }
+		})
 		.then(keyAttrResponse => keyAttrResponse.text())
 		.then(keyAttr => {
 			if (keyAttr == null || typeof keyAttr == "undefined")
@@ -689,7 +692,10 @@ function createButtonToDeleteNote(id, contentType)
 
 function deleteNote(id, contentType)
 {
-	return fetch(SERVER_ADDRESS + '/rest/notes/' + contentType + '/' + id, { method: "DELETE" })
+	return fetch(SERVER_ADDRESS + '/rest/notes/' + contentType + '/' + id, { 
+		method: "DELETE",
+		headers: { "Accept": APPLICATION_JSON }
+	})
 	.then(response => {
 		if (response.status === 500)
 			showError(response.message);
@@ -1548,15 +1554,23 @@ function createNoteActionButtons(dataElement, id, parentNoteId, parentNoteAttrib
 		fetch(SERVER_ADDRESS + '/rest/notes/' + contentType, {
 			method: objectToSave.id == null ? "POST" : "PUT",
 			body: JSON.stringify(objectToSave),
-			headers: { "Accept": TEXT_PLAIN, "Content-Type": APPLICATION_JSON }
+			headers: { "Accept": APPLICATION_JSON, "Content-Type": APPLICATION_JSON }
 		})
 		.then(response => {
 			if (response.status === 200)
 			{
 				window.history.back();
-				if (!this.hasAttribute(PARENT_NOTE_ID))
-					showCurrentContent(contentType);
+				//if (!this.hasAttribute(PARENT_NOTE_ID))
+				//	showCurrentContent(contentType);
 			}
+			else if (response.status == 500)
+			{
+				return response.json();
+			}
+		})
+		.then(error => {
+			if (error)
+				showError(error.message);
 		});
 	};
 
@@ -1742,30 +1756,36 @@ function setPageTitleFromEntityTitle(contentType)
 
 function changeNoteVisibilityButtonClickHandler()
 {
+	var operation, from, to;
 	if (this.classList.contains(HIDDEN_IMAGE))
 	{
-		fetch(SERVER_ADDRESS + "/rest/notes/" + this.getAttribute(CONTENT_TYPE) + "/" + this.getAttribute(NOTE_ID) + "/hide", {
-			method: "PUT",
-			headers: { "Accept": TEXT_PLAIN, "Content-Type": APPLICATION_JSON }
-		})
-		.then(response => {
-			if (response.status == 200)
-			{
-				changeImageClass(this, HIDDEN_IMAGE, VISIBLE_IMAGE);
-			}
-		});
+		operation = "hide";
+		from = HIDDEN_IMAGE;
+		to = VISIBLE_IMAGE;
 	}
 	else
 	{
-		fetch(SERVER_ADDRESS + "/rest/notes/" + this.getAttribute(CONTENT_TYPE) + "/" + this.getAttribute(NOTE_ID) + "/reveal", {
-			method: "PUT",
-			headers: { "Accept": TEXT_PLAIN, "Content-Type": APPLICATION_JSON }
-		})
-		.then(response => {
-			if (response.status == 200)
-			{
-				changeImageClass(this, VISIBLE_IMAGE, HIDDEN_IMAGE);
-			}
-		});
+		operation = "reveal";
+		from = VISIBLE_IMAGE;
+		to = HIDDEN_IMAGE;
 	}
+
+	fetch(`${SERVER_ADDRESS}/rest/notes/${this.getAttribute(CONTENT_TYPE)}/${this.getAttribute(NOTE_ID)}/${operation}`, {
+		method: "PUT",
+		headers: { "Accept": APPLICATION_JSON }
+	})
+	.then(response => {
+		if (response.status == 200)
+		{
+			changeImageClass(this, from, to);
+		}
+		else if (response.status == 500)
+		{
+			return response.json();
+		}
+	})
+	.then(error => {
+		if (error)
+			showError(error.message);
+	});
 }

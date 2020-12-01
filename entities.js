@@ -64,7 +64,7 @@ function createEntitiesTableBody(table, entities)
         appendNewSpan(table, entities[i].visible);
 
         var attributes = appendNewSpan(table, "");
-        attributes.classList.add("entity-attributes");
+        attributes.classList.add("usage-list");
         attributes.style.display = "flex";
         entities[i].attributes.forEach(function (item, index) {
             var attribute = document.createElement("a");
