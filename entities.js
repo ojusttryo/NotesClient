@@ -102,7 +102,15 @@ function createEntitiesTableBody(table, entities)
                         pushEntityTableState();
                         showEntities();
                     }
+                    else if (response.status === 500)
+                    {
+                        return response.json();
+                    }
                 })
+                .then(error => {
+                    if (error)
+                        showError(error.message);
+                });
             }
         };
 		table.appendChild(deleteButton);

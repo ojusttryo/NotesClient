@@ -235,7 +235,7 @@ async function showComparedNotes(contentType, parentNoteAttribute, parentNoteId,
 		.then(notes => {
 			var table = document.getElementById(tableId);
 			createNotesTableHead(table, attributes, parentNoteId);
-			createNotesTableBody(table, attributes, notes, contentType, parentNoteId, parentNoteAttribute);
+			createNotesTableBody(table, attributes, notes, contentType, parentNoteId, parentNoteAttribute, side);
 		});
 	});
 }
@@ -330,7 +330,7 @@ function countColumnsWithoutButtons(attributes)
 }
 
 
-function createNotesTableBody(table, attributes, notes, contentType, parentNoteId, parentNoteAttribute)
+function createNotesTableBody(table, attributes, notes, contentType, parentNoteId, parentNoteAttribute, side)
 {
 	if (notes == null)
 		return;
@@ -614,7 +614,7 @@ function createNotesTableBody(table, attributes, notes, contentType, parentNoteI
 
 		if (!parentNoteId)
 			table.appendChild(createButtonToHideNote(note.id, contentType, note.hidden));
-		table.appendChild(createButtonToShowNoteEditForm(note.id, contentType, parentNoteId, parentNoteAttribute));
+		table.appendChild(createButtonToShowNoteEditForm(note.id, contentType, parentNoteId, parentNoteAttribute, side));
 		table.appendChild(createButtonToDeleteNote(note.id, contentType));
 	}
 }
@@ -631,12 +631,13 @@ function createButtonToHideNote(id, contentType, isHidden)
 }
 
 
-function createButtonToShowNoteEditForm(id, contentType, parentNoteId, parentNoteAttribute)
+function createButtonToShowNoteEditForm(id, contentType, parentNoteId, parentNoteAttribute, side)
 {
 	var editButton = document.createElement("td");
 	editButton.classList.add(EDIT_BUTTON);
 	editButton.setAttribute(NOTE_ID, id);
 	editButton.setAttribute(CONTENT_TYPE, contentType);
+	editButton.setAttribute("side", side);
 	if (parentNoteAttribute)
 		editButton.setAttribute(PARENT_NOTE_ATTRIBUTE, parentNoteAttribute);
 	if (parentNoteId)
@@ -644,7 +645,8 @@ function createButtonToShowNoteEditForm(id, contentType, parentNoteId, parentNot
 	editButton.onclick = function() 
 	{
 		pushNoteState(this.getAttribute(NOTE_ID), this.getAttribute(CONTENT_TYPE), this.getAttribute(PARENT_NOTE_ID));
-		showNoteForm(this.getAttribute(NOTE_ID), this.getAttribute(CONTENT_TYPE), this.getAttribute(PARENT_NOTE_ID), this.getAttribute(PARENT_NOTE_ATTRIBUTE)); 
+		showNoteForm(this.getAttribute(NOTE_ID), this.getAttribute(CONTENT_TYPE), this.getAttribute(PARENT_NOTE_ID), 
+			this.getAttribute(PARENT_NOTE_ATTRIBUTE), this.getAttribute("side")); 
 	};
 	return editButton;
 }
@@ -1543,9 +1545,12 @@ function createNoteActionButtons(dataElement, id, parentNoteId, parentNoteAttrib
 		var contentType = this.getAttribute(CONTENT_TYPE);
 		var parentId = this.getAttribute(PARENT_NOTE_ID);
 		var parentAttr = this.getAttribute(PARENT_NOTE_ATTRIBUTE);
-		var side = this.getAttribute("side");
+		// TODO переписать эту мутотень с side
+		var sideAttr = this.hasAttribute("side") ? this.getAttribute("side") : null;
 		if (side && parentId && parentAttr)
 			objectToSave.nested = `${parentAttr}/${side}/${parentId}`;
+		if (sideAttr && parentId && parentAttr)
+			objectToSave.nested = `${parentAttr}/${sideAttr}/${parentId}`;
 		else if (parentId && parentAttr)
 			objectToSave.nested = `${parentAttr}/${parentId}`;
 
@@ -1630,7 +1635,7 @@ function updateNote(objectToSave, id, contentType)
 	return fetch(SERVER_ADDRESS + '/rest/notes/' + contentType + "/" + id, {
 		method: "PUT",
 		body: JSON.stringify(objectToSave),
-		headers: { "Accept": TEXT_PLAIN, "Content-Type": APPLICATION_JSON }
+		headers: { "Accept": APPLICATION_JSON, "Content-Type": APPLICATION_JSON }
 	})
 }
 

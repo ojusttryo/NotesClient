@@ -107,6 +107,14 @@ function deleteAttribute(name)
             pushAttributeTableState();
             showAttributes();
         }
+        else if (response.status === 500)
+        {
+            return response.json();
+        }
+    })
+    .then(error => {
+        if (error)
+            showError(error.message);
     });
 }
 
